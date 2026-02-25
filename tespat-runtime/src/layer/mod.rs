@@ -143,10 +143,6 @@ impl<T: Color> Layer<T> {
             self.pixel_info_table[index] = new_el;
         }
     }
-
-    pub fn height(&self) -> usize {
-        self.pixel_info_table.len() / self.row_width
-    }
 }
 
 // 读取实现
@@ -189,6 +185,20 @@ impl<T: Color> Layer<T> {
             .iter()
             .map(|el| el.color.clone())
             .collect()
+    }
+}
+
+impl<T> Layer<T> {
+    pub fn width(&self) -> usize {
+        self.row_width
+    }
+
+    pub fn height(&self) -> usize {
+        self.pixel_info_table.len() / self.row_width
+    }
+
+    pub fn size(&self) -> usize {
+        self.pixel_info_table.len()
     }
 }
 

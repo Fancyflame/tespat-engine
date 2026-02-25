@@ -2,24 +2,24 @@ use crate::{Color, index_to_position, layer::Layer, pattern::Pattern};
 
 /// 匹配结果
 #[derive(Default)]
-pub struct Matches {
+pub struct PatternMatchResult {
     /// 对应模式的左上角位置
     pub positions: Vec<(usize, usize)>,
 }
 
 impl<T: Color> Layer<T> {
     /// 查找出层中所有匹配该模式的位置。不保证任何顺序。
-    pub fn match_pattern(&self, pattern: &Pattern<T>) -> Matches {
+    pub fn match_pattern(&self, pattern: &Pattern<T>) -> PatternMatchResult {
         let Some(check_positions) = self.compute_check_positions(pattern) else {
             // 模式中没有颜色：只要 layer 能容纳该模式尺寸的所有位置都是候选
             if self.row_width < pattern.width() || self.height() < pattern.height() {
-                return Matches::default();
+                return PatternMatchResult::default();
             }
 
             let max_left = self.row_width - pattern.width();
             let max_top = self.height() - pattern.height();
 
-            return Matches {
+            return PatternMatchResult {
                 positions: (0..=max_top)
                     .flat_map(|y| (0..=max_left).map(move |x| (x, y)))
                     .collect(),
@@ -42,7 +42,7 @@ impl<T: Color> Layer<T> {
             true
         });
 
-        Matches {
+        PatternMatchResult {
             positions: final_positions,
         }
     }

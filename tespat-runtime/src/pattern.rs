@@ -17,7 +17,9 @@ impl<T: Color> Pattern<T> {
         );
         Self { width, grid }
     }
+}
 
+impl<T> Pattern<T> {
     pub fn width(&self) -> usize {
         self.width
     }

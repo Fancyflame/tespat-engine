@@ -1,7 +1,7 @@
 use std::hash::Hash;
 
-pub mod instruction;
-pub mod layer;
+pub mod app;
+mod layer;
 pub mod pattern;
 
 /// 可作为层中的数据的类型。请确保克隆该类型是廉价的，可能涉及大量克隆。
