@@ -1,0 +1,10 @@
+[package]
+name = "tespat-runtime"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+rand.workspace = true
+serde.workspace = true
+tracing.workspace = true
