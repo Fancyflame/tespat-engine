@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::{array, cell::RefCell};
 
 use crate::{
     Color,
@@ -51,6 +51,19 @@ impl<T: Color> Tespat<T> {
 
     pub fn export(&self) -> Vec<T> {
         self.layer.export()
+    }
+
+    /// 导出到二维数组。如果形状不匹配则返回None
+    pub fn export_to_2d_array<const W: usize, const H: usize>(&self) -> Option<[[T; W]; H]> {
+        let export = self.export();
+        if export.len() != W * H {
+            return None;
+        }
+        let mut colors = export.into_iter();
+
+        Some(array::from_fn(|_| {
+            array::from_fn(|_| colors.next().unwrap())
+        }))
     }
 
     pub fn width(&self) -> usize {

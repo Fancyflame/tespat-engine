@@ -258,6 +258,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tespat-editor"
+version = "0.1.0"
+dependencies = [
+ "tespat-runtime",
+]
+
+[[package]]
 name = "tespat-runtime"
 version = "0.1.0"
 dependencies = [

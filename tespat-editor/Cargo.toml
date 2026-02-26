@@ -1,0 +1,7 @@
+[package]
+name = "tespat-editor"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tespat-runtime = { version = "0.1.0", path = "../tespat-runtime" }

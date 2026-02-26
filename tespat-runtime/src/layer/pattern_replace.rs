@@ -1,6 +1,7 @@
 use crate::{Color, layer::Layer, pattern::Pattern};
 
 impl<T: Color> Layer<T> {
+    /// 将给定位置作为左上角，将模式放在该位置上
     pub fn pattern_replace(&mut self, position: (usize, usize), replaced_by: &Pattern<T>) {
         let (left, top) = position;
 

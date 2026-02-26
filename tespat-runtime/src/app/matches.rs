@@ -31,6 +31,10 @@ impl Matches {
 
         self.0.truncate(reserve_count);
     }
+
+    pub fn optioned(self) -> Option<Self> {
+        (!self.0.is_empty()).then_some(self)
+    }
 }
 
 impl Matches {

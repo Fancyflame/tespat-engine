@@ -17,6 +17,13 @@ impl<T: Color> Pattern<T> {
         );
         Self { width, grid }
     }
+
+    pub fn literal<const W: usize, const H: usize>(grid: [[Option<T>; W]; H]) -> Self {
+        Self::new(
+            W,
+            grid.into_iter().flat_map(|arr| arr.into_iter()).collect(),
+        )
+    }
 }
 
 impl<T> Pattern<T> {
