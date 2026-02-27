@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "useDefineForClassFields": true,
+        "lib": ["ESNext", "DOM", "DOM.Iterable"],
+        "module": "ESNext",
+        "skipLibCheck": true,
+
+        /* 必须是 bundler 或 node16/nodenext */
+        "moduleResolution": "bundler",
+
+        /* 允许识别任意扩展名 */
+        "allowArbitraryExtensions": true,
+
+        /* 核心：必须包含 vite 的客户端定义 */
+        "types": ["vite/client"],
+
+        "jsx": "react-jsx",
+        "strict": true,
+        "noEmit": true,
+        "isolatedModules": true
+    },
+    "include": ["src"]
+}

@@ -1,0 +1,63 @@
+.header {
+    background-color: var(--mantine-color-grey-10);
+    /* border-bottom: 1px solid #1f2937; */
+}
+
+.navbar {
+    border-right: 1px solid #1f2937;
+}
+
+.main {
+    background-color: #030712;
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    align-items: stretch;
+
+    .gridDisplaySliderWrapper {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .canvasStage {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-image: radial-gradient(#1f2937 1px, transparent 1px);
+        background-size: 40px 40px;
+
+        .canvasPlaceholder {
+            width: 100%;
+            height: 100%;
+            max-width: 900px;
+            aspect-ratio: 16/9;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.5);
+        }
+    }
+}
+
+.playbackOverlay {
+    position: absolute;
+    bottom: 40px;
+    left: 60px;
+    right: 60px;
+    background: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(12px);
+    padding: 16px 24px;
+    border-radius: 20px;
+    border: 1px solid #374151;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
