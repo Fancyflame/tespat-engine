@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Stack, ActionIcon, ScrollArea } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { PatternRule, useProject } from "../../ProjectData";
-import { RuleCard } from "./RuleCard";
+import { PatternCard } from "./PatternCard";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 export const PatternRulesSection = () => {
@@ -10,7 +10,7 @@ export const PatternRulesSection = () => {
 
     const rules: Array<[string, PatternRule]> = useMemo(
         () => Array.from(project.patterns.entries()),
-        [project.patterns]
+        [project.patterns],
     );
 
     const handleRenameRule = (id: string, newName: string) => {
@@ -34,7 +34,7 @@ export const PatternRulesSection = () => {
 
     return (
         <CollapsibleSection
-            title="PATTERN RULES"
+            title="PATTERNS"
             rightAction={
                 <ActionIcon
                     variant="light"
@@ -51,10 +51,12 @@ export const PatternRulesSection = () => {
             <ScrollArea offsetScrollbars flex={1}>
                 <Stack gap="md">
                     {rules.map(([id, rule]) => (
-                        <RuleCard
+                        <PatternCard
                             key={id}
                             rule={rule}
-                            onRename={(newName) => handleRenameRule(id, newName)}
+                            onRename={(newName) =>
+                                handleRenameRule(id, newName)
+                            }
                             onDelete={() => handleDeleteRule(id)}
                         />
                     ))}
@@ -62,5 +64,4 @@ export const PatternRulesSection = () => {
             </ScrollArea>
         </CollapsibleSection>
     );
-}
-
+};

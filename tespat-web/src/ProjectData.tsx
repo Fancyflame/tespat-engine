@@ -1,4 +1,4 @@
-import React, {
+import {
     createContext,
     useContext,
     useState,
@@ -21,9 +21,6 @@ export interface ProjectData {
 
     // 根据单元格id显示对应颜色
     cellDisplay: Map<string, string>;
-
-    // 当前选中的单元格id，用于绘制
-    selectedCell: string | null;
 }
 
 // Context 类型：只暴露数据本身和原生的 setState
@@ -38,14 +35,15 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     const [project, setProject] = useState<ProjectData>({
         name: "Markov Project",
         patterns: new Map([
-            ["Eat Apple", {
-                name: "Eat Apple",
-                width: 2,
-                height: 1,
-                pattern: [
-                    "Slime", "Apple",
-                ]
-            }],
+            [
+                "Eat Apple",
+                {
+                    name: "Eat Apple",
+                    width: 2,
+                    height: 1,
+                    pattern: ["Slime", "Apple"],
+                },
+            ],
         ]),
         cellDisplay: new Map([
             ["Apple", "#ef4444"],
@@ -53,7 +51,6 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
             ["Empty", "#1f2937"],
             ["SatiatedSlime", "#facc15"],
         ]),
-        selectedCell: null,
     });
 
     return (

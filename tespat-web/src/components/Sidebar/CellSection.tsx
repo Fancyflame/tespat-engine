@@ -8,16 +8,22 @@ import {
     Popover,
     ColorSwatch,
     ColorPicker,
+    Box,
 } from "@mantine/core";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { IconPlus, IconPencil, IconTrash } from "@tabler/icons-react";
 import { useProject } from "../../ProjectData";
+import { useEditor } from "../../EditorData";
 
 export function CellSection() {
     const { project, setProject } = useProject();
+    const { editor, setEditor } = useEditor();
 
-    const units = useMemo(
-        () => Array.from(project.cellDisplay.entries()),
+    const cells = useMemo(
+        () =>
+            Array.from(project.cellDisplay.entries()).sort((a, b) =>
+                a[0].localeCompare(b[0]),
+            ),
         [project.cellDisplay],
     );
 
@@ -41,27 +47,50 @@ export function CellSection() {
                 const trimmed = newName.trim();
                 if (!trimmed || trimmed === oldName) return;
 
+                if (
+                    !project.cellDisplay.has(oldName) ||
+                    project.cellDisplay.has(trimmed)
+                ) {
+                    return;
+                }
+                const color = project.cellDisplay.get(oldName);
+                if (color === undefined) return;
+
                 setProject((prev) => {
                     const cellDisplay = new Map(prev.cellDisplay);
-                    if (!cellDisplay.has(oldName) || cellDisplay.has(trimmed)) {
-                        return prev;
-                    }
-                    const color = cellDisplay.get(oldName);
-                    if (color === undefined) return prev;
                     cellDisplay.delete(oldName);
                     cellDisplay.set(trimmed, color);
-                    return { ...prev, cellDisplay, selectedCell: trimmed };
+                    return { ...prev, cellDisplay };
                 });
+                setEditor((prev) => ({ ...prev, selectedCell: trimmed }));
             },
             onSelect: (unitName: string) => {
-                setProject((prev) => ({
-                    ...prev,
-                    selectedCell: unitName,
-                }));
+                setEditor((prev) => ({ ...prev, selectedCell: unitName }));
             },
         }),
-        [setProject],
+        [project.cellDisplay, setEditor, setProject],
     );
+
+    const createNewCell = () => {
+        const baseName = "_NewCell";
+        let index = 0;
+        let candidate = baseName;
+        while (project.cellDisplay.has(candidate)) {
+            index += 1;
+            candidate = `${baseName}${index}`;
+        }
+
+        setProject((prev) => {
+            const cellDisplay = new Map(prev.cellDisplay);
+            cellDisplay.set(candidate, "#ffffff");
+
+            return {
+                ...prev,
+                cellDisplay,
+            };
+        });
+        setEditor((prev) => ({ ...prev, selectedCell: candidate }));
+    };
 
     return (
         <CollapsibleSection
@@ -72,7 +101,7 @@ export function CellSection() {
                     size="sm"
                     onClick={(event) => {
                         event.stopPropagation();
-                        // TODO: 新增单位/单元逻辑
+                        createNewCell();
                     }}
                 >
                     <IconPlus size={14} />
@@ -80,18 +109,18 @@ export function CellSection() {
             }
         >
             <Stack gap="xs" pt="xs">
-                {units.length === 0 ? (
+                {cells.length === 0 ? (
                     <Text size="xs" c="dimmed">
                         暂无单位
                     </Text>
                 ) : (
                     <Group gap="xs" wrap="wrap">
-                        {units.map(([unitName, color]) => (
+                        {cells.map(([unitName, color]) => (
                             <CellUnitCapsule
                                 key={unitName}
                                 name={unitName}
                                 color={color}
-                                selected={project.selectedCell === unitName}
+                                selected={editor.selectedCell === unitName}
                                 actions={cellActions}
                             />
                         ))}
@@ -127,7 +156,7 @@ const CellUnitCapsule = memo(function CellUnitCapsule({
     }, [color]);
 
     return (
-        <UnstyledButton
+        <Box
             onClick={() => actions.onSelect(name)}
             style={{
                 borderRadius: 999,
@@ -135,7 +164,7 @@ const CellUnitCapsule = memo(function CellUnitCapsule({
                     ? "1px solid rgba(15, 23, 42, 0.3)"
                     : "1px solid var(--mantine-color-gray-3)",
                 backgroundColor: selected
-                    ? "rgba(255, 255, 255, 0.96)"
+                    ? "rgba(255, 255, 255, 0.9)"
                     : "transparent",
                 padding: "6px 10px",
             }}
@@ -148,7 +177,6 @@ const CellUnitCapsule = memo(function CellUnitCapsule({
                             radius="sm"
                             size={16}
                             style={{ cursor: "pointer" }}
-                            onClick={(event) => event.stopPropagation()}
                         />
                     </Popover.Target>
                     <Popover.Dropdown
@@ -201,6 +229,6 @@ const CellUnitCapsule = memo(function CellUnitCapsule({
                     {name}
                 </Text>
             </Group>
-        </UnstyledButton>
+        </Box>
     );
 });

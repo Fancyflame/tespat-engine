@@ -1,0 +1,10 @@
+.resizeBar {
+    position: absolute;
+    border-radius: 999px;
+    background: rgba(148, 163, 184);
+    opacity: 0.1;
+
+    &:hover {
+        opacity: 0.2;
+    }
+}
