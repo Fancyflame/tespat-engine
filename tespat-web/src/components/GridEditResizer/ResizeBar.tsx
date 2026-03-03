@@ -21,12 +21,12 @@ export interface ResizeBarProps {
 
 export function ResizeBar({
     direction,
-    barThickness = 10,
+    barThickness = 5,
     onDeltaChange,
     className,
 }: ResizeBarProps) {
     const { setEditor } = useEditor();
-    const offset = "-25px";
+    const offset = "-15px";
     const isDraggingRef = useRef(false);
     const startPointRef = useRef<{ x: number; y: number } | null>(null);
 
