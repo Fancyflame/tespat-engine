@@ -1,6 +1,15 @@
-import { Card, Group, Text, ActionIcon, Divider, Stack } from "@mantine/core";
+import {
+    Card,
+    Group,
+    Text,
+    ActionIcon,
+    Center,
+    Stack,
+    Box,
+} from "@mantine/core";
 import { IconTrash, IconPencil } from "@tabler/icons-react";
 import { PatternRule } from "../../ProjectData";
+import { GridDisplay2D } from "../GridDisplay2D/GridDisplay2D";
 
 interface PatternCardProps {
     rule: PatternRule;
@@ -25,10 +34,10 @@ export const PatternCard = ({ rule, onRename, onDelete }: PatternCardProps) => {
 
     return (
         <Card withBorder padding="sm" radius="md" bg="gray.9">
-            <Group justify="space-between" align="flex-start" wrap="nowrap">
-                <Stack gap={4}>
+            <Group justify="space-between" align="stretch" wrap="nowrap">
+                <Stack gap={4} justify="space-between">
                     <Text
-                        size="xs"
+                        size="sm"
                         ff="monospace"
                         fw={700}
                         c="blue.4"
@@ -54,6 +63,9 @@ export const PatternCard = ({ rule, onRename, onDelete }: PatternCardProps) => {
                         </ActionIcon>
                     </Group>
                 </Stack>
+                <Center w={100} h={70}>
+                    <GridDisplay2D width={rule.width} data={rule.pattern} />
+                </Center>
             </Group>
         </Card>
     );

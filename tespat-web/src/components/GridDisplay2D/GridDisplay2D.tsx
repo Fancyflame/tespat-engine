@@ -70,30 +70,21 @@ export function GridDisplay2D({
     }
 
     return (
-        <Box
+        <canvas
+            ref={canvasRef}
             style={{
+                display: "block",
                 width: "100%",
                 height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                objectFit: "contain",
+                aspectRatio: `${gridWidth} / ${gridHeight}`,
+                maxWidth: "100%",
+                maxHeight: "100%",
+                borderRadius: 5,
+                background: "transparent",
+                imageRendering: "pixelated",
             }}
-        >
-            <canvas
-                ref={canvasRef}
-                style={{
-                    display: "block",
-                    width: "100%",
-                    height: "auto",
-                    aspectRatio: `${gridWidth} / ${gridHeight}`,
-                    maxWidth: "100%",
-                    maxHeight: "100%",
-                    borderRadius: 5,
-                    background: "rgba(0,0,0,0.4)",
-                    imageRendering: "pixelated",
-                }}
-            />
-        </Box>
+        />
     );
 }
 

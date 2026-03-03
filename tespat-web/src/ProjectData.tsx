@@ -11,7 +11,6 @@ import {
 export interface PatternRule {
     name: string;
     width: number;
-    height: number;
     pattern: string[];
 }
 
@@ -40,8 +39,14 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
                 {
                     name: "Eat Apple",
                     width: 2,
-                    height: 1,
-                    pattern: ["Slime", "Apple"],
+                    pattern: [
+                        "Slime",
+                        "Apple",
+                        "Apple",
+                        "Empty",
+                        "SatiatedSlime",
+                        "Empty",
+                    ],
                 },
             ],
         ]),
