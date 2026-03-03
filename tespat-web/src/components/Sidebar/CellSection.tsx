@@ -11,7 +11,8 @@ import {
     Box,
 } from "@mantine/core";
 import { CollapsibleSection } from "./CollapsibleSection";
-import { IconPlus, IconPencil, IconTrash } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
+import { IconPlus, IconPencil, IconTrash, IconX } from "@tabler/icons-react";
 import { useProject } from "../../ProjectData";
 import { useEditor } from "../../EditorData";
 
@@ -47,14 +48,20 @@ export function CellSection() {
                 const trimmed = newName.trim();
                 if (!trimmed || trimmed === oldName) return;
 
-                if (
-                    !project.cellDisplay.has(oldName) ||
-                    project.cellDisplay.has(trimmed)
-                ) {
+                const color = project.cellDisplay.get(oldName);
+                if (color === undefined) {
                     return;
                 }
-                const color = project.cellDisplay.get(oldName);
-                if (color === undefined) return;
+
+                if (project.cellDisplay.has(trimmed)) {
+                    notifications.show({
+                        title: "无法重命名",
+                        message: "相同名字的单位已存在",
+                        icon: <IconX />,
+                        color: "red",
+                    });
+                    return;
+                }
 
                 setProject((prev) => {
                     const cellDisplay = new Map(prev.cellDisplay);
@@ -184,16 +191,7 @@ const CellUnitCapsule = memo(function CellUnitCapsule({
                         style={{ width: 220 }}
                     >
                         <Stack gap="xs">
-                            <ColorPicker
-                                value={tempColor}
-                                format="hex"
-                                fullWidth
-                                onChange={setTempColor}
-                                onChangeEnd={(final) =>
-                                    actions.onChangeColor(name, final)
-                                }
-                            />
-                            <Group justify="flex-end" gap="xs">
+                            <Group gap="xs">
                                 <ActionIcon
                                     variant="subtle"
                                     size="sm"
@@ -221,6 +219,15 @@ const CellUnitCapsule = memo(function CellUnitCapsule({
                                 >
                                     <IconTrash size={14} />
                                 </ActionIcon>
+                                <ColorPicker
+                                    value={tempColor}
+                                    format="hex"
+                                    fullWidth
+                                    onChange={setTempColor}
+                                    onChangeEnd={(final) =>
+                                        actions.onChangeColor(name, final)
+                                    }
+                                />
                             </Group>
                         </Stack>
                     </Popover.Dropdown>

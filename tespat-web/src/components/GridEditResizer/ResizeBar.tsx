@@ -1,6 +1,7 @@
 import { Box } from "@mantine/core";
 import type React from "react";
 import { useRef } from "react";
+import { useEditor } from "../../EditorData";
 import styles from "./ResizeBar.module.css";
 
 export type ResizeDirection = "top" | "bottom" | "left" | "right";
@@ -24,6 +25,7 @@ export function ResizeBar({
     onDeltaChange,
     className,
 }: ResizeBarProps) {
+    const { setEditor } = useEditor();
     const offset = "-25px";
     const isDraggingRef = useRef(false);
     const startPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -43,6 +45,12 @@ export function ResizeBar({
         isDraggingRef.current = false;
         startPointRef.current = null;
 
+        // 结束拖拽时重新开启编辑
+        setEditor((prev) => ({
+            ...prev,
+            enableEdit: true,
+        }));
+
         window.removeEventListener("pointermove", handlePointerMove);
         window.removeEventListener("pointerup", handlePointerUp);
     };
@@ -53,6 +61,12 @@ export function ResizeBar({
 
         isDraggingRef.current = true;
         startPointRef.current = { x: event.clientX, y: event.clientY };
+
+        // 开始拖拽时临时关闭编辑
+        setEditor((prev) => ({
+            ...prev,
+            enableEdit: false,
+        }));
 
         window.addEventListener("pointermove", handlePointerMove);
         window.addEventListener("pointerup", handlePointerUp);

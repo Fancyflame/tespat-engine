@@ -89,7 +89,7 @@ export default function App() {
                                 <GridDisplay2D
                                     width={editor.editingGrid.width}
                                     data={editor.editingGrid.data}
-                                    enableEdit={true}
+                                    enableEdit={editor.enableEdit}
                                     onChangeData={(nextData) =>
                                         setEditor((prev) => ({
                                             ...prev,

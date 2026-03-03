@@ -1,6 +1,5 @@
 import { Card, Group, Text, ActionIcon, Divider, Stack } from "@mantine/core";
 import { IconTrash, IconPencil } from "@tabler/icons-react";
-import { DynamicGrid, CellState } from "../DynamicGrid/DynamicGrid";
 import { PatternRule } from "../../ProjectData";
 
 interface PatternCardProps {
@@ -55,12 +54,6 @@ export const PatternCard = ({ rule, onRename, onDelete }: PatternCardProps) => {
                         </ActionIcon>
                     </Group>
                 </Stack>
-                <DynamicGrid
-                    width={rule.width}
-                    height={rule.height}
-                    data={rule.pattern as unknown as CellState[]}
-                    cellSize={20}
-                />
             </Group>
         </Card>
     );

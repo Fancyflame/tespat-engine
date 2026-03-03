@@ -17,6 +17,8 @@ export interface EditorData {
     selectedCell: string | null;
     /** 主编辑器当前正在编辑的网格对象 */
     editingGrid: EditingGrid;
+    /** 是否允许编辑（拖拽、调整尺寸等会临时关闭） */
+    enableEdit: boolean;
 }
 
 interface EditorContextType {
@@ -33,6 +35,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
             width: 2,
             data: ["Apple", "Slime", "Empty", "SatiatedSlime"],
         },
+        enableEdit: true,
     });
 
     return (
