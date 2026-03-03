@@ -2,14 +2,14 @@ import { Stack, Button, Group, Divider } from "@mantine/core";
 import { IconPlayerPlayFilled } from "@tabler/icons-react";
 import { useProject } from "../../ProjectData";
 import { PatternRulesSection } from "./PatternRulesSection";
-import { CellSection } from "./CellSection";
+import { ColorSection } from "./ColorSection";
 
 export const Sidebar = () => {
     const { project, setProject } = useProject();
 
     return (
         <Stack p="md" h="100%">
-            <CellSection />
+            <ColorSection />
             <PatternRulesSection />
 
             <Divider />

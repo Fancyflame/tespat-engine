@@ -4,7 +4,6 @@ import {
     Group,
     Stack,
     Text,
-    UnstyledButton,
     Popover,
     ColorSwatch,
     ColorPicker,
@@ -16,47 +15,47 @@ import { IconPlus, IconPencil, IconTrash, IconX } from "@tabler/icons-react";
 import { useProject } from "../../ProjectData";
 import { useEditor } from "../../EditorData";
 
-export function CellSection() {
+export function ColorSection() {
     const { project, setProject } = useProject();
     const { editor, setEditor } = useEditor();
 
-    const cells = useMemo(
+    const colors = useMemo(
         () =>
-            Array.from(project.cellDisplay.entries()).sort((a, b) =>
+            Array.from(project.colorDisplay.entries()).sort((a, b) =>
                 a[0].localeCompare(b[0]),
             ),
-        [project.cellDisplay],
+        [project.colorDisplay],
     );
 
-    const cellActions = useMemo(
+    const colorActions = useMemo(
         () => ({
-            onChangeColor: (unitName: string, nextColor: string) => {
+            onChangeColor: (colorName: string, nextColor: string) => {
                 setProject((prev) => {
-                    const cellDisplay = new Map(prev.cellDisplay);
-                    cellDisplay.set(unitName, nextColor);
-                    return { ...prev, cellDisplay };
+                    const colorDisplay = new Map(prev.colorDisplay);
+                    colorDisplay.set(colorName, nextColor);
+                    return { ...prev, colorDisplay };
                 });
             },
-            onDelete: (unitName: string) => {
+            onDelete: (colorName: string) => {
                 setProject((prev) => {
-                    const cellDisplay = new Map(prev.cellDisplay);
-                    cellDisplay.delete(unitName);
-                    return { ...prev, cellDisplay };
+                    const colorDisplay = new Map(prev.colorDisplay);
+                    colorDisplay.delete(colorName);
+                    return { ...prev, colorDisplay };
                 });
             },
             onRename: (oldName: string, newName: string) => {
                 const trimmed = newName.trim();
                 if (!trimmed || trimmed === oldName) return;
 
-                const color = project.cellDisplay.get(oldName);
+                const color = project.colorDisplay.get(oldName);
                 if (color === undefined) {
                     return;
                 }
 
-                if (project.cellDisplay.has(trimmed)) {
+                if (project.colorDisplay.has(trimmed)) {
                     notifications.show({
                         title: "无法重命名",
-                        message: "相同名字的单位已存在",
+                        message: "相同名字的颜色已存在",
                         icon: <IconX />,
                         color: "red",
                     });
@@ -64,51 +63,51 @@ export function CellSection() {
                 }
 
                 setProject((prev) => {
-                    const cellDisplay = new Map(prev.cellDisplay);
-                    cellDisplay.delete(oldName);
-                    cellDisplay.set(trimmed, color);
-                    return { ...prev, cellDisplay };
+                    const colorDisplay = new Map(prev.colorDisplay);
+                    colorDisplay.delete(oldName);
+                    colorDisplay.set(trimmed, color);
+                    return { ...prev, colorDisplay };
                 });
-                setEditor((prev) => ({ ...prev, selectedCell: trimmed }));
+                setEditor((prev) => ({ ...prev, selectedColor: trimmed }));
             },
-            onSelect: (unitName: string) => {
-                setEditor((prev) => ({ ...prev, selectedCell: unitName }));
+            onSelect: (colorName: string) => {
+                setEditor((prev) => ({ ...prev, selectedColor: colorName }));
             },
         }),
-        [project.cellDisplay, setEditor, setProject],
+        [project.colorDisplay, setEditor, setProject],
     );
 
-    const createNewCell = () => {
-        const baseName = "_NewCell";
+    const createNewColor = () => {
+        const baseName = "_NewColor";
         let index = 0;
         let candidate = baseName;
-        while (project.cellDisplay.has(candidate)) {
+        while (project.colorDisplay.has(candidate)) {
             index += 1;
             candidate = `${baseName}${index}`;
         }
 
         setProject((prev) => {
-            const cellDisplay = new Map(prev.cellDisplay);
-            cellDisplay.set(candidate, "#ffffff");
+            const colorDisplay = new Map(prev.colorDisplay);
+            colorDisplay.set(candidate, "#ffffff");
 
             return {
                 ...prev,
-                cellDisplay,
+                colorDisplay,
             };
         });
-        setEditor((prev) => ({ ...prev, selectedCell: candidate }));
+        setEditor((prev) => ({ ...prev, selectedColor: candidate }));
     };
 
     return (
         <CollapsibleSection
-            title="CELLS"
+            title="COLORS"
             rightAction={
                 <ActionIcon
                     variant="light"
                     size="sm"
                     onClick={(event) => {
                         event.stopPropagation();
-                        createNewCell();
+                        createNewColor();
                     }}
                 >
                     <IconPlus size={14} />
@@ -116,19 +115,19 @@ export function CellSection() {
             }
         >
             <Stack gap="xs" pt="xs">
-                {cells.length === 0 ? (
+                {colors.length === 0 ? (
                     <Text size="xs" c="dimmed">
-                        暂无单位
+                        暂无颜色
                     </Text>
                 ) : (
                     <Group gap="xs" wrap="wrap">
-                        {cells.map(([unitName, color]) => (
-                            <CellUnitCapsule
-                                key={unitName}
-                                name={unitName}
+                        {colors.map(([colorName, color]) => (
+                            <ColorCapsule
+                                key={colorName}
+                                name={colorName}
                                 color={color}
-                                selected={editor.selectedCell === unitName}
-                                actions={cellActions}
+                                selected={editor.selectedColor === colorName}
+                                actions={colorActions}
                             />
                         ))}
                     </Group>
@@ -138,24 +137,24 @@ export function CellSection() {
     );
 }
 
-type CellUnitCapsuleProps = {
+type ColorCapsuleProps = {
     name: string;
     color: string;
     selected: boolean;
     actions: {
-        onChangeColor: (unitName: string, nextColor: string) => void;
-        onDelete: (unitName: string) => void;
+        onChangeColor: (colorName: string, nextColor: string) => void;
+        onDelete: (colorName: string) => void;
         onRename: (oldName: string, newName: string) => void;
-        onSelect: (unitName: string) => void;
+        onSelect: (colorName: string) => void;
     };
 };
 
-const CellUnitCapsule = memo(function CellUnitCapsule({
+const ColorCapsule = memo(function ColorCapsule({
     name,
     color,
     selected,
     actions,
-}: CellUnitCapsuleProps) {
+}: ColorCapsuleProps) {
     const [tempColor, setTempColor] = useState(color);
 
     useEffect(() => {
@@ -198,7 +197,7 @@ const CellUnitCapsule = memo(function CellUnitCapsule({
                                     onClick={(event) => {
                                         event.stopPropagation();
                                         const next = window.prompt(
-                                            "重命名单位",
+                                            "重命名颜色",
                                             name,
                                         );
                                         if (next != null) {

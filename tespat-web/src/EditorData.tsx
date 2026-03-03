@@ -13,8 +13,8 @@ export interface EditingGrid {
 }
 
 export interface EditorData {
-    /** 当前选中的单元格 id（用于绘制） */
-    selectedCell: string | null;
+    /** 当前选中的颜色名（用于绘制） */
+    selectedColor: string | null;
     /** 主编辑器当前正在编辑的网格对象 */
     editingGrid: EditingGrid;
     /** 是否允许编辑（拖拽、调整尺寸等会临时关闭） */
@@ -30,7 +30,7 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
 export const EditorProvider = ({ children }: { children: ReactNode }) => {
     const [editor, setEditor] = useState<EditorData>({
-        selectedCell: null,
+        selectedColor: null,
         editingGrid: {
             width: 2,
             data: ["Apple", "Slime", "Empty", "SatiatedSlime"],

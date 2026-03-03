@@ -46,9 +46,9 @@ export function GridDisplay2D({
             width: gridWidth,
             height: gridHeight,
             data: renderData,
-            cellDisplay: project.cellDisplay,
+            colorDisplay: project.colorDisplay,
         });
-    }, [renderData, gridWidth, gridHeight, project.cellDisplay]);
+    }, [renderData, gridWidth, gridHeight, project.colorDisplay]);
 
     // 当没有网格信息时的占位
     if (gridWidth === 0 || renderData.length === 0) {
@@ -104,14 +104,14 @@ function renderWholeGrid({
     width,
     height,
     data,
-    cellDisplay,
+    colorDisplay,
 }: {
     canvas: HTMLCanvasElement;
     size: { w: number; h: number };
     width: number;
     height: number;
     data: string[];
-    cellDisplay: ReadonlyMap<string, string>;
+    colorDisplay: ReadonlyMap<string, string>;
 }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -127,27 +127,27 @@ function renderWholeGrid({
     // 清空
     ctx.clearRect(0, 0, size.w, size.h);
 
-    const cellW = size.w / width;
-    const cellH = size.h / height;
+    const tileW = size.w / width;
+    const tileH = size.h / height;
 
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const index = y * width + x;
             const state = data[index] ?? "Empty";
             const color =
-                cellDisplay.get(state) ??
+                colorDisplay.get(state) ??
                 (state === "Empty" ? "#111827" : "#4b5563");
 
-            const px = x * cellW;
-            const py = y * cellH;
+            const px = x * tileW;
+            const py = y * tileH;
 
             ctx.fillStyle = color;
-            ctx.fillRect(px, py, cellW, cellH);
+            ctx.fillRect(px, py, tileW, tileH);
 
             // 细微网格线
             ctx.strokeStyle = "rgba(15,23,42,0.6)";
             ctx.lineWidth = 1;
-            ctx.strokeRect(px + 0.5, py + 0.5, cellW - 1, cellH - 1);
+            ctx.strokeRect(px + 0.5, py + 0.5, tileW - 1, tileH - 1);
         }
     }
 }
@@ -179,10 +179,10 @@ function useGridDisplay2DEditing({
         [data.length, gridWidth],
     );
 
-    const paintCell = useCallback(
+    const paintColor = useCallback(
         (index: number) => {
             if (!enableEdit) return;
-            const selected = editor.selectedCell;
+            const selected = editor.selectedColor;
             if (!selected) return;
 
             const prev = renderData[index];
@@ -192,7 +192,7 @@ function useGridDisplay2DEditing({
             setRenderData(next);
             onChangeData?.(next);
         },
-        [editor.selectedCell, enableEdit, onChangeData],
+        [editor.selectedColor, enableEdit, onChangeData],
     );
 
     useEffect(() => {
@@ -201,7 +201,7 @@ function useGridDisplay2DEditing({
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const pickCellIndex = (event: PointerEvent): number | null => {
+        const pickColorIndex = (event: PointerEvent): number | null => {
             if (gridWidth === 0 || gridHeight === 0) return null;
 
             const rect = canvas.getBoundingClientRect();
@@ -223,25 +223,25 @@ function useGridDisplay2DEditing({
         const handlePointerDown = (event: PointerEvent) => {
             // 仅允许左键开始绘制
             if (event.button !== 0) return;
-            const index = pickCellIndex(event);
+            const index = pickColorIndex(event);
             if (index == null) return;
-            paintCell(index);
+            paintColor(index);
         };
 
         const handlePointerMove = (event: PointerEvent) => {
             // 仅在左键按下时持续绘制
             if ((event.buttons & 1) === 0) return;
-            const index = pickCellIndex(event);
+            const index = pickColorIndex(event);
             if (index == null) return;
-            paintCell(index);
+            paintColor(index);
         };
 
         const handlePointerUp = (event: PointerEvent) => {
             // 仅响应左键抬起的绘制结束
             if (event.button !== 0) return;
-            const index = pickCellIndex(event);
+            const index = pickColorIndex(event);
             if (index == null) return;
-            paintCell(index);
+            paintColor(index);
         };
 
         canvas.addEventListener("pointerdown", handlePointerDown);
@@ -253,7 +253,7 @@ function useGridDisplay2DEditing({
             canvas.removeEventListener("pointermove", handlePointerMove);
             canvas.removeEventListener("pointerup", handlePointerUp);
         };
-    }, [canvasRef, enableEdit, gridWidth, gridHeight, paintCell]);
+    }, [canvasRef, enableEdit, gridWidth, gridHeight, paintColor]);
 
     return {
         renderData,

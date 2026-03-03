@@ -19,8 +19,8 @@ export interface ProjectData {
     name: string;
     patterns: Map<string, PatternRule>;
 
-    // 根据单元格id显示对应颜色
-    cellDisplay: Map<string, string>;
+    // 根据颜色名显示对应颜色值
+    colorDisplay: Map<string, string>;
 }
 
 // Context 类型：只暴露数据本身和原生的 setState
@@ -45,7 +45,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
                 },
             ],
         ]),
-        cellDisplay: new Map([
+        colorDisplay: new Map([
             ["Apple", "#ef4444"],
             ["Slime", "#22c55e"],
             ["Empty", "#1f2937"],
