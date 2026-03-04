@@ -29,16 +29,27 @@ export const CollapsibleSection = ({
             >
                 <Group gap="xs">
                     <ActionIcon variant="subtle" size="sm">
-                        {opened ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                        {opened ? (
+                            <IconChevronDown size={14} />
+                        ) : (
+                            <IconChevronRight size={14} />
+                        )}
                     </ActionIcon>
-                    <Text size="xs" fw={900} c="dimmed" lts="0.1em" style={{ userSelect: "none" }}  >
+                    <Text
+                        size="xs"
+                        fw={900}
+                        c="dimmed"
+                        lts="0.1em"
+                        style={{ userSelect: "none" }}
+                    >
                         {title}
                     </Text>
                 </Group>
                 {rightAction}
             </Group>
-            <Collapse in={opened} mt="xs">{children}</Collapse>
+            <Collapse in={opened} mt="xs">
+                {children}
+            </Collapse>
         </Box>
     );
 };
-

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Stack, ActionIcon, ScrollArea } from "@mantine/core";
+import { Stack, ActionIcon } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { PatternRule, useProject } from "../../ProjectData";
 import { useEditor } from "../../EditorData";
@@ -57,6 +57,46 @@ export const PatternRulesSection = () => {
         }));
     };
 
+    const handleCreateRule = () => {
+        const existingNames = new Set(
+            Array.from(project.patterns.values()).map((rule) => rule.name),
+        );
+        const existingIds = new Set(project.patterns.keys());
+
+        let index = 0;
+        let newName = "_NewPattern";
+        let newId = "_NewPattern";
+
+        while (existingNames.has(newName) || existingIds.has(newId)) {
+            index += 1;
+            newName = `_NewPattern${index}`;
+            newId = `_NewPattern${index}`;
+        }
+
+        const newRule: PatternRule = {
+            name: newName,
+            width: 0,
+            pattern: [],
+        };
+
+        setProject((prev) => {
+            const patterns = new Map(prev.patterns);
+            patterns.set(newId, newRule);
+            return { ...prev, patterns };
+        });
+
+        setEditor((prev) => ({
+            ...prev,
+            selectedPatternId: newId,
+            editingGrid: {
+                width: 0,
+                data: [],
+            },
+            enableEdit: true,
+            displayMode: "editor",
+        }));
+    };
+
     return (
         <CollapsibleSection
             title="PATTERNS"
@@ -66,29 +106,25 @@ export const PatternRulesSection = () => {
                     size="sm"
                     onClick={(event) => {
                         event.stopPropagation();
-                        // TODO: 新增规则逻辑
+                        handleCreateRule();
                     }}
                 >
                     <IconPlus size={14} />
                 </ActionIcon>
             }
         >
-            <ScrollArea offsetScrollbars flex={1}>
-                <Stack gap="md">
-                    {rules.map(([id, rule]) => (
-                        <PatternCard
-                            key={id}
-                            rule={rule}
-                            selected={editor.selectedPatternId === id}
-                            onSelect={() => handleSelectRule(id)}
-                            onRename={(newName) =>
-                                handleRenameRule(id, newName)
-                            }
-                            onDelete={() => handleDeleteRule(id)}
-                        />
-                    ))}
-                </Stack>
-            </ScrollArea>
+            <Stack gap="md">
+                {rules.map(([id, rule]) => (
+                    <PatternCard
+                        key={id}
+                        rule={rule}
+                        selected={editor.selectedPatternId === id}
+                        onSelect={() => handleSelectRule(id)}
+                        onRename={(newName) => handleRenameRule(id, newName)}
+                        onDelete={() => handleDeleteRule(id)}
+                    />
+                ))}
+            </Stack>
         </CollapsibleSection>
     );
 };
