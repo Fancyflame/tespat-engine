@@ -1,36 +1,32 @@
 import { useEffect } from "react";
+import { AppShell, Group, Text, Button, ActionIcon } from "@mantine/core";
 import {
-    AppShell,
-    Group,
-    Text,
-    Button,
-    Tabs,
-    Box,
-    Slider,
-    ActionIcon,
-    Center,
-    Flex,
-    Stack,
-} from "@mantine/core";
-import {
-    IconPlayerPlay,
-    IconPlayerSkipForward,
-    IconUpload,
     IconDeviceFloppy,
+    IconFileImport,
+    IconFilePlus,
 } from "@tabler/icons-react";
 import { Sidebar } from "./components/Sidebar/Sidebar";
 import styles from "./App.module.css";
-import GridDisplaySlider from "./components/GridDisplaySlider/GridDisplaySlider";
-import { CtrlDragPannable } from "./components/CtrlDragPannable/CtrlDragPannable";
-import { GridDisplay2D } from "./components/GridDisplay2D/GridDisplay2D";
-import Welcome from "./components/Welcome/Welcome";
+import { EditorStage } from "./stages/EditorStage";
+import { PlaybackStage } from "./stages/PlaybackStage";
+import { WelcomeStage } from "./stages/WelcomeStage";
 import { useEditor, getSelectedPatternId } from "./EditorData";
 import { useProject } from "./ProjectData";
-import { GridEditResizer } from "./components/GridEditResizer/GridEditResizer";
+import { useFileSync } from "./FileSyncContext";
+import { projectToJson } from "./projectSerialization";
+
+const SYNC_DEBOUNCE_MS = 1000;
 
 export default function App() {
     const { editor, setEditor } = useEditor();
-    const { setProject } = useProject();
+    const { setProject, project } = useProject();
+    const {
+        fileHandle,
+        isSupported,
+        openWithFilePicker,
+        createNewFile,
+        syncToFile,
+    } = useFileSync();
 
     useEffect(() => {
         // 仅在选中某个 pattern 时，将主编辑区内容实时回写到该规则
@@ -67,6 +63,21 @@ export default function App() {
         setProject,
     ]);
 
+    // 打开文件时，project 变化后 debounce 同步到本地
+    useEffect(() => {
+        if (!fileHandle) return;
+        const timer = setTimeout(() => {
+            syncToFile(projectToJson(project));
+        }, SYNC_DEBOUNCE_MS);
+        return () => clearTimeout(timer);
+    }, [project, fileHandle, syncToFile]);
+
+    const handleSave = () => {
+        if (fileHandle) {
+            syncToFile(projectToJson(project));
+        }
+    };
+
     return (
         <AppShell
             header={{ height: 40 }}
@@ -97,13 +108,34 @@ export default function App() {
                             {"TESPAT EDITOR"}
                         </Text>
                     </Group>
-                    <Button
-                        size="xs"
-                        variant="light"
-                        leftSection={<IconDeviceFloppy size={14} />}
-                    >
-                        保存
-                    </Button>
+                    <Group gap="xs">
+                        {isSupported && (
+                            <>
+                                <ActionIcon
+                                    size="md"
+                                    variant="light"
+                                    onClick={createNewFile}
+                                >
+                                    <IconFilePlus size={16} />
+                                </ActionIcon>
+                                <ActionIcon
+                                    size="md"
+                                    variant="light"
+                                    onClick={openWithFilePicker}
+                                >
+                                    <IconFileImport size={16} />
+                                </ActionIcon>
+                            </>
+                        )}
+                        <ActionIcon
+                            size="md"
+                            variant="light"
+                            onClick={handleSave}
+                            disabled={!fileHandle}
+                        >
+                            <IconDeviceFloppy size={16} />
+                        </ActionIcon>
+                    </Group>
                 </Group>
             </AppShell.Header>
 
@@ -114,35 +146,9 @@ export default function App() {
 
             {/* 中央主舞台 */}
             <AppShell.Main className={styles.main}>
-                <Box className={styles.UIStack}>
-                    <Box className={styles.canvasStage}>
-                        <CtrlDragPannable className={styles.canvasPlaceholder}>
-                            {editor.displayMode.mode === "editor" ? (
-                                <GridEditResizer>
-                                    <GridDisplay2D
-                                        width={editor.editingGrid.width}
-                                        data={editor.editingGrid.data}
-                                        enableEdit={editor.enableEdit}
-                                        onChangeData={(nextData) =>
-                                            setEditor((prev) => ({
-                                                ...prev,
-                                                editingGrid: {
-                                                    ...prev.editingGrid,
-                                                    data: nextData,
-                                                },
-                                            }))
-                                        }
-                                    />
-                                </GridEditResizer>
-                            ) : editor.displayMode.mode === "welcome" ? (
-                                <Welcome />
-                            ) : null}
-                        </CtrlDragPannable>
-                    </Box>
-                    {editor.displayMode.mode === "playback" && (
-                        <GridDisplaySlider />
-                    )}
-                </Box>
+                {editor.displayMode.mode === "editor" && <EditorStage />}
+                {editor.displayMode.mode === "playback" && <PlaybackStage />}
+                {editor.displayMode.mode === "welcome" && <WelcomeStage />}
             </AppShell.Main>
         </AppShell>
     );

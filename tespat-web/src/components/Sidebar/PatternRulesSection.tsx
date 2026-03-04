@@ -16,12 +16,23 @@ export const PatternRulesSection = () => {
     );
 
     const handleRenameRule = (id: string, newName: string) => {
+        const trimmed = newName.trim();
+        if (!trimmed || trimmed === id) return;
         setProject((prev) => {
             const patterns = new Map(prev.patterns);
             const rule = patterns.get(id);
             if (!rule) return prev;
-            patterns.set(id, { ...rule, name: newName });
+            if (patterns.has(trimmed) && trimmed !== id) return prev;
+            patterns.delete(id);
+            patterns.set(trimmed, { ...rule });
             return { ...prev, patterns };
+        });
+        setEditor((prev) => {
+            if (getSelectedPatternId(prev.displayMode) !== id) return prev;
+            return {
+                ...prev,
+                displayMode: { mode: "editor", selectedPatternId: trimmed },
+            };
         });
     };
 
@@ -57,23 +68,17 @@ export const PatternRulesSection = () => {
     };
 
     const handleCreateRule = () => {
-        const existingNames = new Set(
-            Array.from(project.patterns.values()).map((rule) => rule.name),
-        );
         const existingIds = new Set(project.patterns.keys());
 
         let index = 0;
-        let newName = "_NewPattern";
         let newId = "_NewPattern";
 
-        while (existingNames.has(newName) || existingIds.has(newId)) {
+        while (existingIds.has(newId)) {
             index += 1;
-            newName = `_NewPattern${index}`;
             newId = `_NewPattern${index}`;
         }
 
         const newRule: PatternRule = {
-            name: newName,
             width: 0,
             pattern: [],
         };
@@ -111,12 +116,15 @@ export const PatternRulesSection = () => {
                 </ActionIcon>
             }
         >
-            <Stack gap="md">
+            <Stack gap="xs">
                 {rules.map(([id, rule]) => (
                     <PatternCard
                         key={id}
+                        id={id}
                         rule={rule}
-                        selected={getSelectedPatternId(editor.displayMode) === id}
+                        selected={
+                            getSelectedPatternId(editor.displayMode) === id
+                        }
                         onSelect={() => handleSelectRule(id)}
                         onRename={(newName) => handleRenameRule(id, newName)}
                         onDelete={() => handleDeleteRule(id)}

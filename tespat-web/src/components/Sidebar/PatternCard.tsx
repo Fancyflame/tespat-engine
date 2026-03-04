@@ -12,6 +12,7 @@ import { PatternRule } from "../../ProjectData";
 import { GridDisplay2D } from "../GridDisplay2D/GridDisplay2D";
 
 interface PatternCardProps {
+    id: string;
     rule: PatternRule;
     selected?: boolean;
     onSelect?: () => void;
@@ -20,6 +21,7 @@ interface PatternCardProps {
 }
 
 export const PatternCard = ({
+    id,
     rule,
     selected = false,
     onSelect,
@@ -27,15 +29,15 @@ export const PatternCard = ({
     onDelete,
 }: PatternCardProps) => {
     const handleRenameClick = () => {
-        const newName = window.prompt("输入新的规则名称", rule.name);
+        const newName = window.prompt("输入新的规则名称", id);
         if (!newName) return;
         const trimmed = newName.trim();
-        if (!trimmed || trimmed === rule.name) return;
+        if (!trimmed || trimmed === id) return;
         onRename(trimmed);
     };
 
     const handleDeleteClick = () => {
-        const confirmed = window.confirm(`确认删除规则「${rule.name}」吗？`);
+        const confirmed = window.confirm(`确认删除规则「${id}」吗？`);
         if (!confirmed) return;
         onDelete();
     };
@@ -63,7 +65,7 @@ export const PatternCard = ({
                         c={selected ? "blue.1" : "blue.4"}
                         style={{ wordBreak: "break-all" }}
                     >
-                        {rule.name}
+                        {id}
                     </Text>
                     <Group gap={4}>
                         <ActionIcon

@@ -9,6 +9,7 @@ import App from "./App";
 import "./index.css";
 import { ProjectProvider } from "./ProjectData";
 import { EditorProvider } from "./EditorData";
+import { FileSyncProvider } from "./FileSyncContext";
 
 const theme = createTheme({
     primaryColor: "blue",
@@ -20,7 +21,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Notifications position="top-right" zIndex={2000} />
             <ProjectProvider>
                 <EditorProvider>
-                    <App />
+                    <FileSyncProvider>
+                        <App />
+                    </FileSyncProvider>
                 </EditorProvider>
             </ProjectProvider>
         </MantineProvider>

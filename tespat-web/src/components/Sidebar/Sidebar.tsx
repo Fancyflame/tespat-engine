@@ -23,7 +23,7 @@ export const Sidebar = () => {
                     size="xs"
                     leftSection={<IconPlayerPlayFilled size={14} />}
                 >
-                    播放生成
+                    回放录制
                 </Button>
             </Group>
         </Stack>

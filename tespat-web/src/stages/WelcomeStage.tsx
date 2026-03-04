@@ -1,7 +1,21 @@
-import { Center, Stack, Text, Title } from "@mantine/core";
+import { Box, Center, Stack, Title, Text } from "@mantine/core";
 import { IconGridPattern } from "@tabler/icons-react";
+import styles from "../App.module.css";
 
-export default function Welcome() {
+/** 主舞台 - 欢迎模式：无可拖拽的欢迎页 */
+export function WelcomeStage() {
+    return (
+        <Box className={styles.UIStack}>
+            <Box className={styles.canvasStage}>
+                <Box className={styles.canvasPlaceholder}>
+                    <Welcome />
+                </Box>
+            </Box>
+        </Box>
+    );
+}
+
+function Welcome() {
     return (
         <Center h="100%" w="100%">
             <Stack align="center" gap="md">

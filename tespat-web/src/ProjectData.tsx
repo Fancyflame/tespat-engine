@@ -9,18 +9,42 @@ import {
 
 // 数据结构定义
 export interface PatternRule {
-    name: string;
     width: number;
     pattern: string[];
 }
 
 export interface ProjectData {
-    name: string;
     patterns: Map<string, PatternRule>;
 
     // 根据颜色名显示对应颜色值
     colorDisplay: Map<string, string>;
 }
+
+/** 新建项目时的默认数据 */
+export const DEFAULT_PROJECT: ProjectData = {
+    patterns: new Map([
+        [
+            "Eat Apple",
+            {
+                width: 2,
+                pattern: [
+                    "Slime",
+                    "Apple",
+                    "Apple",
+                    "Empty",
+                    "SatiatedSlime",
+                    "Empty",
+                ],
+            },
+        ],
+    ]),
+    colorDisplay: new Map([
+        ["Apple", "#ef4444"],
+        ["Slime", "#22c55e"],
+        ["Empty", "#1f2937"],
+        ["SatiatedSlime", "#facc15"],
+    ]),
+};
 
 // Context 类型：只暴露数据本身和原生的 setState
 interface ProjectContextType {
@@ -31,32 +55,7 @@ interface ProjectContextType {
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
 export const ProjectProvider = ({ children }: { children: ReactNode }) => {
-    const [project, setProject] = useState<ProjectData>({
-        name: "Markov Project",
-        patterns: new Map([
-            [
-                "Eat Apple",
-                {
-                    name: "Eat Apple",
-                    width: 2,
-                    pattern: [
-                        "Slime",
-                        "Apple",
-                        "Apple",
-                        "Empty",
-                        "SatiatedSlime",
-                        "Empty",
-                    ],
-                },
-            ],
-        ]),
-        colorDisplay: new Map([
-            ["Apple", "#ef4444"],
-            ["Slime", "#22c55e"],
-            ["Empty", "#1f2937"],
-            ["SatiatedSlime", "#facc15"],
-        ]),
-    });
+    const [project, setProject] = useState<ProjectData>(DEFAULT_PROJECT);
 
     return (
         <ProjectContext.Provider value={{ project, setProject }}>
