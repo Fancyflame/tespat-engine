@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Stack, ActionIcon } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { PatternRule, useProject } from "../../ProjectData";
-import { useEditor } from "../../EditorData";
+import { useEditor, getSelectedPatternId } from "../../EditorData";
 import { PatternCard } from "./PatternCard";
 import { CollapsibleSection } from "./CollapsibleSection";
 
@@ -33,11 +33,11 @@ export const PatternRulesSection = () => {
             return { ...prev, patterns };
         });
         setEditor((prev) => {
-            if (prev.selectedPatternId !== id) return prev;
+            if (getSelectedPatternId(prev.displayMode) !== id) return prev;
             return {
                 ...prev,
-                selectedPatternId: null,
                 enableEdit: false,
+                displayMode: { mode: "welcome" },
             };
         });
     };
@@ -47,13 +47,12 @@ export const PatternRulesSection = () => {
         if (!rule) return;
         setEditor((prev) => ({
             ...prev,
-            selectedPatternId: id,
             editingGrid: {
                 width: rule.width,
                 data: rule.pattern,
             },
             enableEdit: true,
-            displayMode: "editor",
+            displayMode: { mode: "editor", selectedPatternId: id },
         }));
     };
 
@@ -87,13 +86,12 @@ export const PatternRulesSection = () => {
 
         setEditor((prev) => ({
             ...prev,
-            selectedPatternId: newId,
             editingGrid: {
                 width: 0,
                 data: [],
             },
             enableEdit: true,
-            displayMode: "editor",
+            displayMode: { mode: "editor", selectedPatternId: newId },
         }));
     };
 
@@ -118,7 +116,7 @@ export const PatternRulesSection = () => {
                     <PatternCard
                         key={id}
                         rule={rule}
-                        selected={editor.selectedPatternId === id}
+                        selected={getSelectedPatternId(editor.displayMode) === id}
                         onSelect={() => handleSelectRule(id)}
                         onRename={(newName) => handleRenameRule(id, newName)}
                         onDelete={() => handleDeleteRule(id)}

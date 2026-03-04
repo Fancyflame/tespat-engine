@@ -23,7 +23,8 @@ import styles from "./App.module.css";
 import GridDisplaySlider from "./components/GridDisplaySlider/GridDisplaySlider";
 import { CtrlDragPannable } from "./components/CtrlDragPannable/CtrlDragPannable";
 import { GridDisplay2D } from "./components/GridDisplay2D/GridDisplay2D";
-import { useEditor } from "./EditorData";
+import Welcome from "./components/Welcome/Welcome";
+import { useEditor, getSelectedPatternId } from "./EditorData";
 import { useProject } from "./ProjectData";
 import { GridEditResizer } from "./components/GridEditResizer/GridEditResizer";
 
@@ -33,7 +34,7 @@ export default function App() {
 
     useEffect(() => {
         // 仅在选中某个 pattern 时，将主编辑区内容实时回写到该规则
-        const selectedPatternId = editor.selectedPatternId;
+        const selectedPatternId = getSelectedPatternId(editor.displayMode);
         if (!selectedPatternId) return;
 
         setProject((prev) => {
@@ -60,7 +61,7 @@ export default function App() {
             return { ...prev, patterns };
         });
     }, [
-        editor.selectedPatternId,
+        editor.displayMode,
         editor.editingGrid.width,
         editor.editingGrid.data,
         setProject,
@@ -82,7 +83,16 @@ export default function App() {
                             fw={900}
                             size="xl"
                             lts={-1}
-                            style={{ userSelect: "none" }}
+                            style={{
+                                userSelect: "none",
+                                cursor: "pointer",
+                            }}
+                            onClick={() =>
+                                setEditor((prev) => ({
+                                    ...prev,
+                                    displayMode: { mode: "welcome" },
+                                }))
+                            }
                         >
                             {"TESPAT EDITOR"}
                         </Text>
@@ -107,16 +117,12 @@ export default function App() {
                 <Box className={styles.UIStack}>
                     <Box className={styles.canvasStage}>
                         <CtrlDragPannable className={styles.canvasPlaceholder}>
-                            {editor.displayMode === "editor" &&
-                            editor.selectedPatternId !== null ? (
+                            {editor.displayMode.mode === "editor" ? (
                                 <GridEditResizer>
                                     <GridDisplay2D
                                         width={editor.editingGrid.width}
                                         data={editor.editingGrid.data}
-                                        enableEdit={
-                                            editor.enableEdit &&
-                                            editor.selectedPatternId !== null
-                                        }
+                                        enableEdit={editor.enableEdit}
                                         onChangeData={(nextData) =>
                                             setEditor((prev) => ({
                                                 ...prev,
@@ -128,24 +134,14 @@ export default function App() {
                                         }
                                     />
                                 </GridEditResizer>
-                            ) : (
-                                <GridDisplay2D
-                                    width={editor.editingGrid.width}
-                                    data={editor.editingGrid.data}
-                                    onChangeData={(nextData) =>
-                                        setEditor((prev) => ({
-                                            ...prev,
-                                            editingGrid: {
-                                                ...prev.editingGrid,
-                                                data: nextData,
-                                            },
-                                        }))
-                                    }
-                                />
-                            )}
+                            ) : editor.displayMode.mode === "welcome" ? (
+                                <Welcome />
+                            ) : null}
                         </CtrlDragPannable>
                     </Box>
-                    {editor.displayMode === "playback" && <GridDisplaySlider />}
+                    {editor.displayMode.mode === "playback" && (
+                        <GridDisplaySlider />
+                    )}
                 </Box>
             </AppShell.Main>
         </AppShell>

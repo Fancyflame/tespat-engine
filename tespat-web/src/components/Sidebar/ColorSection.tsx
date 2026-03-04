@@ -231,7 +231,12 @@ const ColorCapsule = memo(function ColorCapsule({
                         </Stack>
                     </Popover.Dropdown>
                 </Popover>
-                <Text size="xs" c={selected ? "dark" : "dimmed"} fw={600}>
+                <Text
+                    size="xs"
+                    c={selected ? "dark" : "dimmed"}
+                    fw={600}
+                    style={{ userSelect: "none" }}
+                >
                     {name}
                 </Text>
             </Group>
