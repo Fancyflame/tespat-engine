@@ -34,11 +34,14 @@ export function GridDisplay2D({
         onChangeData,
         canvasRef,
     });
+    const showEmptyPlaceholder = gridWidth === 0 || renderData.length === 0;
+    const displayWidth = showEmptyPlaceholder ? 1 : gridWidth;
+    const displayHeight = showEmptyPlaceholder ? 1 : gridHeight;
 
     // 绘制网格
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas || gridWidth === 0 || gridHeight === 0) return;
+        if (!canvas || showEmptyPlaceholder) return;
 
         renderWholeGrid({
             canvas,
@@ -48,10 +51,9 @@ export function GridDisplay2D({
             data: renderData,
             colorDisplay: project.colorDisplay,
         });
-    }, [renderData, gridWidth, gridHeight, project.colorDisplay]);
+    }, [renderData, gridWidth, gridHeight, project.colorDisplay, showEmptyPlaceholder]);
 
-    // 当没有网格信息时的占位
-    if (gridWidth === 0 || renderData.length === 0) {
+    if (showEmptyPlaceholder) {
         return (
             <Box
                 style={{
@@ -62,9 +64,26 @@ export function GridDisplay2D({
                     justifyContent: "center",
                 }}
             >
-                <Text c="dimmed" ff="monospace" size="sm" lts="0.3em">
-                    ZERO SIZED GRID
-                </Text>
+                <Box
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        maxWidth: "32px",
+                        maxHeight: "32px",
+                        aspectRatio: "1 / 1",
+                        borderRadius: 5,
+                        background: "#111827",
+                        border: "1px solid rgba(15,23,42,0.6)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        overflow: "hidden",
+                    }}
+                >
+                    <Text c="gray.2" ff="monospace" size="8px" fw={700} lts="0.06em">
+                        EMPTY
+                    </Text>
+                </Box>
             </Box>
         );
     }
@@ -77,7 +96,7 @@ export function GridDisplay2D({
                 width: "100%",
                 height: "100%",
                 objectFit: "contain",
-                aspectRatio: `${gridWidth} / ${gridHeight}`,
+                aspectRatio: `${displayWidth} / ${displayHeight}`,
                 maxWidth: "100%",
                 maxHeight: "100%",
                 borderRadius: 5,

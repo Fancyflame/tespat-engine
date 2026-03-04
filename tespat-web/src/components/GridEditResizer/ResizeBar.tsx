@@ -26,7 +26,7 @@ export function ResizeBar({
     className,
 }: ResizeBarProps) {
     const { setEditor } = useEditor();
-    const offset = "-15px";
+    const offset = "-20px";
     const isDraggingRef = useRef(false);
     const startPointRef = useRef<{ x: number; y: number } | null>(null);
 
