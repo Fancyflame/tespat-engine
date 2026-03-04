@@ -49,9 +49,15 @@ export function GridDisplay2D({
             width: gridWidth,
             height: gridHeight,
             data: renderData,
-            colorDisplay: project.colorDisplay,
+            colorDisplay: project.colors,
         });
-    }, [renderData, gridWidth, gridHeight, project.colorDisplay, showEmptyPlaceholder]);
+    }, [
+        renderData,
+        gridWidth,
+        gridHeight,
+        project.colors,
+        showEmptyPlaceholder,
+    ]);
 
     if (showEmptyPlaceholder) {
         return (
@@ -80,7 +86,13 @@ export function GridDisplay2D({
                         overflow: "hidden",
                     }}
                 >
-                    <Text c="gray.2" ff="monospace" size="8px" fw={700} lts="0.06em">
+                    <Text
+                        c="gray.2"
+                        ff="monospace"
+                        size="8px"
+                        fw={700}
+                        lts="0.06em"
+                    >
                         EMPTY
                     </Text>
                 </Box>

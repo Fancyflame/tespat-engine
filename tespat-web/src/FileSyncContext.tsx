@@ -90,7 +90,7 @@ export const FileSyncProvider = ({ children }: { children: ReactNode }) => {
             const defaultProject: typeof DEFAULT_PROJECT = {
                 ...DEFAULT_PROJECT,
                 patterns: new Map(DEFAULT_PROJECT.patterns),
-                colorDisplay: new Map(DEFAULT_PROJECT.colorDisplay),
+                colors: new Map(DEFAULT_PROJECT.colors),
             };
             const content = projectToJson(defaultProject);
             const writable = await handle.createWritable();
@@ -111,16 +111,19 @@ export const FileSyncProvider = ({ children }: { children: ReactNode }) => {
         setFileName(null);
     }, []);
 
-    const syncToFile = useCallback(async (content: string) => {
-        if (!fileHandle) return;
-        try {
-            const writable = await fileHandle.createWritable();
-            await writable.write(content);
-            await writable.close();
-        } catch (err) {
-            console.error("同步到文件失败:", err);
-        }
-    }, [fileHandle]);
+    const syncToFile = useCallback(
+        async (content: string) => {
+            if (!fileHandle) return;
+            try {
+                const writable = await fileHandle.createWritable();
+                await writable.write(content);
+                await writable.close();
+            } catch (err) {
+                console.error("同步到文件失败:", err);
+            }
+        },
+        [fileHandle],
+    );
 
     return (
         <FileSyncContext.Provider

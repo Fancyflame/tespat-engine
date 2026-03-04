@@ -21,38 +21,38 @@ export function ColorSection() {
 
     const colors = useMemo(
         () =>
-            Array.from(project.colorDisplay.entries()).sort((a, b) =>
+            Array.from(project.colors.entries()).sort((a, b) =>
                 a[0].localeCompare(b[0]),
             ),
-        [project.colorDisplay],
+        [project.colors],
     );
 
     const colorActions = useMemo(
         () => ({
             onChangeColor: (colorName: string, nextColor: string) => {
                 setProject((prev) => {
-                    const colorDisplay = new Map(prev.colorDisplay);
+                    const colorDisplay = new Map(prev.colors);
                     colorDisplay.set(colorName, nextColor);
-                    return { ...prev, colorDisplay };
+                    return { ...prev, colors: colorDisplay };
                 });
             },
             onDelete: (colorName: string) => {
                 setProject((prev) => {
-                    const colorDisplay = new Map(prev.colorDisplay);
+                    const colorDisplay = new Map(prev.colors);
                     colorDisplay.delete(colorName);
-                    return { ...prev, colorDisplay };
+                    return { ...prev, colors: colorDisplay };
                 });
             },
             onRename: (oldName: string, newName: string) => {
                 const trimmed = newName.trim();
                 if (!trimmed || trimmed === oldName) return;
 
-                const color = project.colorDisplay.get(oldName);
+                const color = project.colors.get(oldName);
                 if (color === undefined) {
                     return;
                 }
 
-                if (project.colorDisplay.has(trimmed)) {
+                if (project.colors.has(trimmed)) {
                     notifications.show({
                         title: "无法重命名",
                         message: "相同名字的颜色已存在",
@@ -63,10 +63,10 @@ export function ColorSection() {
                 }
 
                 setProject((prev) => {
-                    const colorDisplay = new Map(prev.colorDisplay);
+                    const colorDisplay = new Map(prev.colors);
                     colorDisplay.delete(oldName);
                     colorDisplay.set(trimmed, color);
-                    return { ...prev, colorDisplay };
+                    return { ...prev, colors: colorDisplay };
                 });
                 setEditor((prev) => ({ ...prev, selectedColor: trimmed }));
             },
@@ -74,25 +74,25 @@ export function ColorSection() {
                 setEditor((prev) => ({ ...prev, selectedColor: colorName }));
             },
         }),
-        [project.colorDisplay, setEditor, setProject],
+        [project.colors, setEditor, setProject],
     );
 
     const createNewColor = () => {
         const baseName = "_NewColor";
         let index = 0;
         let candidate = baseName;
-        while (project.colorDisplay.has(candidate)) {
+        while (project.colors.has(candidate)) {
             index += 1;
             candidate = `${baseName}${index}`;
         }
 
         setProject((prev) => {
-            const colorDisplay = new Map(prev.colorDisplay);
+            const colorDisplay = new Map(prev.colors);
             colorDisplay.set(candidate, "#ffffff");
 
             return {
                 ...prev,
-                colorDisplay,
+                colors: colorDisplay,
             };
         });
         setEditor((prev) => ({ ...prev, selectedColor: candidate }));

@@ -17,7 +17,7 @@ export interface ProjectData {
     patterns: Map<string, PatternRule>;
 
     // 根据颜色名显示对应颜色值
-    colorDisplay: Map<string, string>;
+    colors: Map<string, string>;
 }
 
 /** 新建项目时的默认数据 */
@@ -38,7 +38,7 @@ export const DEFAULT_PROJECT: ProjectData = {
             },
         ],
     ]),
-    colorDisplay: new Map([
+    colors: new Map([
         ["Apple", "#ef4444"],
         ["Slime", "#22c55e"],
         ["Empty", "#1f2937"],
