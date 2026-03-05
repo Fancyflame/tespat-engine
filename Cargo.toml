@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["tespat-editor","tespat-runtime"]
+members = ["tespat-compiler", "examples/*", "tespat-runtime"]
 
 [workspace.package]
 version = "0.1.0"
@@ -8,6 +8,10 @@ edition = "2024"
 
 [workspace.dependencies]
 anyhow = "1.0"
+convert_case = "0.4"
 rand = "0.10"
-serde = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 tracing = "0.1"
+quote = "1.0"
+proc-macro2 = "1.0"

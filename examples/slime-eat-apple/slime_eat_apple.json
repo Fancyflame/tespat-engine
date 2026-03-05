@@ -1,0 +1,63 @@
+{
+  "patterns": {
+    "EatAppleMatch": {
+      "width": 2,
+      "pattern": [
+        "Slime",
+        "Apple"
+      ]
+    },
+    "EatAppleReplace": {
+      "width": 2,
+      "pattern": [
+        "Empty",
+        "SatiatedSlime"
+      ]
+    },
+    "SlimeMoveMatch": {
+      "width": 2,
+      "pattern": [
+        "Slime",
+        "Empty"
+      ]
+    },
+    "SlimeMoveReplace": {
+      "width": 2,
+      "pattern": [
+        "Empty",
+        "Slime"
+      ]
+    },
+    "Graph": {
+      "width": 5,
+      "pattern": [
+        "Slime",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Apple",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Slime",
+        "Empty",
+        "Empty",
+        "Apple",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty"
+      ]
+    }
+  },
+  "colors": {
+    "Slime": "#22c55e",
+    "Empty": "#1f2937",
+    "SatiatedSlime": "#facc15",
+    "Apple": "#ff4040"
+  }
+}

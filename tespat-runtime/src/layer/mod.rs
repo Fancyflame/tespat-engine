@@ -2,7 +2,7 @@ use std::collections::{HashMap, hash_map::Entry};
 
 use crate::{index_to_position, pattern::Pattern};
 
-use super::Color;
+use super::PatternColor;
 
 pub mod pattern_match;
 pub mod pattern_replace;
@@ -41,7 +41,7 @@ pub struct Layer<T> {
 }
 
 // 写入实现
-impl<T: Color> Layer<T> {
+impl<T: PatternColor> Layer<T> {
     pub fn new() -> Self {
         Self {
             colors: HashMap::new(),
@@ -146,15 +146,14 @@ impl<T: Color> Layer<T> {
 }
 
 // 读取实现
-impl<T: Color> Layer<T> {
+impl<T: PatternColor> Layer<T> {
     /// 找出出现频率最低的颜色。如果迭代器中没有颜色，则返回None。
-    pub fn find_fewest_color<'a>(&self, pattern: &'a Pattern<T>) -> Option<(usize, &'a T)> {
+    pub fn find_fewest_color<'a>(&self, pattern: &'a Pattern<T>) -> Option<(&'a T, usize)> {
         pattern
-            .grid()
+            .color_kinds()
             .iter()
-            .enumerate()
-            .filter_map(|(i, color)| color.as_ref().map(|color| (i, color)))
-            .min_by_key(|(_, color)| match self.colors.get(color) {
+            .filter_map(|(color, i)| color.as_ref().map(|color| (color, *i)))
+            .min_by_key(|(color, _)| match self.colors.get(color) {
                 Some(chain) => chain.len,
                 None => 0,
             })

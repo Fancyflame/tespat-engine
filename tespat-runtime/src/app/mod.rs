@@ -1,7 +1,7 @@
 use std::{array, cell::RefCell};
 
 use crate::{
-    Color,
+    PatternColor,
     app::{history::History, matches::Matches},
     layer::Layer,
     pattern::Pattern,
@@ -18,13 +18,7 @@ pub struct Tespat<T> {
     overlapping_bitset: RefCell<Vec<bool>>,
 }
 
-pub struct CreateTespat<I> {
-    pub picture: I,
-    pub width: usize,
-    pub enable_history: bool,
-}
-
-impl<T: Color> Tespat<T> {
+impl<T: PatternColor> Tespat<T> {
     pub fn new<I>(options: CreateTespat<I>) -> Self
     where
         I: ExactSizeIterator<Item = T>,
@@ -35,7 +29,7 @@ impl<T: Color> Tespat<T> {
             overlapping_bitset: Default::default(),
         };
 
-        this.layer.initialize(options.width, options.picture);
+        this.layer.initialize(options.width, options.graph);
         this
     }
 
@@ -72,5 +66,29 @@ impl<T: Color> Tespat<T> {
 
     pub fn height(&self) -> usize {
         self.layer.height()
+    }
+}
+
+pub struct CreateTespat<I> {
+    pub graph: I,
+    pub width: usize,
+    pub enable_history: bool,
+}
+
+impl<I> CreateTespat<I> {
+    pub fn new(graph: I, width: usize) -> Self {
+        Self {
+            graph,
+            width,
+            enable_history: false,
+        }
+    }
+
+    pub fn create<T>(self) -> Tespat<T>
+    where
+        T: PatternColor,
+        I: ExactSizeIterator<Item = T>,
+    {
+        Tespat::new(self)
     }
 }

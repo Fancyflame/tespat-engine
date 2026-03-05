@@ -1,4 +1,4 @@
-use crate::{Color, index_to_position, layer::Layer, pattern::Pattern};
+use crate::{PatternColor, index_to_position, layer::Layer, pattern::Pattern};
 
 /// 匹配结果
 #[derive(Default)]
@@ -7,7 +7,7 @@ pub struct PatternMatchResult {
     pub positions: Vec<(usize, usize)>,
 }
 
-impl<T: Color> Layer<T> {
+impl<T: PatternColor> Layer<T> {
     /// 查找出层中所有匹配该模式的位置。不保证任何顺序。
     pub fn match_pattern(&self, pattern: &Pattern<T>) -> PatternMatchResult {
         let Some(check_positions) = self.compute_check_positions(pattern) else {
@@ -51,7 +51,7 @@ impl<T: Color> Layer<T> {
     fn compute_check_positions(&self, pattern: &Pattern<T>) -> Option<Vec<(usize, usize)>> {
         let mut positions = Vec::new();
 
-        let (index, color) = self.find_fewest_color(pattern)?;
+        let (color, index) = self.find_fewest_color(pattern)?;
 
         let (off_x, off_y) = index_to_position(index, pattern.width());
 
