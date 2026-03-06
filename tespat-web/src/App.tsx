@@ -22,6 +22,7 @@ export default function App() {
     const { setProject, project } = useProject();
     const {
         fileHandle,
+        fileName,
         isSupported,
         openWithFilePicker,
         createNewFile,
@@ -72,9 +73,22 @@ export default function App() {
         return () => clearTimeout(timer);
     }, [project, fileHandle, syncToFile]);
 
-    const handleSave = () => {
-        if (fileHandle) {
-            syncToFile(projectToJson(project));
+    // 点击保存下载
+    const handleDownloadProject = () => {
+        const content = projectToJson(project);
+        const blob = new Blob([content], {
+            type: "application/json;charset=utf-8",
+        });
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = fileName ?? "untitled.tsp";
+        document.body.appendChild(link);
+        try {
+            link.click();
+        } finally {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(downloadUrl);
         }
     };
 
@@ -130,8 +144,7 @@ export default function App() {
                         <ActionIcon
                             size="md"
                             variant="light"
-                            onClick={handleSave}
-                            disabled={!fileHandle}
+                            onClick={handleDownloadProject}
                         >
                             <IconDeviceFloppy size={16} />
                         </ActionIcon>
