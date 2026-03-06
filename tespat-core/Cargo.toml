@@ -1,5 +1,5 @@
 [package]
-name = "tespat-runtime"
+name = "tespat"
 version.workspace = true
 edition.workspace = true
 

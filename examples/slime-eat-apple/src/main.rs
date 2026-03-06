@@ -1,4 +1,4 @@
-use tespat_runtime::include_tespat;
+use tespat::include_tespat;
 
 include_tespat!();
 

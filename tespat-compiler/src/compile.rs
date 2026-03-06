@@ -34,7 +34,7 @@ fn generate_color_enum(colors: &HashMap<String, String>) -> TokenStream {
             #(#color_variants,)*
         }
 
-        impl ::tespat_runtime::PatternColor for Color {}
+        impl ::tespat::PatternColor for Color {}
     }
 }
 
@@ -85,7 +85,7 @@ fn generate_pattern_item(name: &str, config: &PatternConfig) -> TokenStream {
     let width = config.width;
 
     quote! {
-        pub static #static_name: ::tespat_runtime::Pattern<Color> = {
+        pub static #static_name: ::tespat::Pattern<Color> = {
             const WIDTH: usize = #width;
             const GRID: &[Option<Color>] = &[
                 #(#grid_items,)*
@@ -93,7 +93,7 @@ fn generate_pattern_item(name: &str, config: &PatternConfig) -> TokenStream {
             const COLORS: &[(Option<Color>, usize)] = &[
                 #(#color_items,)*
             ];
-            ::tespat_runtime::Pattern::from_static(WIDTH, GRID, COLORS)
+            ::tespat::Pattern::from_static(WIDTH, GRID, COLORS)
         };
     }
 }
@@ -188,7 +188,7 @@ mod tests {
         assert!(generated.contains("pubstaticEAT_APPLE_MATCH"));
         assert!(generated.contains("Pattern::from_static(WIDTH,GRID,COLORS)"));
         assert!(generated.contains(
-            "pubfneat_apple_match()->::tespat_runtime::Pattern<Color>{EAT_APPLE_MATCH.clone()}"
+            "pubfneat_apple_match()->::tespat::Pattern<Color>{EAT_APPLE_MATCH.clone()}"
         ));
         assert!(!generated.contains("__EAT_APPLE_MATCH_GRID"));
         assert!(!generated.contains("__EAT_APPLE_MATCH_COLORS"));

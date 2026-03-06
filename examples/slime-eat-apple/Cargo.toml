@@ -8,4 +8,4 @@ publish = false
 tespat-compiler = { version = "0.1.0", path = "../../tespat-compiler" }
 
 [dependencies]
-tespat-runtime = { version = "0.1.0", path = "../../tespat-runtime" }
+tespat = { version = "0.1.0", path = "../../tespat-core" }

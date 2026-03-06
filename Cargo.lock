@@ -257,8 +257,8 @@ dependencies = [
 name = "slime-eat-apple"
 version = "0.1.0"
 dependencies = [
+ "tespat",
  "tespat-compiler",
- "tespat-runtime",
 ]
 
 [[package]]
@@ -273,6 +273,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tespat"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "rand",
+ "serde",
+ "tracing",
+]
+
+[[package]]
 name = "tespat-compiler"
 version = "0.1.0"
 dependencies = [
@@ -282,16 +292,6 @@ dependencies = [
  "quote",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "tespat-runtime"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "rand",
- "serde",
- "tracing",
 ]
 
 [[package]]
