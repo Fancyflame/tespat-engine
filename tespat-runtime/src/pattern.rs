@@ -1,20 +1,18 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::Debug,
-};
+use std::{collections::HashMap, ops::Deref};
 
 use crate::{PatternColor, app::CreateTespat, index_to_position};
 
 type PatColor<T> = Option<T>;
 
-pub struct Pattern<T> {
+#[derive(Clone)]
+pub struct Pattern<T: 'static> {
     width: usize,
     height: usize,
-    grid: Vec<PatColor<T>>,
+    grid: ReadSlice<PatColor<T>>,
 
     /// 颜色表
     /// (表中所有包含的颜色, 该颜色在表中的一个位置)
-    colors: Vec<(PatColor<T>, usize)>,
+    colors: ReadSlice<(PatColor<T>, usize)>,
 }
 
 impl<T: PatternColor> Pattern<T> {
@@ -22,15 +20,30 @@ impl<T: PatternColor> Pattern<T> {
         Self {
             width,
             height: compute_height(width, grid.len()),
-            colors: HashMap::<PatColor<T>, usize>::from_iter(
-                grid.iter()
-                    .cloned()
-                    .enumerate()
-                    .map(|(idx, color)| (color, idx)),
-            )
-            .into_iter()
-            .collect(),
-            grid,
+            colors: ReadSlice::Own(
+                HashMap::<PatColor<T>, usize>::from_iter(
+                    grid.iter()
+                        .cloned()
+                        .enumerate()
+                        .map(|(idx, color)| (color, idx)),
+                )
+                .into_iter()
+                .collect(),
+            ),
+            grid: ReadSlice::Own(grid),
+        }
+    }
+
+    pub const fn from_static(
+        width: usize,
+        grid: &'static [PatColor<T>],
+        colors: &'static [(PatColor<T>, usize)],
+    ) -> Self {
+        Self {
+            width,
+            height: compute_height(width, grid.len()),
+            grid: ReadSlice::Ref(grid),
+            colors: ReadSlice::Ref(colors),
         }
     }
 
@@ -39,6 +52,20 @@ impl<T: PatternColor> Pattern<T> {
             W,
             grid.into_iter().flat_map(|arr| arr.into_iter()).collect(),
         )
+    }
+
+    /// 将自身视为初始图创建一个 Tespat
+    pub fn create_tespat(&self) -> Option<CreateTespat<impl ExactSizeIterator<Item = T> + '_>> {
+        if self.colors.iter().any(|(color, _)| color.is_none()) {
+            return None;
+        }
+
+        Some(CreateTespat::new(
+            self.grid
+                .iter()
+                .map(|color| color.clone().unwrap_or_else(|| unreachable!())),
+            self.width,
+        ))
     }
 }
 
@@ -52,32 +79,18 @@ impl<T> Pattern<T> {
     }
 
     pub fn grid(&self) -> &[PatColor<T>] {
-        &self.grid
+        self.grid.as_ref()
     }
 
     pub fn iter(&self) -> impl Iterator<Item = ((usize, usize), &PatColor<T>)> {
-        self.grid
+        self.grid()
             .iter()
             .enumerate()
             .map(|(i, color)| (index_to_position(i, self.width), color))
     }
 
     pub fn color_kinds(&self) -> &[(PatColor<T>, usize)] {
-        &self.colors
-    }
-
-    /// 将自身视为初始图创建一个 Tespat
-    pub fn create_tespat(self) -> Option<CreateTespat<impl ExactSizeIterator<Item = T>>> {
-        if self.colors.iter().any(|(color, _)| color.is_none()) {
-            return None;
-        }
-
-        Some(CreateTespat::new(
-            self.grid
-                .into_iter()
-                .map(|color| color.unwrap_or_else(|| unreachable!())),
-            self.width,
-        ))
+        self.colors.as_ref()
     }
 }
 
@@ -89,4 +102,20 @@ const fn compute_height(width: usize, len: usize) -> usize {
     }
 
     height
+}
+
+#[derive(Clone, Debug)]
+enum ReadSlice<T: 'static> {
+    Own(Vec<T>),
+    Ref(&'static [T]),
+}
+
+impl<T> Deref for ReadSlice<T> {
+    type Target = [T];
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Own(o) => o.as_slice(),
+            Self::Ref(r) => r,
+        }
+    }
 }

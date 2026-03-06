@@ -1,6 +1,6 @@
 use rand::{RngExt, seq::SliceRandom};
 
-use crate::{app::Tespat, pattern::Pattern};
+use crate::{PatternColor, app::Tespat, pattern::Pattern};
 
 /// 模式匹配结果
 pub struct Matches(pub(super) Vec<(usize, usize)>);
@@ -38,7 +38,7 @@ impl Matches {
 }
 
 impl Matches {
-    pub fn pick_non_overlapping<T>(
+    pub fn pick_non_overlapping<T: PatternColor>(
         &mut self,
         tespat: &Tespat<T>,
         match_pattern: &Pattern<T>,

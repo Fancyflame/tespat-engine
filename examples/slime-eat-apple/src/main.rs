@@ -1,24 +1,20 @@
-use tespat_runtime::{PatternColor, include_tespat};
+use tespat_runtime::include_tespat;
 
 include_tespat!();
 
 #[rustfmt::skip]
 fn main() {
     use example::pattern;
-    let mut tespat = pattern::graph().create_tespat().unwrap().create();
-    let eat_apple_match = pattern::eat_apple_match();
-    let eat_apple_replace = pattern::eat_apple_replace();
-    let slime_move_match = pattern::slime_move_match();
-    let slime_move_replace = pattern::slime_move_replace();
+    let mut tespat = pattern::GRAPH.clone().create_tespat().unwrap().create();
 
     loop {
-        if let Some(m) = tespat.capture(&eat_apple_match).optioned() {
-            tespat.replace(&m, &eat_apple_replace);
+        if let Some(m) = tespat.capture(&pattern::EAT_APPLE_MATCH).optioned() {
+            tespat.replace(&m, &pattern::EAT_APPLE_REPLACE);
             continue;
         }
         
-        if let Some(m) = tespat.capture(&slime_move_match).optioned() {
-            tespat.replace(&m, &slime_move_replace);
+        if let Some(m) = tespat.capture(&pattern::SLIME_MOVE_MATCH).optioned() {
+            tespat.replace(&m, &pattern::SLIME_MOVE_REPLACE);
             continue;
         }
 
