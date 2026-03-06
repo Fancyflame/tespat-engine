@@ -5,7 +5,7 @@ include_tespat!();
 #[rustfmt::skip]
 fn main() {
     use example::pattern;
-    let mut tespat = pattern::GRAPH.clone().create_tespat().unwrap().create();
+    let mut tespat = pattern::GRAPH.clone().create_tespat().unwrap().enable_history(true).create();
 
     loop {
         if let Some(m) = tespat.capture(&pattern::EAT_APPLE_MATCH).optioned() {
@@ -21,5 +21,7 @@ fn main() {
         break;
     }
 
-    dbg!(tespat.export_to_2d_array::<5, 4>().unwrap());
+    std::fs::write("exported.json", tespat.export_history().to_json()).unwrap();
+    
+    // dbg!(tespat.export_to_2d_array::<5, 4>().unwrap());
 }

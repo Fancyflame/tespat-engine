@@ -24,7 +24,7 @@ fn generate_color_enum(colors: &HashMap<String, String>) -> TokenStream {
     color_names.sort();
 
     let color_variants: Vec<_> = color_names
-        .into_iter()
+        .iter()
         .map(|name| color_variant_ident(name))
         .collect();
 
@@ -32,6 +32,14 @@ fn generate_color_enum(colors: &HashMap<String, String>) -> TokenStream {
         #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
         pub enum Color {
             #(#color_variants,)*
+        }
+
+        impl ::tespat::StrColor for Color {
+            fn to_str(&self) -> &'static str {
+                match self {
+                    #(Self::#color_variants => #color_names,)*
+                }
+            }
         }
 
         impl ::tespat::PatternColor for Color {}
@@ -187,9 +195,11 @@ mod tests {
 
         assert!(generated.contains("pubstaticEAT_APPLE_MATCH"));
         assert!(generated.contains("Pattern::from_static(WIDTH,GRID,COLORS)"));
-        assert!(generated.contains(
-            "pubfneat_apple_match()->::tespat::Pattern<Color>{EAT_APPLE_MATCH.clone()}"
-        ));
+        assert!(
+            generated.contains(
+                "pubfneat_apple_match()->::tespat::Pattern<Color>{EAT_APPLE_MATCH.clone()}"
+            )
+        );
         assert!(!generated.contains("__EAT_APPLE_MATCH_GRID"));
         assert!(!generated.contains("__EAT_APPLE_MATCH_COLORS"));
     }

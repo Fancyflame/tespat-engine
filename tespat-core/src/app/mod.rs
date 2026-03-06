@@ -1,18 +1,15 @@
 use std::{array, cell::RefCell};
 
-use crate::{
-    PatternColor,
-    app::{history::History, matches::Matches},
-    layer::Layer,
-    pattern::Pattern,
-};
+use crate::{PatternColor, app::history::HistoryData, layer::Layer, pattern::Pattern};
 
 mod history;
 pub mod matches;
 
+use matches::Matches;
+
 pub struct Tespat<T> {
     layer: Layer<T>,
-    history: Option<Vec<History<T>>>,
+    history: Option<Vec<Vec<T>>>,
 
     /// 用于重叠判定而预分配的bitset。字段内容本身没有意义。
     overlapping_bitset: RefCell<Vec<bool>>,
@@ -30,6 +27,11 @@ impl<T: PatternColor> Tespat<T> {
         };
 
         this.layer.initialize(options.width, options.graph);
+
+        if let Some(history) = this.history.as_mut() {
+            history.push(history::capture_frame(&this.layer));
+        }
+
         this
     }
 
@@ -38,13 +40,36 @@ impl<T: PatternColor> Tespat<T> {
     }
 
     pub fn replace(&mut self, positions: &Matches, replace_to: &Pattern<T>) {
-        for p in positions.0.iter() {
-            self.layer.pattern_replace(*p, replace_to);
+        if positions.0.is_empty() {
+            return;
+        }
+
+        for p in positions.0.iter().copied() {
+            self.layer.pattern_replace(p, replace_to);
+        }
+
+        if let Some(history) = self.history.as_mut() {
+            history.push(history::capture_frame(&self.layer));
         }
     }
 
     pub fn export(&self) -> Vec<T> {
         self.layer.export()
+    }
+
+    pub fn is_history_enabled(&self) -> bool {
+        self.history.is_some()
+    }
+
+    /// 返回历史记录。如果未启用历史记录则仅返回最后一帧
+    pub fn export_history(&self) -> HistoryData<T> {
+        HistoryData {
+            width: self.width(),
+            frames: match &self.history {
+                Some(h) => h.clone(),
+                None => vec![self.export()],
+            },
+        }
     }
 
     /// 导出到二维数组。如果形状不匹配则返回None
@@ -82,6 +107,11 @@ impl<I> CreateTespat<I> {
             width,
             enable_history: false,
         }
+    }
+
+    pub fn enable_history(mut self, enable: bool) -> Self {
+        self.enable_history = enable;
+        self
     }
 
     pub fn create<T>(self) -> Tespat<T>
