@@ -1,9 +1,9 @@
 use rand::{RngExt, seq::SliceRandom};
 
-use crate::{PatternColor, app::Tespat, pattern::Pattern};
+use crate::{PatternColor, app::Tespat, layer::pattern_match::Match, pattern::Pattern};
 
 /// 模式匹配结果
-pub struct Matches(pub(super) Vec<(usize, usize)>);
+pub struct Matches(pub(super) Vec<Match>);
 
 impl Matches {
     /// 匹配及筛选后剩余结果的总数
@@ -12,17 +12,19 @@ impl Matches {
     }
 
     /// 保留所有坐标，仅将坐标打乱
-    pub fn shuffle(&mut self) {
+    pub fn all(&mut self) -> &Self {
         self.0.shuffle(&mut rand::rng());
+        self
     }
 
     /// 按比率随机挑选一部分坐标。
-    pub fn random_pick_by_ratio(&mut self, ratio: f32) {
-        self.random_pick((self.len() as f32 * ratio) as usize);
+    pub fn ratio_pick(&mut self, ratio: f32) -> &Self {
+        self.pick((self.len() as f32 * ratio) as usize);
+        self
     }
 
     /// 按个数随机挑选一部分坐标。如果输入值超过最大个数则为保留全部并打乱。
-    pub fn random_pick(&mut self, reserve_count: usize) {
+    pub fn pick(&mut self, reserve_count: usize) -> &Self {
         let mut rng = rand::rng();
         for i in 0..reserve_count.min(self.len()) {
             let picked = rng.random_range(i..self.len());
@@ -30,9 +32,11 @@ impl Matches {
         }
 
         self.0.truncate(reserve_count);
+        dbg!(&self.0);
+        self
     }
 
-    pub fn optioned(self) -> Option<Self> {
+    pub fn optioned(&self) -> Option<&Self> {
         (!self.0.is_empty()).then_some(self)
     }
 }
@@ -64,27 +68,24 @@ impl Matches {
             .map(|(m_c, r_c)| m_c.is_some() || r_c.is_some())
             .collect();
 
-        self.shuffle();
-        self.0.retain(|&(left, top)| {
+        self.all();
+        self.0.retain(|&match_result| {
             let index_iter = iter_region_indexes(
                 tespat.layer.width(),
-                left,
-                top,
+                match_result,
                 match_pattern.width(),
                 match_pattern.height(),
-            )
-            .zip(mask.iter().copied());
+                &mask,
+            );
 
-            for (index, will_occupy) in index_iter.clone() {
-                if bitset[index] && will_occupy {
+            for index in index_iter.clone() {
+                if bitset[index] {
                     return false;
                 }
             }
 
-            for (index, will_occupy) in index_iter {
-                if will_occupy {
-                    bitset[index] = true;
-                }
+            for index in index_iter {
+                bitset[index] = true;
             }
 
             true
@@ -92,19 +93,28 @@ impl Matches {
     }
 }
 
-#[rustfmt::skip]
+/// 返回需要检查的元素在图中的下标
 fn iter_region_indexes(
-    region_width: usize,
-    left: usize,
-    top: usize,
-    width: usize,
-    height: usize,
+    graph_width: usize,
+    match_result: Match,
+    pattern_w: usize,
+    pattern_h: usize,
+    mask: &[bool],
 ) -> impl Iterator<Item = usize> + Clone {
-    (top..top + height)
-        .flat_map(move |y| {
-            (left..left + width)
-                .map(move |x| {
-                    x + y * region_width
-                })
-        })
+    let Match {
+        pos_x,
+        pos_y,
+        symmetry,
+    } = match_result;
+
+    (0..mask.len()).filter_map(move |pattern_index| {
+        if !mask[pattern_index] {
+            return None;
+        }
+
+        let x = pattern_index % pattern_w;
+        let y = pattern_index / pattern_w;
+        let (mapped_x, mapped_y) = symmetry.map(x, y, pattern_w, pattern_h);
+        Some(pos_x + mapped_x + (pos_y + mapped_y) * graph_width)
+    })
 }

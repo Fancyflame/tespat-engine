@@ -1,6 +1,11 @@
 use std::{array, cell::RefCell};
 
-use crate::{PatternColor, app::history::HistoryData, layer::Layer, pattern::Pattern};
+use crate::{
+    Pattern, PatternColor,
+    app::history::HistoryData,
+    layer::{Layer, pattern_match::Match},
+    pattern::transform::SymmetryList,
+};
 
 mod history;
 pub mod matches;
@@ -35,8 +40,19 @@ impl<T: PatternColor> Tespat<T> {
         this
     }
 
-    pub fn capture(&self, pattern: &Pattern<T>) -> Matches {
-        Matches(self.layer.match_pattern(pattern).positions)
+    pub fn capture(&self, pattern: &Pattern<T>, transforms: SymmetryList) -> Matches {
+        Matches(
+            transforms
+                .as_array()
+                .into_iter()
+                .flat_map(|sym| {
+                    self.layer
+                        .match_pattern(pattern.transform(sym))
+                        .positions
+                        .into_iter()
+                })
+                .collect::<Vec<Match>>(),
+        )
     }
 
     pub fn replace(&mut self, positions: &Matches, replace_to: &Pattern<T>) {
@@ -44,8 +60,14 @@ impl<T: PatternColor> Tespat<T> {
             return;
         }
 
-        for p in positions.0.iter().copied() {
-            self.layer.pattern_replace(p, replace_to);
+        for Match {
+            pos_x,
+            pos_y,
+            symmetry,
+        } in positions.0.iter().copied()
+        {
+            self.layer
+                .pattern_replace((pos_x, pos_y), replace_to.transform(symmetry));
         }
 
         if let Some(history) = self.history.as_mut() {

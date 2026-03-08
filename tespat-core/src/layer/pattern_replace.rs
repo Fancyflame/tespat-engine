@@ -1,8 +1,12 @@
-use crate::{PatternColor, layer::Layer, pattern::Pattern};
+use crate::{PatternColor, layer::Layer, pattern::transform::TransformedPattern};
 
 impl<T: PatternColor> Layer<T> {
     /// 将给定位置作为左上角，将模式放在该位置上
-    pub fn pattern_replace(&mut self, position: (usize, usize), replaced_by: &Pattern<T>) {
+    pub fn pattern_replace(
+        &mut self,
+        position: (usize, usize),
+        replaced_by: TransformedPattern<T>,
+    ) {
         let (left, top) = position;
 
         assert!(

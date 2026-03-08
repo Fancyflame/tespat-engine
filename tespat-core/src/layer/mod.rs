@@ -1,6 +1,6 @@
 use std::collections::{HashMap, hash_map::Entry};
 
-use crate::{index_to_position, pattern::Pattern};
+use crate::{index_to_position, pattern::transform::TransformedPattern};
 
 use super::PatternColor;
 
@@ -148,11 +148,13 @@ impl<T: PatternColor> Layer<T> {
 // 读取实现
 impl<T: PatternColor> Layer<T> {
     /// 找出出现频率最低的颜色。如果迭代器中没有颜色，则返回None。
-    pub fn find_fewest_color<'a>(&self, pattern: &'a Pattern<T>) -> Option<(&'a T, usize)> {
+    pub fn find_fewest_color<'a>(
+        &self,
+        pattern: TransformedPattern<'a, T>,
+    ) -> Option<(&'a T, (usize, usize))> {
         pattern
             .color_kinds()
-            .iter()
-            .filter_map(|(color, i)| color.as_ref().map(|color| (color, *i)))
+            .filter_map(|(color, i)| color.as_ref().map(|color| (color, i)))
             .min_by_key(|(color, _)| match self.colors.get(color) {
                 Some(chain) => chain.len,
                 None => 0,

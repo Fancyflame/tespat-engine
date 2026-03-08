@@ -1,8 +1,15 @@
 use std::{collections::HashMap, ops::Deref};
 
-use crate::{PatternColor, app::CreateTespat, index_to_position};
+use crate::{
+    PatternColor,
+    app::CreateTespat,
+    index_to_position,
+    pattern::transform::{Symmetry, TransformedPattern},
+};
 
 type PatColor<T> = Option<T>;
+
+pub mod transform;
 
 #[derive(Clone)]
 pub struct Pattern<T: 'static> {
@@ -91,6 +98,13 @@ impl<T> Pattern<T> {
 
     pub fn color_kinds(&self) -> &[(PatColor<T>, usize)] {
         self.colors.as_ref()
+    }
+
+    pub fn transform(&self, symmetry: Symmetry) -> TransformedPattern<'_, T> {
+        TransformedPattern {
+            symmetry,
+            pattern: self,
+        }
     }
 }
 
