@@ -75,6 +75,30 @@ impl<T: PatternColor> Tespat<T> {
         }
     }
 
+    pub fn execute(
+        &mut self,
+        capture: &Pattern<T>,
+        replace_to: &Pattern<T>,
+        filter: MatchFilter,
+        transforms: SymmetryList,
+    ) -> bool {
+        let mut matches = self.capture(capture, transforms);
+        match filter {
+            MatchFilter::One => matches.pick(1),
+            MatchFilter::AtMost(count) => matches.pick(count),
+            MatchFilter::Percent(pct) => matches.ratio_pick(pct),
+            MatchFilter::NonOverlap => matches.pick_non_overlapping(self, capture, replace_to),
+            MatchFilter::All => matches.all(),
+        };
+
+        if matches.is_empty() {
+            false
+        } else {
+            self.replace(&matches, replace_to);
+            true
+        }
+    }
+
     pub fn export(&self) -> Vec<T> {
         self.layer.export()
     }
@@ -143,4 +167,13 @@ impl<I> CreateTespat<I> {
     {
         Tespat::new(self)
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum MatchFilter {
+    One,
+    AtMost(usize),
+    Percent(f32),
+    NonOverlap,
+    All,
 }

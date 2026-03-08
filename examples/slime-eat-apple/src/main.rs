@@ -1,26 +1,39 @@
 use tespat::{
+    app::MatchFilter,
     include_tespat,
     pattern::transform::{Symmetry, SymmetryList},
 };
 
 include_tespat!();
 
-#[rustfmt::skip]
 fn main() {
     use example::pattern;
-    let mut tespat = pattern::GRAPH.clone().create_tespat().unwrap().enable_history(true).create();
+    let mut tespat = pattern::GRAPH
+        .clone()
+        .create_tespat()
+        .unwrap()
+        .enable_history(true)
+        .create();
 
     loop {
-        if let Some(m) = tespat.capture(&pattern::EAT_APPLE_MATCH, SymmetryList::ROTATE_ONLY).optioned() {
-            tespat.replace(m, &pattern::EAT_APPLE_REPLACE);
+        if tespat.execute(
+            &pattern::EAT_APPLE_MATCH,
+            &pattern::EAT_APPLE_REPLACE,
+            MatchFilter::All,
+            SymmetryList::ROTATE_ONLY,
+        ) {
             continue;
         }
-        
-        if let Some(m) = tespat.capture(&pattern::SLIME_MOVE_MATCH, SymmetryList {
-            rot_90: true,
-            ..SymmetryList::ID
-        }).pick(1).optioned() {
-            tespat.replace(m, &pattern::SLIME_MOVE_REPLACE);
+
+        if tespat.execute(
+            &pattern::SLIME_MOVE_MATCH,
+            &pattern::SLIME_MOVE_REPLACE,
+            MatchFilter::One,
+            SymmetryList {
+                rot_90: true,
+                ..SymmetryList::ID
+            },
+        ) {
             continue;
         }
 

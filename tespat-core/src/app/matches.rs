@@ -3,12 +3,17 @@ use rand::{RngExt, seq::SliceRandom};
 use crate::{PatternColor, app::Tespat, layer::pattern_match::Match, pattern::Pattern};
 
 /// 模式匹配结果
+#[derive(Clone, Debug)]
 pub struct Matches(pub(super) Vec<Match>);
 
 impl Matches {
     /// 匹配及筛选后剩余结果的总数
     pub const fn len(&self) -> usize {
         self.0.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 
     /// 保留所有坐标，仅将坐标打乱
@@ -30,9 +35,8 @@ impl Matches {
             let picked = rng.random_range(i..self.len());
             self.0.swap(i, picked);
         }
-
         self.0.truncate(reserve_count);
-        dbg!(&self.0);
+
         self
     }
 
@@ -47,7 +51,7 @@ impl Matches {
         tespat: &Tespat<T>,
         match_pattern: &Pattern<T>,
         replace_pattern: &Pattern<T>,
-    ) {
+    ) -> &Self {
         let mut bitset = tespat.overlapping_bitset.borrow_mut();
         bitset.fill(false);
         bitset.resize(tespat.layer.size(), false);
@@ -90,6 +94,7 @@ impl Matches {
 
             true
         });
+        self
     }
 }
 

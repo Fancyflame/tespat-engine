@@ -20,12 +20,28 @@ pub fn compile(file_content: String) -> Result<TokenStream> {
 }
 
 fn generate_color_enum(colors: &HashMap<String, String>) -> TokenStream {
-    let mut color_names: Vec<_> = colors.keys().collect();
+    let mut color_names: Vec<_> = colors.keys().filter(|name| name.as_str() != "*").collect();
     color_names.sort();
 
     let color_variants: Vec<_> = color_names
         .iter()
         .map(|name| color_variant_ident(name))
+        .collect();
+
+    let unit_pattern_match_arms: Vec<_> = color_variants
+        .iter()
+        .map(|variant| {
+            quote! {
+                Self::#variant => {
+                    static PATTERN: ::tespat::Pattern<Color> = ::tespat::Pattern::from_static(
+                        1,
+                        &[Some(Color::#variant)],
+                        &[(Some(Color::#variant), 0)],
+                    );
+                    &PATTERN
+                }
+            }
+        })
         .collect();
 
     quote! {
@@ -43,6 +59,14 @@ fn generate_color_enum(colors: &HashMap<String, String>) -> TokenStream {
         }
 
         impl ::tespat::PatternColor for Color {}
+
+        impl Color {
+            pub const fn unit_pattern(self) -> &'static ::tespat::Pattern<Self> {
+                match self {
+                    #(#unit_pattern_match_arms,)*
+                }
+            }
+        }
     }
 }
 
