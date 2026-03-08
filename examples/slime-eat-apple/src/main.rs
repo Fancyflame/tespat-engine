@@ -28,6 +28,4 @@ fn main() {
     }
 
     std::fs::write("exported.json", tespat.export_history().to_json()).unwrap();
-    
-    // dbg!(tespat.export_to_2d_array::<5, 4>().unwrap());
 }
