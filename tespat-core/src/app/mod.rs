@@ -21,9 +21,9 @@ pub struct Tespat<T> {
 }
 
 impl<T: PatternColor> Tespat<T> {
-    pub fn new<I>(options: CreateTespat<I>) -> Self
+    pub fn new<I>(options: TespatBuilder<I>) -> Self
     where
-        I: ExactSizeIterator<Item = T>,
+        I: IntoIterator<Item = T>,
     {
         let mut this = Self {
             layer: Layer::new(),
@@ -31,7 +31,8 @@ impl<T: PatternColor> Tespat<T> {
             overlapping_bitset: Default::default(),
         };
 
-        this.layer.initialize(options.width, options.graph);
+        this.layer
+            .initialize(options.width, options.graph.into_iter());
 
         if let Some(history) = this.history.as_mut() {
             history.push(history::capture_frame(&this.layer));
@@ -99,6 +100,10 @@ impl<T: PatternColor> Tespat<T> {
         }
     }
 
+    pub fn color_count(&self, color: &T) -> usize {
+        self.layer.color_count(color)
+    }
+
     pub fn export(&self) -> Vec<T> {
         self.layer.export()
     }
@@ -140,13 +145,27 @@ impl<T: PatternColor> Tespat<T> {
     }
 }
 
-pub struct CreateTespat<I> {
+pub struct TespatBuilder<I> {
     pub graph: I,
     pub width: usize,
     pub enable_history: bool,
 }
 
-impl<I> CreateTespat<I> {
+impl TespatBuilder<()> {
+    pub fn new_filled<T: PatternColor>(
+        color: T,
+        width: usize,
+        height: usize,
+    ) -> TespatBuilder<impl Iterator<Item = T>> {
+        TespatBuilder {
+            graph: std::iter::repeat_n(color, width * height),
+            width,
+            enable_history: false,
+        }
+    }
+}
+
+impl<I> TespatBuilder<I> {
     pub fn new(graph: I, width: usize) -> Self {
         Self {
             graph,
@@ -160,10 +179,10 @@ impl<I> CreateTespat<I> {
         self
     }
 
-    pub fn create<T>(self) -> Tespat<T>
+    pub fn build<T>(self) -> Tespat<T>
     where
         T: PatternColor,
-        I: ExactSizeIterator<Item = T>,
+        I: Iterator<Item = T>,
     {
         Tespat::new(self)
     }

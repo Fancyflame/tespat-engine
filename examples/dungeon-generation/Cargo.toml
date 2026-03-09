@@ -1,0 +1,11 @@
+[package]
+name = "dungeon-generation"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rand.workspace = true
+tespat = { version = "0.1.0", path = "../../tespat-core" }
+
+[build-dependencies]
+tespat-compiler = { path = "../../tespat-compiler" }

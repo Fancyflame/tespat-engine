@@ -53,18 +53,21 @@ impl<T: PatternColor> Layer<T> {
     /// 用数据初始化
     pub fn initialize<I>(&mut self, row_width: usize, grid: I)
     where
-        I: ExactSizeIterator<Item = T>,
+        I: Iterator<Item = T>,
     {
         self.colors.clear();
         self.pixel_info_table.clear();
         self.row_width = row_width;
 
-        if let Some(additional) = grid.len().checked_sub(self.pixel_info_table.len()) {
-            self.pixel_info_table.reserve_exact(additional);
-        }
+        let mut count = 0usize;
 
         for (i, data) in grid.enumerate() {
+            count += 1;
             self.write_color(i, data, true);
+        }
+
+        if let Some(additional) = count.checked_sub(self.pixel_info_table.len()) {
+            self.pixel_info_table.reserve_exact(additional);
         }
     }
 
@@ -148,21 +151,18 @@ impl<T: PatternColor> Layer<T> {
 // 读取实现
 impl<T: PatternColor> Layer<T> {
     /// 找出出现频率最低的颜色。如果迭代器中没有颜色，则返回None。
-    pub fn find_fewest_color<'a>(
+    fn find_fewest_color<'a>(
         &self,
         pattern: TransformedPattern<'a, T>,
     ) -> Option<(&'a T, (usize, usize))> {
         pattern
             .color_kinds()
             .filter_map(|(color, i)| color.as_ref().map(|color| (color, i)))
-            .min_by_key(|(color, _)| match self.colors.get(color) {
-                Some(chain) => chain.len,
-                None => 0,
-            })
+            .min_by_key(|(color, _)| self.color_count(color))
     }
 
     /// 获得对应颜色在图像中的所有位置
-    pub fn get_color_positions<'a>(&'a self, color: &T) -> ColorPositions<'a, T> {
+    fn get_color_positions<'a>(&'a self, color: &T) -> ColorPositions<'a, T> {
         let next_index = self.colors.get(color).map(|chain| chain.head_index);
         ColorPositions {
             layer: self,
@@ -186,6 +186,14 @@ impl<T: PatternColor> Layer<T> {
             .iter()
             .map(|el| el.color.clone())
             .collect()
+    }
+
+    /// 获取一种颜色在图中的数量。复杂度为O(1)。
+    pub fn color_count(&self, color: &T) -> usize {
+        match self.colors.get(color) {
+            Some(chain) => chain.len,
+            None => 0,
+        }
     }
 }
 

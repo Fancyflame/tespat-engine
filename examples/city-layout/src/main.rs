@@ -9,7 +9,7 @@ fn main() {
         .create_tespat()
         .unwrap()
         .enable_history(true)
-        .create();
+        .build();
 
     loop {
         // 生成所有候选点，未成功生成则意味着全部墙体已生成完毕

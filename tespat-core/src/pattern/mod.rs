@@ -2,7 +2,7 @@ use std::{collections::HashMap, ops::Deref};
 
 use crate::{
     PatternColor,
-    app::CreateTespat,
+    app::TespatBuilder,
     index_to_position,
     pattern::transform::{Symmetry, TransformedPattern},
 };
@@ -62,12 +62,12 @@ impl<T: PatternColor> Pattern<T> {
     }
 
     /// 将自身视为初始图创建一个 Tespat
-    pub fn create_tespat(&self) -> Option<CreateTespat<impl ExactSizeIterator<Item = T> + '_>> {
+    pub fn create_tespat(&self) -> Option<TespatBuilder<impl ExactSizeIterator<Item = T> + '_>> {
         if self.colors.iter().any(|(color, _)| color.is_none()) {
             return None;
         }
 
-        Some(CreateTespat::new(
+        Some(TespatBuilder::new(
             self.grid
                 .iter()
                 .map(|color| color.clone().unwrap_or_else(|| unreachable!())),

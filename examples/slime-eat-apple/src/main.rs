@@ -1,8 +1,4 @@
-use tespat::{
-    app::MatchFilter,
-    include_tespat,
-    pattern::transform::{Symmetry, SymmetryList},
-};
+use tespat::{app::MatchFilter, include_tespat, pattern::transform::SymmetryList};
 
 include_tespat!();
 
@@ -13,7 +9,7 @@ fn main() {
         .create_tespat()
         .unwrap()
         .enable_history(true)
-        .create();
+        .build();
 
     loop {
         if tespat.execute(
