@@ -4,7 +4,10 @@
 
 ## 功能概况
 
-TESPAT (TESseraPATtern) 是一个基于 Rust 的二维网格模式匹配与替换引擎，和[MarkovJunior](https://github.com/mxgmn/MarkovJunior)类似，适合做规则驱动的网格演化、自动机模拟、回合演算等场景。项目由三部分组成：
+TESPAT (TESseraPATtern) 是一个基于 Rust 的二维网格模式匹配与替换引擎，和[MarkovJunior](https://github.com/mxgmn/MarkovJunior)类似，适合做规则驱动的网格演化、自动机模拟、回合演算等场景。
+引擎为我的独立游戏《ForsakenLine》随机场景生成而制作。
+
+项目由三部分组成：
 
 - `tespat-core`：核心运行时，负责模式匹配、替换、对称变换（旋转/翻转）以及历史帧记录。
 - `tespat-compiler`：编译期工具，将 JSON 规则文件编译为 Rust 代码，便于在运行时直接使用静态 pattern。
