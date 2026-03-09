@@ -69,5 +69,12 @@ fn main() {
         );
     }
 
-    std::fs::write("exported.json", tespat.export_history().to_json()).unwrap();
+    std::fs::write(
+        format!(
+            "{}/exported.json",
+            std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default()
+        ),
+        tespat.export_history().to_json(),
+    )
+    .unwrap();
 }
