@@ -1,13 +1,6 @@
-import {
-    Card,
-    Group,
-    Text,
-    ActionIcon,
-    Center,
-    Stack,
-    Box,
-} from "@mantine/core";
-import { IconTrash, IconPencil } from "@tabler/icons-react";
+import { Card, Group, Text, ActionIcon, Center, Stack } from "@mantine/core";
+import { IconTrash, IconPencil, IconGripVertical } from "@tabler/icons-react";
+import type { DragEventHandler } from "react";
 import { PatternRule } from "../../ProjectData";
 import { GridDisplay2D } from "../GridDisplay2D/GridDisplay2D";
 
@@ -15,18 +8,30 @@ interface PatternCardProps {
     id: string;
     rule: PatternRule;
     selected?: boolean;
+    dragging?: boolean;
+    dropIndicator?: "before" | "after" | null;
     onSelect?: () => void;
     onRename: (newName: string) => void;
     onDelete: () => void;
+    onDragStart?: DragEventHandler<HTMLButtonElement>;
+    onDragEnd?: DragEventHandler<HTMLButtonElement>;
+    onDragOver?: DragEventHandler<HTMLDivElement>;
+    onDrop?: DragEventHandler<HTMLDivElement>;
 }
 
 export const PatternCard = ({
     id,
     rule,
     selected = false,
+    dragging = false,
+    dropIndicator = null,
     onSelect,
     onRename,
     onDelete,
+    onDragStart,
+    onDragEnd,
+    onDragOver,
+    onDrop,
 }: PatternCardProps) => {
     const handleRenameClick = () => {
         const newName = window.prompt("输入新的规则名称", id);
@@ -49,48 +54,77 @@ export const PatternCard = ({
             radius="md"
             bg={selected ? "blue.9" : "gray.9"}
             onClick={onSelect}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
             style={{
                 cursor: "pointer",
+                opacity: dragging ? 0.55 : 1,
                 borderColor: selected
                     ? "var(--mantine-color-blue-4)"
                     : undefined,
+                borderTopColor:
+                    dropIndicator === "before"
+                        ? "var(--mantine-color-blue-4)"
+                        : undefined,
+                borderBottomColor:
+                    dropIndicator === "after"
+                        ? "var(--mantine-color-blue-4)"
+                        : undefined,
+                borderTopWidth: dropIndicator === "before" ? 2 : undefined,
+                borderBottomWidth: dropIndicator === "after" ? 2 : undefined,
+                transition: "opacity 120ms ease, border-color 120ms ease",
             }}
         >
             <Group justify="space-between" align="stretch" wrap="nowrap">
-                <Stack gap={4} justify="space-between">
-                    <Text
-                        size="sm"
-                        ff="monospace"
-                        fw={700}
-                        c={selected ? "blue.1" : "blue.4"}
-                        style={{ wordBreak: "break-all" }}
+                <Group gap="xs" align="flex-start" wrap="nowrap">
+                    <ActionIcon
+                        variant="subtle"
+                        size="xs"
+                        color="gray"
+                        draggable={true}
+                        title="拖拽调整顺序"
+                        onMouseDown={(event) => event.stopPropagation()}
+                        onClick={(event) => event.stopPropagation()}
+                        onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
                     >
-                        {id}
-                    </Text>
-                    <Group gap={4}>
-                        <ActionIcon
-                            variant="subtle"
-                            size="xs"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                handleRenameClick();
-                            }}
+                        <IconGripVertical size={14} />
+                    </ActionIcon>
+                    <Stack gap={4} justify="space-between">
+                        <Text
+                            size="sm"
+                            ff="monospace"
+                            fw={700}
+                            c={selected ? "blue.1" : "blue.4"}
+                            style={{ wordBreak: "break-all" }}
                         >
-                            <IconPencil size={12} />
-                        </ActionIcon>
-                        <ActionIcon
-                            variant="subtle"
-                            color="red"
-                            size="xs"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                handleDeleteClick();
-                            }}
-                        >
-                            <IconTrash size={12} />
-                        </ActionIcon>
-                    </Group>
-                </Stack>
+                            {id}
+                        </Text>
+                        <Group gap={4}>
+                            <ActionIcon
+                                variant="subtle"
+                                size="xs"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleRenameClick();
+                                }}
+                            >
+                                <IconPencil size={12} />
+                            </ActionIcon>
+                            <ActionIcon
+                                variant="subtle"
+                                color="red"
+                                size="xs"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleDeleteClick();
+                                }}
+                            >
+                                <IconTrash size={12} />
+                            </ActionIcon>
+                        </Group>
+                    </Stack>
+                </Group>
                 <Center w={100} h={70}>
                     <GridDisplay2D width={rule.width} data={rule.pattern} />
                 </Center>

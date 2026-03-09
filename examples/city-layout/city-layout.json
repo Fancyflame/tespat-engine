@@ -383,52 +383,6 @@
         "Active"
       ]
     },
-    "DirectionSelectMatch": {
-      "width": 3,
-      "pattern": [
-        "Active",
-        "Seed",
-        "Active"
-      ]
-    },
-    "DirectionSelectReplace": {
-      "width": 3,
-      "pattern": [
-        "Growth",
-        "Seed",
-        "Growth"
-      ]
-    },
-    "PropagationMatch": {
-      "width": 3,
-      "pattern": [
-        "Seed",
-        "Growth",
-        "Active"
-      ]
-    },
-    "PropagationReplace": {
-      "width": 3,
-      "pattern": [
-        "Wall",
-        "Seed",
-        "Growth"
-      ]
-    },
-    "ClearGrowthMatch": {
-      "width": 2,
-      "pattern": [
-        "Seed",
-        "Growth"
-      ]
-    },
-    "ClearGrowthReplace": {
-      "width": 2,
-      "pattern": [
-        "Wall",
-        "Wall"
-      ]
-    },
     "SearchSpaceMatch": {
       "width": 7,
       "pattern": [
@@ -536,8 +490,65 @@
         "*",
         "*"
       ]
+    },
+    "DirectionSelectMatch": {
+      "width": 3,
+      "pattern": [
+        "Active",
+        "Seed",
+        "Active"
+      ]
+    },
+    "DirectionSelectReplace": {
+      "width": 3,
+      "pattern": [
+        "Growth",
+        "Seed",
+        "Growth"
+      ]
+    },
+    "PropagationMatch": {
+      "width": 3,
+      "pattern": [
+        "Seed",
+        "Growth",
+        "Active"
+      ]
+    },
+    "PropagationReplace": {
+      "width": 3,
+      "pattern": [
+        "Wall",
+        "Seed",
+        "Growth"
+      ]
+    },
+    "ClearGrowthMatch": {
+      "width": 2,
+      "pattern": [
+        "Seed",
+        "Growth"
+      ]
+    },
+    "ClearGrowthReplace": {
+      "width": 2,
+      "pattern": [
+        "Wall",
+        "Wall"
+      ]
     }
   },
+  "patternOrder": [
+    "Graph",
+    "SearchSpaceMatch",
+    "SearchSpaceReplace",
+    "DirectionSelectMatch",
+    "DirectionSelectReplace",
+    "PropagationMatch",
+    "PropagationReplace",
+    "ClearGrowthMatch",
+    "ClearGrowthReplace"
+  ],
   "colors": {
     "Active": "#e8e8e8",
     "Wall": "#99775d",

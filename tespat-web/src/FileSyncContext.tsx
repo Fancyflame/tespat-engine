@@ -6,7 +6,7 @@ import {
     ReactNode,
 } from "react";
 import { useProject } from "./ProjectData";
-import { DEFAULT_PROJECT } from "./ProjectData";
+import { DEFAULT_PROJECT, cloneProject } from "./ProjectData";
 import { projectToJson, jsonToProject } from "./projectSerialization";
 
 interface FileSyncContextType {
@@ -87,11 +87,8 @@ export const FileSyncProvider = ({ children }: { children: ReactNode }) => {
                     },
                 ],
             });
-            const defaultProject: typeof DEFAULT_PROJECT = {
-                ...DEFAULT_PROJECT,
-                patterns: new Map(DEFAULT_PROJECT.patterns),
-                colors: new Map(DEFAULT_PROJECT.colors),
-            };
+            const defaultProject: typeof DEFAULT_PROJECT =
+                cloneProject(DEFAULT_PROJECT);
             const content = projectToJson(defaultProject);
             const writable = await handle.createWritable();
             await writable.write(content);
