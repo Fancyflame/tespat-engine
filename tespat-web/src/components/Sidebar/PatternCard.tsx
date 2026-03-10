@@ -90,7 +90,7 @@ export const PatternCard = ({
                     >
                         <IconGripVertical size={14} />
                     </ActionIcon>
-                    <Stack gap={4} justify="space-between">
+                    <Stack gap={4}>
                         <Text
                             size="sm"
                             ff="monospace"
@@ -125,7 +125,7 @@ export const PatternCard = ({
                         </Group>
                     </Stack>
                 </Group>
-                <Center w={100} h={70}>
+                <Center w={70} h={70} flex="0 0 auto">
                     <GridDisplay2D width={rule.width} data={rule.pattern} />
                 </Center>
             </Group>

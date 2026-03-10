@@ -25,26 +25,17 @@ export interface ProjectData {
 export const DEFAULT_PROJECT: ProjectData = {
     patterns: new Map([
         [
-            "Eat Apple",
+            "BlackAndWhite",
             {
                 width: 2,
-                pattern: [
-                    "Slime",
-                    "Apple",
-                    "Apple",
-                    "Empty",
-                    "SatiatedSlime",
-                    "Empty",
-                ],
+                pattern: ["Black", "White", "White", "Black"],
             },
         ],
     ]),
-    patternOrder: ["Eat Apple"],
+    patternOrder: ["BlackAndWhite"],
     colors: new Map([
-        ["Apple", "#ef4444"],
-        ["Slime", "#22c55e"],
-        ["Empty", "#1f2937"],
-        ["SatiatedSlime", "#facc15"],
+        ["Black", "#000000"],
+        ["White", "#ffffff"],
     ]),
 };
 

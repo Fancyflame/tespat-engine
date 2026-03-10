@@ -15,6 +15,21 @@ import { IconPlus, IconPencil, IconTrash, IconX } from "@tabler/icons-react";
 import { useProject } from "../../ProjectData";
 import { useEditor } from "../../EditorData";
 
+function replaceColorNameInCells(
+    cells: string[],
+    oldName: string,
+    newName: string,
+) {
+    let changed = false;
+    const nextCells = cells.map((cell) => {
+        if (cell !== oldName) return cell;
+        changed = true;
+        return newName;
+    });
+
+    return changed ? nextCells : cells;
+}
+
 export function ColorSection() {
     const { project, setProject } = useProject();
     const { editor, setEditor } = useEditor();
@@ -47,8 +62,7 @@ export function ColorSection() {
                 const trimmed = newName.trim();
                 if (!trimmed || trimmed === oldName) return;
 
-                const color = project.colors.get(oldName);
-                if (color === undefined) {
+                if (!project.colors.has(oldName)) {
                     return;
                 }
 
@@ -63,12 +77,62 @@ export function ColorSection() {
                 }
 
                 setProject((prev) => {
-                    const colorDisplay = new Map(prev.colors);
-                    colorDisplay.delete(oldName);
-                    colorDisplay.set(trimmed, color);
-                    return { ...prev, colors: colorDisplay };
+                    if (!prev.colors.has(oldName)) {
+                        return prev;
+                    }
+
+                    const colorDisplay = new Map<string, string>();
+                    for (const [name, value] of prev.colors.entries()) {
+                        if (name === oldName) {
+                            colorDisplay.set(trimmed, value);
+                            continue;
+                        }
+                        colorDisplay.set(name, value);
+                    }
+
+                    const patterns = new Map(
+                        Array.from(prev.patterns.entries()).map(([id, rule]) => {
+                            const nextPattern = replaceColorNameInCells(
+                                rule.pattern,
+                                oldName,
+                                trimmed,
+                            );
+
+                            if (nextPattern === rule.pattern) {
+                                return [id, rule] as const;
+                            }
+
+                            return [
+                                id,
+                                {
+                                    ...rule,
+                                    pattern: nextPattern,
+                                },
+                            ] as const;
+                        }),
+                    );
+
+                    return {
+                        ...prev,
+                        colors: colorDisplay,
+                        patterns,
+                    };
                 });
-                setEditor((prev) => ({ ...prev, selectedColor: trimmed }));
+                setEditor((prev) => ({
+                    ...prev,
+                    selectedColor:
+                        prev.selectedColor === oldName
+                            ? trimmed
+                            : prev.selectedColor,
+                    editingGrid: {
+                        ...prev.editingGrid,
+                        data: replaceColorNameInCells(
+                            prev.editingGrid.data,
+                            oldName,
+                            trimmed,
+                        ),
+                    },
+                }));
             },
             onSelect: (colorName: string) => {
                 setEditor((prev) => ({ ...prev, selectedColor: colorName }));
