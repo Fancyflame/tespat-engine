@@ -77,12 +77,12 @@ export const FileSyncProvider = ({ children }: { children: ReactNode }) => {
         if (!isSupported) return;
         try {
             const handle = await window.showSaveFilePicker({
-                suggestedName: "untitled.tsp",
+                suggestedName: "untitled.json",
                 types: [
                     {
                         description: "TESPAT 项目文件",
                         accept: {
-                            "application/json": [".tsp", ".json"],
+                            "application/json": [".json", ".tsp"],
                         },
                     },
                 ],
