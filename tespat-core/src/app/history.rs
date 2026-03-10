@@ -3,7 +3,7 @@ use serde_json::json;
 use crate::{PatternColor, StrColor, layer::Layer};
 
 pub(super) fn capture_frame<T: PatternColor>(layer: &Layer<T>) -> Vec<T> {
-    layer.export()
+    layer.export().cloned().collect()
 }
 
 pub struct HistoryData<T> {

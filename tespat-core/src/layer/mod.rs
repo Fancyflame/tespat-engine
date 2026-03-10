@@ -8,6 +8,7 @@ pub mod pattern_match;
 pub mod pattern_replace;
 
 /// 颜色链表的信息
+#[derive(Clone)]
 struct ColorChain {
     /// 头元素下标
     head_index: usize,
@@ -29,6 +30,7 @@ struct Element<T> {
     next_index: Option<usize>,
 }
 
+#[derive(Clone)]
 pub struct Layer<T> {
     /// 所有颜色对应的链表
     colors: HashMap<T, ColorChain>,
@@ -181,11 +183,8 @@ impl<T: PatternColor> Layer<T> {
     }
 
     /// 导出图
-    pub fn export(&self) -> Vec<T> {
-        self.pixel_info_table
-            .iter()
-            .map(|el| el.color.clone())
-            .collect()
+    pub fn export(&self) -> impl Iterator<Item = &T> {
+        self.pixel_info_table.iter().map(|el| &el.color)
     }
 
     /// 获取一种颜色在图中的数量。复杂度为O(1)。

@@ -125,7 +125,7 @@ export const PatternCard = ({
                         </Group>
                     </Stack>
                 </Group>
-                <Center w={70} h={70} flex="0 0 auto">
+                <Center w={50} h={50} flex="0 0 auto">
                     <GridDisplay2D width={rule.width} data={rule.pattern} />
                 </Center>
             </Group>

@@ -12,6 +12,7 @@ pub mod matches;
 
 use matches::Matches;
 
+#[derive(Clone)]
 pub struct Tespat<T> {
     layer: Layer<T>,
     history: Option<Vec<Vec<T>>>,
@@ -105,7 +106,7 @@ impl<T: PatternColor> Tespat<T> {
     }
 
     pub fn export(&self) -> Vec<T> {
-        self.layer.export()
+        self.layer.export().cloned().collect()
     }
 
     pub fn is_history_enabled(&self) -> bool {
@@ -134,6 +135,18 @@ impl<T: PatternColor> Tespat<T> {
         Some(array::from_fn(|_| {
             array::from_fn(|_| colors.next().unwrap())
         }))
+    }
+
+    /// 将当前的color迁移至新的color
+    pub fn migrate<U>(&self) -> TespatBuilder<impl Iterator<Item = U>>
+    where
+        U: From<T>,
+    {
+        TespatBuilder {
+            graph: self.layer.export().map(|color| U::from(color.clone())),
+            width: self.width(),
+            enable_history: self.is_history_enabled(),
+        }
     }
 
     pub fn width(&self) -> usize {

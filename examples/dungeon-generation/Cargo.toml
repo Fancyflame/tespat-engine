@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 rand.workspace = true
 tespat = { version = "0.1.0", path = "../../tespat-core" }
+log.workspace = true
 
 [build-dependencies]
 tespat-compiler = { path = "../../tespat-compiler" }

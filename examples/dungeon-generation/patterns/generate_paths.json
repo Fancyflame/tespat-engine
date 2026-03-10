@@ -1,0 +1,180 @@
+{
+  "patterns": {
+    "OpenDoorMatch": {
+      "width": 4,
+      "pattern": [
+        "Room",
+        "Wall",
+        "Empty",
+        "Anchor"
+      ]
+    },
+    "OpenDoorReplace": {
+      "width": 4,
+      "pattern": [
+        "RoomWithDoor",
+        "Anchor",
+        "Empty",
+        "Anchor"
+      ]
+    },
+    "SetRoomHasDoorMatch": {
+      "width": 2,
+      "pattern": [
+        "Room",
+        "RoomWithDoor"
+      ]
+    },
+    "SetRoomHasDoorReplace": {
+      "width": 2,
+      "pattern": [
+        "RoomWithDoor",
+        "RoomWithDoor"
+      ]
+    },
+    "CreatePathMatch": {
+      "width": 3,
+      "pattern": [
+        "PathHead",
+        "Empty",
+        "Anchor"
+      ]
+    },
+    "CreatePathReplace": {
+      "width": 3,
+      "pattern": [
+        "PathBacktrace",
+        "PathBacktrace",
+        "PathHead"
+      ]
+    },
+    "BackwardPathMatch": {
+      "width": 3,
+      "pattern": [
+        "PathBacktrace",
+        "PathBacktrace",
+        "PathHead"
+      ]
+    },
+    "BackwardPathReplace": {
+      "width": 3,
+      "pattern": [
+        "PathHead",
+        "Path",
+        "Path"
+      ]
+    },
+    "CreateConnectivePathMatch": {
+      "width": 3,
+      "pattern": [
+        "Anchor",
+        "Path",
+        "Path"
+      ]
+    },
+    "CreateConnectivePathReplace": {
+      "width": 3,
+      "pattern": [
+        "Anchor",
+        "Path",
+        "Anchor"
+      ]
+    },
+    "DripDoorMatch": {
+      "width": 3,
+      "pattern": [
+        "Anchor",
+        "Empty",
+        "Path"
+      ]
+    },
+    "DripDoorReplace": {
+      "width": 3,
+      "pattern": [
+        "Anchor",
+        "Path",
+        "Anchor"
+      ]
+    },
+    "DestroyWallMatch": {
+      "width": 3,
+      "pattern": [
+        "*",
+        "Empty",
+        "*",
+        "Path",
+        "Empty",
+        "Path",
+        "*",
+        "Empty",
+        "*"
+      ]
+    },
+    "DestroyWallReplace": {
+      "width": 3,
+      "pattern": [
+        "*",
+        "Empty",
+        "*",
+        "Path",
+        "Path",
+        "Path",
+        "*",
+        "Empty",
+        "*"
+      ]
+    },
+    "ClearDeadEndMatch": {
+      "width": 3,
+      "pattern": [
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Path",
+        "Empty"
+      ]
+    },
+    "ClearDeadEndReplace": {
+      "width": 3,
+      "pattern": [
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty"
+      ]
+    }
+  },
+  "patternOrder": [
+    "OpenDoorMatch",
+    "OpenDoorReplace",
+    "SetRoomHasDoorMatch",
+    "SetRoomHasDoorReplace",
+    "CreatePathMatch",
+    "CreatePathReplace",
+    "BackwardPathMatch",
+    "BackwardPathReplace",
+    "CreateConnectivePathMatch",
+    "CreateConnectivePathReplace",
+    "DripDoorMatch",
+    "DripDoorReplace",
+    "DestroyWallMatch",
+    "DestroyWallReplace",
+    "ClearDeadEndMatch",
+    "ClearDeadEndReplace"
+  ],
+  "colors": {
+    "Wall": "#f07000",
+    "Room": "#0a6cff",
+    "Empty": "#423333",
+    "RoomVertex": "#ffc300",
+    "RoomWithDoor": "#05e6ff",
+    "PathHead": "#ff0303",
+    "*": "#000000",
+    "Anchor": "#94009c",
+    "PathBacktrace": "#5cff57",
+    "Path": "#ffffff"
+  }
+}

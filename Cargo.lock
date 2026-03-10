@@ -58,6 +58,7 @@ dependencies = [
 name = "dungeon-generation"
 version = "0.1.0"
 dependencies = [
+ "log",
  "rand",
  "tespat",
  "tespat-compiler",

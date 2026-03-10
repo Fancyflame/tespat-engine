@@ -78,6 +78,7 @@ fn generate_pattern_module(patterns: &HashMap<String, PatternConfig>) -> Result<
 
     Ok(quote! {
         pub mod pattern {
+            #[allow(unused_imports)]
             use super::Color;
 
             #(#pattern_items)*
