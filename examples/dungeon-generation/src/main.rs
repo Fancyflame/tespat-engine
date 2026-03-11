@@ -9,7 +9,7 @@ include_tespat!();
 
 fn main() {
     let tespat = generate_rooms::generate(false, 17, 21);
-    let mut tespat = tespat.migrate().enable_history(false).build();
+    let mut tespat = tespat.migrate().enable_history(true).build();
     generate_paths::generate(&mut tespat);
 
     fs::write(

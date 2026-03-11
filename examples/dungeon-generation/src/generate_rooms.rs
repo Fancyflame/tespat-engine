@@ -28,39 +28,20 @@ pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Col
         .build();
 
     // 生成边界
-    tespat.execute(
-        &pattern::FIND_BORDER_MATCH,
-        &pattern::FIND_BORDER_REPLACE,
-        MatchFilter::All,
-        SymmetryList::ID,
-    );
+    tespat.execute(&pattern::FIND_BORDER, MatchFilter::All, SymmetryList::ID);
 
     // 生成一个锚点
-    tespat.execute(
-        &pattern::SPAWN_FIRST_ANCHOR_MATCH,
-        &pattern::SPAWN_FIRST_ANCHOR_REPLACE,
-        MatchFilter::One,
-        SymmetryList::ID,
-    );
+    tespat.execute(&pattern::SPAWN_FIRST_ANCHOR, MatchFilter::One, SymmetryList::ID);
 
     // 生成网格
-    while tespat.execute(
-        &pattern::SPAWN_GRID_MATCH,
-        &pattern::SPAWN_GRID_REPLACE,
-        MatchFilter::All,
-        SymmetryList::ROTATE_ONLY,
-    ) {}
+    while tespat.execute(&pattern::SPAWN_GRID, MatchFilter::All, SymmetryList::ROTATE_ONLY) {}
 
     // 选一些地方生成最小房间
     {
-        let mut m = tespat.capture(&pattern::GENERATE_SEED_MATCH, SymmetryList::ID);
-        m.pick_non_overlapping(
-            &tespat,
-            &pattern::GENERATE_SEED_MATCH,
-            &pattern::GENERATE_SEED_REPLACE,
-        );
+        let mut m = tespat.capture(&pattern::GENERATE_SEED.0, SymmetryList::ID);
+        m.pick_non_overlapping(&tespat, &pattern::GENERATE_SEED.0, &pattern::GENERATE_SEED.1);
         m.ratio_pick(0.4);
-        tespat.replace(&m, &pattern::GENERATE_SEED_REPLACE);
+        tespat.replace(&m, &pattern::GENERATE_SEED.1);
     }
 
     // 如果还有空间可能可以生成
@@ -72,32 +53,22 @@ pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Col
             break;
         }
 
-        if !tespat.execute(
-            &pattern::SELECT_VERTEX_MATCH,
-            &pattern::SELECT_VERTEX_REPLACE,
-            MatchFilter::One,
-            SymmetryList::ALL,
-        ) {
+        if !tespat.execute(&pattern::SELECT_VERTEX, MatchFilter::One, SymmetryList::ALL) {
             break;
         }
 
         // 墙壁扩散
-        while tespat.execute(
-            &pattern::SELECT_WALL_TO_GROW_MATCH,
-            &pattern::SELECT_WALL_TO_GROW_REPLACE,
-            MatchFilter::One,
-            SymmetryList::ALL,
-        ) || tespat.execute(
-            &pattern::SELECT_WALL_TO_GROW_MATCH_2,
-            &pattern::SELECT_WALL_TO_GROW_REPLACE,
-            MatchFilter::One,
-            SymmetryList::ALL,
-        ) {}
+        while tespat.execute(&pattern::SELECT_WALL_TO_GROW, MatchFilter::One, SymmetryList::ALL)
+            || tespat.execute(
+                &pattern::SELECT_WALL_TO_GROW_2,
+                MatchFilter::One,
+                SymmetryList::ALL,
+            )
+        {}
 
         // 墙壁扩散完成，尝试关联顶点
         if !tespat.execute(
-            &pattern::SELECT_WALL_TO_GROW_END_MATCH,
-            &pattern::SELECT_WALL_TO_GROW_END_REPLACE,
+            &pattern::SELECT_WALL_TO_GROW_END,
             MatchFilter::One,
             SymmetryList::ALL,
         ) {
@@ -105,24 +76,21 @@ pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Col
 
             // 取消激活顶点
             tespat.execute(
-                Color::ActiveRoomVertex.unit_pattern(),
-                Color::RoomVertex.unit_pattern(),
+                (Color::ActiveRoomVertex.unit_pattern(), Color::RoomVertex.unit_pattern()),
                 MatchFilter::All,
                 SymmetryList::ID,
             );
 
             // 将所有激活的墙禁止向外延伸
             tespat.execute(
-                Color::GrowingWall.unit_pattern(),
-                Color::DeactiveWall.unit_pattern(),
+                (Color::GrowingWall.unit_pattern(), Color::DeactiveWall.unit_pattern()),
                 MatchFilter::All,
                 SymmetryList::ID,
             );
 
             // 将整堵墙禁止向外延伸
             while tespat.execute(
-                &pattern::DEACTIVATE_WALL_MATCH,
-                &pattern::DEACTIVATE_WALL_REPLACE,
+                &pattern::DEACTIVATE_WALL,
                 MatchFilter::One,
                 SymmetryList::ROTATE_ONLY,
             ) {}
@@ -132,41 +100,28 @@ pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Col
         }
 
         // 将所有顶点向外延伸
-        tespat.execute(
-            &pattern::VERTEX_GROW_MATCH,
-            &pattern::VERTEX_GROW_REPLACE,
-            MatchFilter::All,
-            SymmetryList::ALL,
-        );
+        tespat.execute(&pattern::VERTEX_GROW, MatchFilter::All, SymmetryList::ALL);
 
         // 将所有墙向外延伸
-        tespat.execute(
-            &pattern::WALL_GROW_MATCH,
-            &pattern::WALL_GROW_REPLACE,
-            MatchFilter::All,
-            SymmetryList::ALL,
-        );
+        tespat.execute(&pattern::WALL_GROW, MatchFilter::All, SymmetryList::ALL);
     }
 
     // 生成完毕，将所有禁止激活的墙重新写为墙
     tespat.execute(
-        Color::DeactiveWall.unit_pattern(),
-        Color::Wall.unit_pattern(),
+        (Color::DeactiveWall.unit_pattern(), Color::Wall.unit_pattern()),
         MatchFilter::All,
         SymmetryList::ID,
     );
 
     // 将所有顶点换成墙
     tespat.execute(
-        Color::RoomVertex.unit_pattern(),
-        Color::Wall.unit_pattern(),
+        (Color::RoomVertex.unit_pattern(), Color::Wall.unit_pattern()),
         MatchFilter::All,
         SymmetryList::ID,
     );
 
     tespat.execute(
-        Color::Wall.unit_pattern(),
-        Color::RoomFloor.unit_pattern(),
+        (Color::Wall.unit_pattern(), Color::RoomFloor.unit_pattern()),
         MatchFilter::All,
         SymmetryList::ID,
     );

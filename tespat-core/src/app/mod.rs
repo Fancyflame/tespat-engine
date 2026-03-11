@@ -12,6 +12,8 @@ pub mod matches;
 
 use matches::Matches;
 
+type PatternPair<'a, T> = (&'a Pattern<T>, &'a Pattern<T>);
+
 #[derive(Clone)]
 pub struct Tespat<T> {
     layer: Layer<T>,
@@ -79,11 +81,12 @@ impl<T: PatternColor> Tespat<T> {
 
     pub fn execute(
         &mut self,
-        capture: &Pattern<T>,
-        replace_to: &Pattern<T>,
+        capture_and_replace: impl AsPatternPair<T>,
         filter: MatchFilter,
         transforms: SymmetryList,
     ) -> bool {
+        let (capture, replace_to) = capture_and_replace.as_pattern_pair();
+
         let mut matches = self.capture(capture, transforms);
         match filter {
             MatchFilter::One => matches.pick(1),
@@ -208,4 +211,29 @@ pub enum MatchFilter {
     Percent(f32),
     NonOverlap,
     All,
+}
+
+pub trait AsPatternPair<T> {
+    fn as_pattern_pair(&self) -> PatternPair<'_, T>;
+}
+
+impl<T> AsPatternPair<T> for PatternPair<'_, T> {
+    fn as_pattern_pair(&self) -> PatternPair<'_, T> {
+        *self
+    }
+}
+
+impl<T> AsPatternPair<T> for (Pattern<T>, Pattern<T>) {
+    fn as_pattern_pair(&self) -> PatternPair<'_, T> {
+        (&self.0, &self.1)
+    }
+}
+
+impl<T, R> AsPatternPair<T> for &R
+where
+    R: AsPatternPair<T>,
+{
+    fn as_pattern_pair(&self) -> PatternPair<'_, T> {
+        (**self).as_pattern_pair()
+    }
 }

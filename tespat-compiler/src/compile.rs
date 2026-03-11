@@ -19,8 +19,8 @@ pub fn compile(file_content: String) -> Result<TokenStream> {
     })
 }
 
-fn generate_color_enum(colors: &HashMap<String, String>) -> TokenStream {
-    let mut color_names: Vec<_> = colors.keys().filter(|name| name.as_str() != "*").collect();
+fn generate_color_enum(colors: &HashMap<&str, &str>) -> TokenStream {
+    let mut color_names: Vec<_> = colors.keys().filter(|name| **name != "*").collect();
     color_names.sort();
 
     let color_variants: Vec<_> = color_names
@@ -70,10 +70,10 @@ fn generate_color_enum(colors: &HashMap<String, String>) -> TokenStream {
     }
 }
 
-fn generate_pattern_module(patterns: &HashMap<String, PatternConfig>) -> Result<TokenStream> {
+fn generate_pattern_module(patterns: &HashMap<&str, PatternConfig>) -> Result<TokenStream> {
     let mut pattern_items = Vec::with_capacity(patterns.len());
     for (name, pattern) in patterns.iter() {
-        pattern_items.push(generate_pattern_item(name, pattern));
+        pattern_items.push(generate_pattern_pair_item(name, pattern));
     }
 
     Ok(quote! {
@@ -86,20 +86,34 @@ fn generate_pattern_module(patterns: &HashMap<String, PatternConfig>) -> Result<
     })
 }
 
-fn generate_pattern_item(name: &str, config: &PatternConfig) -> TokenStream {
-    let mut grid_items = Vec::with_capacity(config.pattern.len());
+fn generate_pattern_pair_item(name: &str, config: &PatternConfig) -> TokenStream {
+    let capture = generate_pattern_expr(config.width, &config.capture);
+    let replace = generate_pattern_expr(config.width, &config.replace);
+    let static_name = pattern_static_ident(name);
+
+    quote! {
+        pub static #static_name: (
+            ::tespat::Pattern<Color>,
+            ::tespat::Pattern<Color>
+        ) = (
+            #capture,
+            #replace,
+        );
+    }
+}
+
+fn generate_pattern_expr(width: usize, pattern: &[&str]) -> TokenStream {
+    let mut grid_items = Vec::with_capacity(pattern.len());
     let mut first_seen_entries: HashMap<Option<&str>, usize> = HashMap::new();
 
-    for (idx, color_name) in config.pattern.iter().enumerate() {
+    for (idx, &color_name) in pattern.iter().enumerate() {
         if color_name == "*" {
             grid_items.push(quote! {None});
             first_seen_entries.entry(None).or_insert(idx);
         } else {
             let variant = color_variant_ident(color_name);
             grid_items.push(quote! { Some(Color::#variant) });
-            first_seen_entries
-                .entry(Some(color_name.as_str()))
-                .or_insert(idx);
+            first_seen_entries.entry(Some(color_name)).or_insert(idx);
         }
     }
 
@@ -114,11 +128,8 @@ fn generate_pattern_item(name: &str, config: &PatternConfig) -> TokenStream {
         })
         .collect();
 
-    let static_name = pattern_static_ident(name);
-    let width = config.width;
-
     quote! {
-        pub static #static_name: ::tespat::Pattern<Color> = {
+        {
             const WIDTH: usize = #width;
             const GRID: &[Option<Color>] = &[
                 #(#grid_items,)*
@@ -127,20 +138,23 @@ fn generate_pattern_item(name: &str, config: &PatternConfig) -> TokenStream {
                 #(#color_items,)*
             ];
             ::tespat::Pattern::from_static(WIDTH, GRID, COLORS)
-        };
+        }
     }
 }
 
 #[derive(Deserialize)]
-struct ProjectFile {
-    colors: HashMap<String, String>,
-    patterns: HashMap<String, PatternConfig>,
+struct ProjectFile<'a> {
+    #[serde(borrow)]
+    colors: HashMap<&'a str, &'a str>,
+    patterns: HashMap<&'a str, PatternConfig<'a>>,
 }
 
 #[derive(Deserialize)]
-struct PatternConfig {
+struct PatternConfig<'a> {
     width: usize,
-    pattern: Vec<String>,
+    #[serde(borrow)]
+    capture: Vec<&'a str>,
+    replace: Vec<&'a str>,
 }
 
 fn color_variant_ident(name: &str) -> Ident {

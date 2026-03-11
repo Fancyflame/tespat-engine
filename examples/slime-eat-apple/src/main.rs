@@ -5,25 +5,19 @@ include_tespat!();
 fn main() {
     use example::pattern;
     let mut tespat = pattern::GRAPH
-        .clone()
+        .0
         .create_tespat()
         .unwrap()
         .enable_history(true)
         .build();
 
     loop {
-        if tespat.execute(
-            &pattern::EAT_APPLE_MATCH,
-            &pattern::EAT_APPLE_REPLACE,
-            MatchFilter::All,
-            SymmetryList::ROTATE_ONLY,
-        ) {
+        if tespat.execute(&pattern::EAT_APPLE, MatchFilter::All, SymmetryList::ROTATE_ONLY) {
             continue;
         }
 
         if tespat.execute(
-            &pattern::SLIME_MOVE_MATCH,
-            &pattern::SLIME_MOVE_REPLACE,
+            &pattern::SLIME_MOVE,
             MatchFilter::One,
             SymmetryList {
                 rot_90: true,
