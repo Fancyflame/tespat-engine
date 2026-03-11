@@ -105,7 +105,7 @@ pub fn generate(tespat: &mut Tespat<Color>) {
     tespat.execute(
         &pattern::DESTROY_WALL_MATCH,
         &pattern::DESTROY_WALL_REPLACE,
-        MatchFilter::Percent(0.05),
+        MatchFilter::Percent(0.03),
         SymmetryList::ROTATE_ONLY,
     );
 

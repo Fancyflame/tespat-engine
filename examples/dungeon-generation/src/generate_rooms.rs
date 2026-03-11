@@ -59,7 +59,7 @@ pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Col
             &pattern::GENERATE_SEED_MATCH,
             &pattern::GENERATE_SEED_REPLACE,
         );
-        m.ratio_pick(0.5);
+        m.ratio_pick(0.4);
         tespat.replace(&m, &pattern::GENERATE_SEED_REPLACE);
     }
 
@@ -68,7 +68,7 @@ pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Col
         let empty_ratio =
             tespat.color_count(&Color::Empty) as f64 / (tespat.width() * tespat.height()) as f64;
 
-        if empty_ratio < 0.4 {
+        if empty_ratio < 0.3 {
             break;
         }
 
