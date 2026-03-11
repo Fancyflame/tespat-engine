@@ -214,7 +214,7 @@ function useGridDisplay2DEditing({
             setRenderData(next);
             onChangeData?.(next);
         },
-        [editor.selectedColor, enableEdit, onChangeData],
+        [editor.selectedColor, enableEdit, onChangeData, renderData],
     );
 
     useEffect(() => {

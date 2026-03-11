@@ -1,5 +1,17 @@
-import { Card, Group, Text, ActionIcon, Center, Stack } from "@mantine/core";
-import { IconTrash, IconPencil, IconGripVertical } from "@tabler/icons-react";
+import {
+    Card,
+    Group,
+    Text,
+    ActionIcon,
+    Center,
+    Stack,
+} from "@mantine/core";
+import {
+    IconTrash,
+    IconPencil,
+    IconGripVertical,
+    IconArrowRight,
+} from "@tabler/icons-react";
 import type { DragEventHandler } from "react";
 import { PatternRule } from "../../ProjectData";
 import { GridDisplay2D } from "../GridDisplay2D/GridDisplay2D";
@@ -75,22 +87,22 @@ export const PatternCard = ({
                 transition: "opacity 120ms ease, border-color 120ms ease",
             }}
         >
-            <Group justify="space-between" align="stretch" wrap="nowrap">
-                <Group gap="xs" align="flex-start" wrap="nowrap">
-                    <ActionIcon
-                        variant="subtle"
-                        size="xs"
-                        color="gray"
-                        draggable={true}
-                        title="拖拽调整顺序"
-                        onMouseDown={(event) => event.stopPropagation()}
-                        onClick={(event) => event.stopPropagation()}
-                        onDragStart={onDragStart}
-                        onDragEnd={onDragEnd}
-                    >
-                        <IconGripVertical size={14} />
-                    </ActionIcon>
-                    <Stack gap={4}>
+            <Stack gap="xs">
+                <Group justify="space-between" align="center" wrap="nowrap">
+                    <Group gap="xs" align="center" wrap="nowrap">
+                        <ActionIcon
+                            variant="subtle"
+                            size="xs"
+                            color="gray"
+                            draggable={true}
+                            title="拖拽调整顺序"
+                            onMouseDown={(event) => event.stopPropagation()}
+                            onClick={(event) => event.stopPropagation()}
+                            onDragStart={onDragStart}
+                            onDragEnd={onDragEnd}
+                        >
+                            <IconGripVertical size={14} />
+                        </ActionIcon>
                         <Text
                             size="sm"
                             ff="monospace"
@@ -100,35 +112,43 @@ export const PatternCard = ({
                         >
                             {id}
                         </Text>
-                        <Group gap={4}>
-                            <ActionIcon
-                                variant="subtle"
-                                size="xs"
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleRenameClick();
-                                }}
-                            >
-                                <IconPencil size={12} />
-                            </ActionIcon>
-                            <ActionIcon
-                                variant="subtle"
-                                color="red"
-                                size="xs"
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleDeleteClick();
-                                }}
-                            >
-                                <IconTrash size={12} />
-                            </ActionIcon>
-                        </Group>
-                    </Stack>
+                    </Group>
+                    <Group gap={4} wrap="nowrap">
+                        <ActionIcon
+                            variant="subtle"
+                            size="xs"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                handleRenameClick();
+                            }}
+                        >
+                            <IconPencil size={12} />
+                        </ActionIcon>
+                        <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            size="xs"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                handleDeleteClick();
+                            }}
+                        >
+                            <IconTrash size={12} />
+                        </ActionIcon>
+                    </Group>
                 </Group>
-                <Center w={50} h={50} flex="0 0 auto">
-                    <GridDisplay2D width={rule.width} data={rule.pattern} />
-                </Center>
-            </Group>
+                <Group justify="center" align="center" wrap="nowrap" gap="xs">
+                    <Center w={56} h={56} flex="0 0 auto">
+                        <GridDisplay2D width={rule.width} data={rule.capture} />
+                    </Center>
+                    <Center flex="0 0 auto" c={selected ? "blue.1" : "gray.4"}>
+                        <IconArrowRight size={16} />
+                    </Center>
+                    <Center w={56} h={56} flex="0 0 auto">
+                        <GridDisplay2D width={rule.width} data={rule.replace} />
+                    </Center>
+                </Group>
+            </Stack>
         </Card>
     );
 };

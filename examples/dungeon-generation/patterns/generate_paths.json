@@ -1,104 +1,86 @@
 {
   "patterns": {
-    "OpenDoorMatch": {
+    "OpenDoor": {
       "width": 4,
-      "pattern": [
+      "capture": [
         "Room",
         "Wall",
         "Empty",
         "Anchor"
-      ]
-    },
-    "OpenDoorReplace": {
-      "width": 4,
-      "pattern": [
+      ],
+      "replace": [
         "RoomWithDoor",
         "Anchor",
         "Empty",
         "Anchor"
       ]
     },
-    "SetRoomHasDoorMatch": {
+    "SetRoomHasDoor": {
       "width": 2,
-      "pattern": [
+      "capture": [
         "Room",
         "RoomWithDoor"
-      ]
-    },
-    "SetRoomHasDoorReplace": {
-      "width": 2,
-      "pattern": [
+      ],
+      "replace": [
         "RoomWithDoor",
         "RoomWithDoor"
       ]
     },
-    "CreatePathMatch": {
+    "CreatePath": {
       "width": 3,
-      "pattern": [
+      "capture": [
         "PathHead",
         "Empty",
         "Anchor"
-      ]
-    },
-    "CreatePathReplace": {
-      "width": 3,
-      "pattern": [
+      ],
+      "replace": [
         "PathBacktrace",
         "PathBacktrace",
         "PathHead"
       ]
     },
-    "BackwardPathMatch": {
+    "BackwardPath": {
       "width": 3,
-      "pattern": [
+      "capture": [
         "PathBacktrace",
         "PathBacktrace",
         "PathHead"
-      ]
-    },
-    "BackwardPathReplace": {
-      "width": 3,
-      "pattern": [
+      ],
+      "replace": [
         "PathHead",
         "Path",
         "Path"
       ]
     },
-    "CreateConnectivePathMatch": {
+    "CreateConnectivePath": {
       "width": 3,
-      "pattern": [
+      "capture": [
         "Anchor",
         "Path",
         "Path"
-      ]
-    },
-    "CreateConnectivePathReplace": {
-      "width": 3,
-      "pattern": [
+      ],
+      "replace": [
         "Anchor",
         "Path",
         "Anchor"
       ]
     },
-    "DripDoorMatch": {
+    "DripDoor": {
       "width": 3,
-      "pattern": [
+      "capture": [
         "Anchor",
         "Empty",
         "Path"
-      ]
-    },
-    "DripDoorReplace": {
-      "width": 3,
-      "pattern": [
+      ],
+      "replace": [
         "Anchor",
         "Path",
         "Anchor"
       ]
     },
-    "DestroyWallMatch": {
+    "DestroyWall": {
       "width": 3,
-      "pattern": [
+      "capture": [
         "*",
         "Empty",
         "*",
@@ -108,11 +90,8 @@
         "*",
         "Empty",
         "*"
-      ]
-    },
-    "DestroyWallReplace": {
-      "width": 3,
-      "pattern": [
+      ],
+      "replace": [
         "*",
         "Empty",
         "*",
@@ -124,20 +103,17 @@
         "*"
       ]
     },
-    "ClearDeadEndMatch": {
+    "ClearDeadEnd": {
       "width": 3,
-      "pattern": [
+      "capture": [
         "Empty",
         "Empty",
         "Empty",
         "Empty",
         "Path",
         "Empty"
-      ]
-    },
-    "ClearDeadEndReplace": {
-      "width": 3,
-      "pattern": [
+      ],
+      "replace": [
         "Empty",
         "Empty",
         "Empty",
@@ -148,22 +124,14 @@
     }
   },
   "patternOrder": [
-    "OpenDoorMatch",
-    "OpenDoorReplace",
-    "SetRoomHasDoorMatch",
-    "SetRoomHasDoorReplace",
-    "CreatePathMatch",
-    "CreatePathReplace",
-    "BackwardPathMatch",
-    "BackwardPathReplace",
-    "CreateConnectivePathMatch",
-    "CreateConnectivePathReplace",
-    "DripDoorMatch",
-    "DripDoorReplace",
-    "DestroyWallMatch",
-    "DestroyWallReplace",
-    "ClearDeadEndMatch",
-    "ClearDeadEndReplace"
+    "OpenDoor",
+    "SetRoomHasDoor",
+    "CreatePath",
+    "BackwardPath",
+    "CreateConnectivePath",
+    "DripDoor",
+    "DestroyWall",
+    "ClearDeadEnd"
   ],
   "colors": {
     "Wall": "#f07000",

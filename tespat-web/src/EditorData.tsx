@@ -2,15 +2,11 @@ import {
     createContext,
     useContext,
     useState,
-    ReactNode,
+    type ReactNode,
     Dispatch,
     SetStateAction,
 } from "react";
-
-export interface EditingGrid {
-    width: number;
-    data: string[];
-}
+import type { PatternRule } from "./ProjectData";
 
 export type DisplayMode =
     | {
@@ -18,11 +14,11 @@ export type DisplayMode =
       }
     | {
           mode: "editor";
-          /** 当前选中的 pattern id */
+          /** 当前选中的规则 id */
           selectedPatternId: string;
       };
 
-/** 从 displayMode 中获取当前选中的 pattern id（仅 editor 模式时有值） */
+/** 从 displayMode 中获取当前选中的规则 id（仅 editor 模式时有值） */
 export function getSelectedPatternId(displayMode: DisplayMode): string | null {
     return displayMode.mode === "editor" ? displayMode.selectedPatternId : null;
 }
@@ -31,7 +27,7 @@ export interface EditorData {
     /** 当前选中的颜色名（用于绘制） */
     selectedColor: string | null;
     /** 主编辑器当前正在编辑的网格对象 */
-    editingGrid: EditingGrid;
+    editingRule: PatternRule;
     /** 是否允许编辑（拖拽、调整尺寸等会临时关闭） */
     enableEdit: boolean;
     /** 当前显示模式：编辑 or 回放 */
@@ -48,9 +44,10 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined);
 export const EditorProvider = ({ children }: { children: ReactNode }) => {
     const [editor, setEditor] = useState<EditorData>({
         selectedColor: null,
-        editingGrid: {
+        editingRule: {
             width: 0,
-            data: [],
+            capture: [],
+            replace: [],
         },
         enableEdit: false,
         displayMode: { mode: "welcome" },

@@ -10,7 +10,16 @@ import {
 // 数据结构定义
 export interface PatternRule {
     width: number;
-    pattern: string[];
+    capture: string[];
+    replace: string[];
+}
+
+export function clonePatternRule(rule: PatternRule): PatternRule {
+    return {
+        width: rule.width,
+        capture: [...rule.capture],
+        replace: [...rule.replace],
+    };
 }
 
 export interface ProjectData {
@@ -28,7 +37,8 @@ export const DEFAULT_PROJECT: ProjectData = {
             "BlackAndWhite",
             {
                 width: 2,
-                pattern: ["Black", "White", "White", "Black"],
+                capture: ["Black", "White", "White", "Black"],
+                replace: ["White", "Black", "Black", "White"],
             },
         ],
     ]),
@@ -41,7 +51,12 @@ export const DEFAULT_PROJECT: ProjectData = {
 
 export function cloneProject(project: ProjectData): ProjectData {
     return {
-        patterns: new Map(project.patterns),
+        patterns: new Map(
+            Array.from(project.patterns.entries()).map(([id, rule]) => [
+                id,
+                clonePatternRule(rule),
+            ]),
+        ),
         patternOrder: [...project.patternOrder],
         colors: new Map(project.colors),
     };

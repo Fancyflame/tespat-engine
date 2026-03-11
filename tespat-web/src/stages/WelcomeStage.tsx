@@ -28,7 +28,7 @@ function Welcome() {
                     欢迎使用 TESPAT 编辑器
                 </Title>
                 <Text size="sm" c="gray.5" ta="center" maw={320}>
-                    从左侧选择一个 pattern ，选择一个颜色，即刻开始编辑
+                    从左侧选择一个规则，选择一个颜色，即刻开始编辑捕获与替换
                 </Text>
             </Stack>
         </Center>

@@ -67,25 +67,37 @@ export function GridEditResizer({ children }: GridEditResizerProps) {
             if (!fillColor) return;
 
             setEditor((prev) => {
-                const { width, data } = prev.editingGrid;
-                const result = applyResizeGrid({
+                const { width, capture, replace } = prev.editingRule;
+                const nextCapture = applyResizeGrid({
                     direction,
                     deltaUnits,
                     fillColor,
                     width,
-                    data,
+                    data: capture,
+                });
+                const nextReplace = applyResizeGrid({
+                    direction,
+                    deltaUnits,
+                    fillColor,
+                    width,
+                    data: replace,
                 });
 
-                if (result.width === width && result.data === data) {
+                if (
+                    nextCapture.width === width &&
+                    nextCapture.data === capture &&
+                    nextReplace.data === replace
+                ) {
                     return prev;
                 }
 
                 return {
                     ...prev,
-                    editingGrid: {
-                        ...prev.editingGrid,
-                        width: result.width,
-                        data: result.data,
+                    editingRule: {
+                        ...prev.editingRule,
+                        width: nextCapture.width,
+                        capture: nextCapture.data,
+                        replace: nextReplace.data,
                     },
                 };
             });

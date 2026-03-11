@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Stack, ActionIcon } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
-import { PatternRule, useProject } from "../../ProjectData";
+import { PatternRule, clonePatternRule, useProject } from "../../ProjectData";
 import { useEditor, getSelectedPatternId } from "../../EditorData";
 import { PatternCard } from "./PatternCard";
 import { CollapsibleSection } from "./CollapsibleSection";
@@ -63,7 +63,7 @@ export const PatternRulesSection = () => {
             if (!rule) return prev;
             if (patterns.has(trimmed) && trimmed !== id) return prev;
             patterns.delete(id);
-            patterns.set(trimmed, { ...rule });
+            patterns.set(trimmed, clonePatternRule(rule));
             const patternOrder = prev.patternOrder.includes(id)
                 ? prev.patternOrder.map((patternId) =>
                       patternId === id ? trimmed : patternId,
@@ -105,10 +105,7 @@ export const PatternRulesSection = () => {
         if (!rule) return;
         setEditor((prev) => ({
             ...prev,
-            editingGrid: {
-                width: rule.width,
-                data: rule.pattern,
-            },
+            editingRule: clonePatternRule(rule),
             enableEdit: true,
             displayMode: { mode: "editor", selectedPatternId: id },
         }));
@@ -127,12 +124,13 @@ export const PatternRulesSection = () => {
 
         const newRule: PatternRule = {
             width: 0,
-            pattern: [],
+            capture: [],
+            replace: [],
         };
 
         setProject((prev) => {
             const patterns = new Map(prev.patterns);
-            patterns.set(newId, newRule);
+            patterns.set(newId, clonePatternRule(newRule));
             return {
                 ...prev,
                 patterns,
@@ -142,10 +140,7 @@ export const PatternRulesSection = () => {
 
         setEditor((prev) => ({
             ...prev,
-            editingGrid: {
-                width: 0,
-                data: [],
-            },
+            editingRule: clonePatternRule(newRule),
             enableEdit: true,
             displayMode: { mode: "editor", selectedPatternId: newId },
         }));

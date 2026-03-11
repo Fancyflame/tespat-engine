@@ -17,6 +17,13 @@ import { projectToJson } from "./projectSerialization";
 
 const SYNC_DEBOUNCE_MS = 1000;
 
+function areCellsEqual(left: string[], right: string[]) {
+    return (
+        left.length === right.length &&
+        left.every((cell, index) => cell === right[index])
+    );
+}
+
 export default function App() {
     const { editor, setEditor } = useEditor();
     const { setProject, project } = useProject();
@@ -39,28 +46,33 @@ export default function App() {
             if (!rule) return prev;
 
             // 先做一次轻量比较，避免无变化时频繁触发 patterns 的新引用
-            const sameWidth = rule.width === editor.editingGrid.width;
-            const samePattern =
-                rule.pattern.length === editor.editingGrid.data.length &&
-                rule.pattern.every(
-                    (cell, index) => cell === editor.editingGrid.data[index],
-                );
+            const sameWidth = rule.width === editor.editingRule.width;
+            const sameCapture = areCellsEqual(
+                rule.capture,
+                editor.editingRule.capture,
+            );
+            const sameReplace = areCellsEqual(
+                rule.replace,
+                editor.editingRule.replace,
+            );
 
-            if (sameWidth && samePattern) return prev;
+            if (sameWidth && sameCapture && sameReplace) return prev;
 
             // 网格有变化时，复制 Map 并仅更新当前选中规则
             const patterns = new Map(prev.patterns);
             patterns.set(selectedPatternId, {
                 ...rule,
-                width: editor.editingGrid.width,
-                pattern: editor.editingGrid.data,
+                width: editor.editingRule.width,
+                capture: editor.editingRule.capture,
+                replace: editor.editingRule.replace,
             });
             return { ...prev, patterns };
         });
     }, [
         editor.displayMode,
-        editor.editingGrid.width,
-        editor.editingGrid.data,
+        editor.editingRule.width,
+        editor.editingRule.capture,
+        editor.editingRule.replace,
         setProject,
     ]);
 

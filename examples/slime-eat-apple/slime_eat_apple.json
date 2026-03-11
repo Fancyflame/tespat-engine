@@ -1,36 +1,67 @@
 {
   "patterns": {
-    "EatAppleMatch": {
+    "EatApple": {
       "width": 2,
-      "pattern": [
+      "capture": [
         "Slime",
         "Apple"
-      ]
-    },
-    "EatAppleReplace": {
-      "width": 2,
-      "pattern": [
+      ],
+      "replace": [
         "Empty",
         "SatiatedSlime"
       ]
     },
-    "SlimeMoveMatch": {
+    "SlimeMove": {
       "width": 2,
-      "pattern": [
+      "capture": [
         "Slime",
         "Empty"
-      ]
-    },
-    "SlimeMoveReplace": {
-      "width": 2,
-      "pattern": [
+      ],
+      "replace": [
         "Empty",
         "Slime"
       ]
     },
     "Graph": {
       "width": 7,
-      "pattern": [
+      "capture": [
+        "Slime",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Apple"
+      ],
+      "replace": [
         "Slime",
         "Empty",
         "Empty",
@@ -69,6 +100,11 @@
       ]
     }
   },
+  "patternOrder": [
+    "Graph",
+    "EatApple",
+    "SlimeMove"
+  ],
   "colors": {
     "Slime": "#22c55e",
     "Empty": "#1f2937",

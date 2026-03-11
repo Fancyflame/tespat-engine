@@ -92,13 +92,21 @@ export function ColorSection() {
 
                     const patterns = new Map(
                         Array.from(prev.patterns.entries()).map(([id, rule]) => {
-                            const nextPattern = replaceColorNameInCells(
-                                rule.pattern,
+                            const nextCapture = replaceColorNameInCells(
+                                rule.capture,
+                                oldName,
+                                trimmed,
+                            );
+                            const nextReplace = replaceColorNameInCells(
+                                rule.replace,
                                 oldName,
                                 trimmed,
                             );
 
-                            if (nextPattern === rule.pattern) {
+                            if (
+                                nextCapture === rule.capture &&
+                                nextReplace === rule.replace
+                            ) {
                                 return [id, rule] as const;
                             }
 
@@ -106,7 +114,8 @@ export function ColorSection() {
                                 id,
                                 {
                                     ...rule,
-                                    pattern: nextPattern,
+                                    capture: nextCapture,
+                                    replace: nextReplace,
                                 },
                             ] as const;
                         }),
@@ -124,10 +133,15 @@ export function ColorSection() {
                         prev.selectedColor === oldName
                             ? trimmed
                             : prev.selectedColor,
-                    editingGrid: {
-                        ...prev.editingGrid,
-                        data: replaceColorNameInCells(
-                            prev.editingGrid.data,
+                    editingRule: {
+                        ...prev.editingRule,
+                        capture: replaceColorNameInCells(
+                            prev.editingRule.capture,
+                            oldName,
+                            trimmed,
+                        ),
+                        replace: replaceColorNameInCells(
+                            prev.editingRule.replace,
                             oldName,
                             trimmed,
                         ),

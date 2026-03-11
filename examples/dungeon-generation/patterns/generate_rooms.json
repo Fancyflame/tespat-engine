@@ -1,8 +1,8 @@
 {
   "patterns": {
-    "FindBorderMatch": {
+    "FindBorder": {
       "width": 3,
-      "pattern": [
+      "capture": [
         "Border",
         "Border",
         "Border",
@@ -12,11 +12,8 @@
         "Border",
         "Border",
         "Border"
-      ]
-    },
-    "FindBorderReplace": {
-      "width": 3,
-      "pattern": [
+      ],
+      "replace": [
         "*",
         "*",
         "*",
@@ -28,43 +25,37 @@
         "*"
       ]
     },
-    "SpawnFirstAnchorMatch": {
+    "SpawnFirstAnchor": {
       "width": 2,
-      "pattern": [
+      "capture": [
         "Border",
         "Border",
         "Border",
         "Empty"
-      ]
-    },
-    "SpawnFirstAnchorReplace": {
-      "width": 2,
-      "pattern": [
+      ],
+      "replace": [
         "Border",
         "Border",
         "Border",
         "Anchor"
       ]
     },
-    "SpawnGridMatch": {
+    "SpawnGrid": {
       "width": 3,
-      "pattern": [
+      "capture": [
         "Anchor",
         "Empty",
         "Empty"
-      ]
-    },
-    "SpawnGridReplace": {
-      "width": 3,
-      "pattern": [
+      ],
+      "replace": [
         "*",
         "*",
         "Anchor"
       ]
     },
-    "GenerateSeedMatch": {
+    "GenerateSeed": {
       "width": 3,
-      "pattern": [
+      "capture": [
         "Anchor",
         "Empty",
         "Anchor",
@@ -74,11 +65,8 @@
         "Anchor",
         "Empty",
         "Anchor"
-      ]
-    },
-    "GenerateSeedReplace": {
-      "width": 3,
-      "pattern": [
+      ],
+      "replace": [
         "RoomVertex",
         "Wall",
         "RoomVertex",
@@ -90,20 +78,17 @@
         "RoomVertex"
       ]
     },
-    "SelectVertexMatch": {
+    "SelectVertex": {
       "width": 2,
-      "pattern": [
+      "capture": [
         "Anchor",
         "Empty",
         "Empty",
         "Empty",
         "RoomVertex",
         "Wall"
-      ]
-    },
-    "SelectVertexReplace": {
-      "width": 2,
-      "pattern": [
+      ],
+      "replace": [
         "*",
         "*",
         "*",
@@ -112,31 +97,17 @@
         "GrowingWall"
       ]
     },
-    "SelectWallToGrowMatch": {
+    "SelectWallToGrow": {
       "width": 2,
-      "pattern": [
+      "capture": [
         "Anchor",
         "Empty",
         "Empty",
         "Empty",
         "GrowingWall",
         "Wall"
-      ]
-    },
-    "SelectWallToGrowMatch2": {
-      "width": 2,
-      "pattern": [
-        "Empty",
-        "Anchor",
-        "Empty",
-        "Empty",
-        "GrowingWall",
-        "Wall"
-      ]
-    },
-    "SelectWallToGrowReplace": {
-      "width": 2,
-      "pattern": [
+      ],
+      "replace": [
         "*",
         "*",
         "Empty",
@@ -145,20 +116,36 @@
         "GrowingWall"
       ]
     },
-    "SelectWallToGrowEndMatch": {
+    "SelectWallToGrow2": {
       "width": 2,
-      "pattern": [
+      "capture": [
+        "Empty",
+        "Anchor",
+        "Empty",
+        "Empty",
+        "GrowingWall",
+        "Wall"
+      ],
+      "replace": [
+        "*",
+        "*",
+        "Empty",
+        "Empty",
+        "GrowingWall",
+        "GrowingWall"
+      ]
+    },
+    "SelectWallToGrowEnd": {
+      "width": 2,
+      "capture": [
         "Empty",
         "Anchor",
         "Empty",
         "Empty",
         "GrowingWall",
         "RoomVertex"
-      ]
-    },
-    "SelectWallToGrowEndReplace": {
-      "width": 2,
-      "pattern": [
+      ],
+      "replace": [
         "*",
         "*",
         "*",
@@ -167,20 +154,17 @@
         "ActiveRoomVertex"
       ]
     },
-    "VertexGrowMatch": {
+    "VertexGrow": {
       "width": 2,
-      "pattern": [
+      "capture": [
         "Anchor",
         "Empty",
         "Empty",
         "Empty",
         "ActiveRoomVertex",
         "GrowingWall"
-      ]
-    },
-    "VertexGrowReplace": {
-      "width": 2,
-      "pattern": [
+      ],
+      "replace": [
         "RoomVertex",
         "Empty",
         "Wall",
@@ -189,59 +173,43 @@
         "GrowingWall"
       ]
     },
-    "WallGrowMatch": {
+    "WallGrow": {
       "width": 1,
-      "pattern": [
+      "capture": [
         "*",
         "Empty",
         "GrowingWall"
-      ]
-    },
-    "WallGrowReplace": {
-      "width": 1,
-      "pattern": [
+      ],
+      "replace": [
         "Wall",
         "RoomFloor",
         "RoomFloor"
       ]
     },
-    "DeactivateWallMatch": {
+    "DeactivateWall": {
       "width": 2,
-      "pattern": [
+      "capture": [
         "DeactiveWall",
         "Wall"
-      ]
-    },
-    "DeactivateWallReplace": {
-      "width": 2,
-      "pattern": [
+      ],
+      "replace": [
         "DeactiveWall",
         "DeactiveWall"
       ]
     }
   },
   "patternOrder": [
-    "FindBorderMatch",
-    "FindBorderReplace",
-    "SpawnFirstAnchorMatch",
-    "SpawnFirstAnchorReplace",
-    "SpawnGridMatch",
-    "SpawnGridReplace",
-    "GenerateSeedMatch",
-    "GenerateSeedReplace",
-    "SelectVertexMatch",
-    "SelectVertexReplace",
-    "SelectWallToGrowMatch",
-    "SelectWallToGrowMatch2",
-    "SelectWallToGrowReplace",
-    "SelectWallToGrowEndMatch",
-    "SelectWallToGrowEndReplace",
-    "VertexGrowMatch",
-    "VertexGrowReplace",
-    "WallGrowMatch",
-    "WallGrowReplace",
-    "DeactivateWallMatch",
-    "DeactivateWallReplace"
+    "FindBorder",
+    "SpawnFirstAnchor",
+    "SpawnGrid",
+    "GenerateSeed",
+    "SelectVertex",
+    "SelectWallToGrow",
+    "SelectWallToGrow2",
+    "SelectWallToGrowEnd",
+    "VertexGrow",
+    "WallGrow",
+    "DeactivateWall"
   ],
   "colors": {
     "Empty": "#828282",
