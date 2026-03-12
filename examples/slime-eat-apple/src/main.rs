@@ -12,7 +12,11 @@ fn main() {
         .build();
 
     loop {
-        if tespat.execute(&pattern::EAT_APPLE, MatchFilter::All, SymmetryList::ROTATE_ONLY) {
+        if tespat.execute(
+            &pattern::EAT_APPLE,
+            MatchFilter::All,
+            SymmetryList::ROTATE_ONLY,
+        ) {
             continue;
         }
 

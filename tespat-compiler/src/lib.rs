@@ -11,6 +11,7 @@ use quote::{format_ident, quote};
 #[must_use = "TespatCompiler does nothing if do not compile"]
 pub struct TespatCompiler {
     includes: Vec<Include>,
+    public: bool,
 }
 
 /// 待编译的路径及其对应的模块名
@@ -22,6 +23,11 @@ struct Include {
 impl TespatCompiler {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn pub_mod(mut self, public: bool) -> Self {
+        self.public = public;
+        self
     }
 
     /// 添加待编译的路径。若为文件则直接编译；若为目录则递归编译，子项以文件名/目录名作为模块名。
@@ -42,7 +48,7 @@ impl TespatCompiler {
         // 对每个 include 递归处理，生成 mod 包裹的 TokenStream
         let mut modules = Vec::new();
         for include in self.includes {
-            let content = process_path(&include.path, &include.module_name)?;
+            let content = process_path(&include.path, &include.module_name, self.public)?;
             modules.push(content);
         }
 
@@ -74,7 +80,9 @@ fn sanitize_module_name(name: &str) -> String {
 /// 递归处理路径，生成 `mod module_name { ... }` 形式的 TokenStream。
 /// - 若为文件：读取内容，调用 `compile::compile` 编译，用 mod 包裹
 /// - 若为目录：递归处理子项，子文件以文件名（不含扩展名）为模块名，子目录以目录名为模块名
-fn process_path(path: &Path, module_name: &str) -> Result<TokenStream> {
+fn process_path(path: &Path, module_name: &str, public: bool) -> Result<TokenStream> {
+    let public = public.then(|| quote! {pub});
+
     if path.is_file() {
         let content = std::fs::read_to_string(path)
             .with_context(|| format!("读取文件失败: {}", path.display()))?;
@@ -92,7 +100,7 @@ fn process_path(path: &Path, module_name: &str) -> Result<TokenStream> {
         }
 
         Ok(quote! {
-            pub mod #ident {
+            #public mod #ident {
                 #compiled
             }
         })
@@ -119,14 +127,14 @@ fn process_path(path: &Path, module_name: &str) -> Result<TokenStream> {
                     .unwrap_or("unknown")
                     .to_string()
             };
-            let sub_mod = process_path(&sub_path, &sub_module_name)?;
+            let sub_mod = process_path(&sub_path, &sub_module_name, true)?;
             submodules.push(sub_mod);
         }
 
         let ident = format_ident!("{}", sanitize_module_name(module_name));
         // 用 mod 包裹所有子模块，形成嵌套结构
         Ok(quote! {
-            pub mod #ident {
+            #public mod #ident {
                 #(#submodules)*
             }
         })

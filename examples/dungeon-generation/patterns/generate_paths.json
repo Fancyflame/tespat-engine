@@ -1,31 +1,5 @@
 {
   "patterns": {
-    "OpenDoor": {
-      "width": 4,
-      "capture": [
-        "Room",
-        "Wall",
-        "Empty",
-        "Anchor"
-      ],
-      "replace": [
-        "RoomWithDoor",
-        "Anchor",
-        "Empty",
-        "Anchor"
-      ]
-    },
-    "SetRoomHasDoor": {
-      "width": 2,
-      "capture": [
-        "Room",
-        "RoomWithDoor"
-      ],
-      "replace": [
-        "RoomWithDoor",
-        "RoomWithDoor"
-      ]
-    },
     "CreatePath": {
       "width": 3,
       "capture": [
@@ -124,8 +98,6 @@
     }
   },
   "patternOrder": [
-    "OpenDoor",
-    "SetRoomHasDoor",
     "CreatePath",
     "BackwardPath",
     "CreateConnectivePath",
@@ -138,7 +110,6 @@
     "Room": "#0a6cff",
     "Empty": "#423333",
     "RoomVertex": "#ffc300",
-    "RoomWithDoor": "#05e6ff",
     "PathHead": "#ff0303",
     "*": "#000000",
     "Anchor": "#94009c",
