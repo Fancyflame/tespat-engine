@@ -1,6 +1,6 @@
-use crate::{PatternColor, layer::Layer, pattern::transform::TransformedPattern};
+use crate::{GraphColor, layer::Layer, pattern::transform::TransformedPattern};
 
-impl<T: PatternColor> Layer<T> {
+impl<T: GraphColor> Layer<T> {
     /// 将给定位置作为左上角，将模式放在该位置上
     pub fn pattern_replace(
         &mut self,

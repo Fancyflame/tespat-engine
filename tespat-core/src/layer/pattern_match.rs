@@ -1,5 +1,5 @@
 use crate::{
-    PatternColor,
+    GraphColor,
     layer::Layer,
     pattern::transform::{Symmetry, TransformedPattern},
 };
@@ -18,7 +18,7 @@ pub struct Match {
     pub symmetry: Symmetry,
 }
 
-impl<T: PatternColor> Layer<T> {
+impl<T: GraphColor> Layer<T> {
     /// 查找出层中所有匹配该模式的位置。不保证任何顺序。
     pub fn match_pattern(&self, pattern: TransformedPattern<T>) -> PatternMatchResult {
         let (p_width, p_height) = pattern.size();

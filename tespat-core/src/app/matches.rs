@@ -1,6 +1,6 @@
 use rand::{RngExt, seq::SliceRandom};
 
-use crate::{PatternColor, app::Tespat, layer::pattern_match::Match, pattern::Pattern};
+use crate::{GraphColor, app::Tespat, layer::pattern_match::Match, pattern::Pattern};
 
 /// 模式匹配结果
 #[derive(Clone, Debug)]
@@ -46,7 +46,7 @@ impl Matches {
 }
 
 impl Matches {
-    pub fn pick_non_overlapping<T: PatternColor>(
+    pub fn pick_non_overlapping<T: GraphColor>(
         &mut self,
         tespat: &Tespat<T>,
         match_pattern: &Pattern<T>,

@@ -1,8 +1,8 @@
 use serde_json::json;
 
-use crate::{PatternColor, StrColor, layer::Layer};
+use crate::{GraphColor, StrColor, layer::Layer};
 
-pub(super) fn capture_frame<T: PatternColor>(layer: &Layer<T>) -> Vec<T> {
+pub(super) fn capture_frame<T: GraphColor>(layer: &Layer<T>) -> Vec<T> {
     layer.export().cloned().collect()
 }
 

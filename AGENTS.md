@@ -18,4 +18,4 @@ TESPAT Engine 是一个基于 Rust 的二维网格模式匹配与替换引擎，
 
 ## 提醒事项
 
-- 搜索代码目录时，记得避开 `node_modules`、`dist` 和 `target` 目录。
+- 搜索代码目录时，记得避开 `tespat-web/node_modules`、`tespat-web/dist` 和 `./target` 目录。

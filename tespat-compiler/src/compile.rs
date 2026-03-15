@@ -58,7 +58,7 @@ fn generate_color_enum(colors: &HashMap<&str, &str>) -> TokenStream {
             }
         }
 
-        impl ::tespat::PatternColor for Color {}
+        impl ::tespat::GraphColor for Color {}
 
         impl Color {
             pub const fn unit_pattern(self) -> &'static ::tespat::Pattern<Self> {

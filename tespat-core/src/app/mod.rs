@@ -1,7 +1,7 @@
 use std::{array, cell::RefCell};
 
 use crate::{
-    Pattern, PatternColor,
+    GraphColor, Pattern,
     app::history::HistoryData,
     layer::{Layer, pattern_match::Match},
     pattern::transform::SymmetryList,
@@ -23,7 +23,7 @@ pub struct Tespat<T> {
     overlapping_bitset: RefCell<Vec<bool>>,
 }
 
-impl<T: PatternColor> Tespat<T> {
+impl<T: GraphColor> Tespat<T> {
     pub fn new<I>(options: TespatBuilder<I>) -> Self
     where
         I: IntoIterator<Item = T>,
@@ -168,7 +168,7 @@ pub struct TespatBuilder<I> {
 }
 
 impl TespatBuilder<()> {
-    pub fn new_filled<T: PatternColor>(
+    pub fn new_filled<T: GraphColor>(
         color: T,
         width: usize,
         height: usize,
@@ -197,7 +197,7 @@ impl<I> TespatBuilder<I> {
 
     pub fn build<T>(self) -> Tespat<T>
     where
-        T: PatternColor,
+        T: GraphColor,
         I: Iterator<Item = T>,
     {
         Tespat::new(self)

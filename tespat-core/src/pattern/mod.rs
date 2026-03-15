@@ -1,7 +1,7 @@
 use std::{collections::HashMap, ops::Deref};
 
 use crate::{
-    PatternColor,
+    GraphColor,
     app::TespatBuilder,
     index_to_position,
     pattern::transform::{Symmetry, TransformedPattern},
@@ -22,7 +22,7 @@ pub struct Pattern<T: 'static> {
     colors: ReadSlice<(PatColor<T>, usize)>,
 }
 
-impl<T: PatternColor> Pattern<T> {
+impl<T: GraphColor> Pattern<T> {
     pub fn new(width: usize, grid: Vec<PatColor<T>>) -> Self {
         Self {
             width,
