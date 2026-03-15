@@ -1,7 +1,7 @@
 pub use pattern::Pattern;
 use std::{fmt::Debug, hash::Hash};
 
-use crate::color_direction::Rotation;
+use crate::pattern::transform::Symmetry;
 
 pub mod app;
 pub mod color_direction;
@@ -20,7 +20,18 @@ pub trait GraphColor: Hash + Eq + Clone + Debug + 'static {}
 
 /// 固定颜色，可同时用于捕获（包括索引）和替换
 pub trait ConstantColor<T: GraphColor> {
-    fn get_color_with_rotation(&self, rotation: Rotation) -> T;
+    fn get_color_with_symmetry(&self, symmetry: Symmetry) -> T;
+}
+
+/// 用于捕获
+pub trait CaptureColor<T: GraphColor> {
+    fn as_index(&self, symmetry: Symmetry) -> Option<T>;
+    fn matches(&self, graph_color: &T, symmetry: Symmetry) -> bool;
+}
+
+/// 用于替换
+pub trait ReplaceColor<T: GraphColor> {
+    fn replace(&self, place_graph_color: &T, symmetry: Symmetry) -> T;
 }
 
 impl<T, C> CaptureColor<C> for T
@@ -28,11 +39,11 @@ where
     T: ConstantColor<C>,
     C: GraphColor,
 {
-    fn as_index(&self, rotation: Rotation) -> Option<C> {
-        Some(self.get_color_with_rotation(rotation))
+    fn as_index(&self, symmetry: Symmetry) -> Option<C> {
+        Some(self.get_color_with_symmetry(symmetry))
     }
-    fn matches(&self, graph_color: &C, rotation: Rotation) -> bool {
-        self.get_color_with_rotation(rotation) == *graph_color
+    fn matches(&self, graph_color: &C, symmetry: Symmetry) -> bool {
+        self.get_color_with_symmetry(symmetry) == *graph_color
     }
 }
 
@@ -41,20 +52,9 @@ where
     T: ConstantColor<C>,
     C: GraphColor,
 {
-    fn replace(&self, _place_graph_color: &C, rotation: Rotation) -> C {
-        self.get_color_with_rotation(rotation)
+    fn replace(&self, _place_graph_color: &C, symmetry: Symmetry) -> C {
+        self.get_color_with_symmetry(symmetry)
     }
-}
-
-/// 用于捕获
-pub trait CaptureColor<T: GraphColor> {
-    fn as_index(&self, rotation: Rotation) -> Option<T>;
-    fn matches(&self, graph_color: &T, rotation: Rotation) -> bool;
-}
-
-/// 用于替换
-pub trait ReplaceColor<T: GraphColor> {
-    fn replace(&self, place_graph_color: &T, rotation: Rotation) -> T;
 }
 
 pub trait StrColor: GraphColor {

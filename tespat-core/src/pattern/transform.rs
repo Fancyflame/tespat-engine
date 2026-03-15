@@ -78,9 +78,9 @@ impl SymmetryList {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Symmetry {
     Id,     // 0
-    Rot90,  // 1
-    Rot180, // 2
-    Rot270, // 3
+    Rot90,  // 1 CCW
+    Rot180, // 2 CCW
+    Rot270, // 3 CCW
     FlipH,  // 4
     FlipV,  // 5
     FlipD1, // 6 (Main Diagonal \)

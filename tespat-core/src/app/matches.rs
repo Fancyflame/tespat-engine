@@ -46,11 +46,11 @@ impl Matches {
 }
 
 impl Matches {
-    pub fn pick_non_overlapping<T: GraphColor>(
+    pub fn pick_non_overlapping<T: GraphColor, M, R>(
         &mut self,
         tespat: &Tespat<T>,
-        match_pattern: &Pattern<T>,
-        replace_pattern: &Pattern<T>,
+        match_pattern: &Pattern<M>,
+        replace_pattern: &Pattern<R>,
     ) -> &Self {
         let mut bitset = tespat.overlapping_bitset.borrow_mut();
         bitset.fill(false);

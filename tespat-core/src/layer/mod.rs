@@ -1,6 +1,6 @@
 use std::collections::{HashMap, hash_map::Entry};
 
-use crate::{index_to_position, pattern::transform::TransformedPattern};
+use crate::{CaptureColor, index_to_position, pattern::transform::TransformedPattern};
 
 use super::GraphColor;
 
@@ -153,13 +153,22 @@ impl<T: GraphColor> Layer<T> {
 // 读取实现
 impl<T: GraphColor> Layer<T> {
     /// 找出出现频率最低的颜色。如果迭代器中没有颜色，则返回None。
-    fn find_fewest_color<'a>(
+    fn find_fewest_color<'a, P>(
         &self,
-        pattern: TransformedPattern<'a, T>,
-    ) -> Option<(&'a T, (usize, usize))> {
+        pattern: TransformedPattern<'a, P>,
+    ) -> Option<(T, (usize, usize))>
+    where
+        P: CaptureColor<T>,
+    {
         pattern
             .color_kinds()
-            .filter_map(|(color, i)| color.as_ref().map(|color| (color, i)))
+            .filter_map(|(color, i)| {
+                color.as_ref().and_then(|color| {
+                    color
+                        .as_index(pattern.symmetry)
+                        .map(|graph_color| (graph_color, i))
+                })
+            })
             .min_by_key(|(color, _)| self.color_count(color))
     }
 

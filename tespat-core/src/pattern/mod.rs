@@ -1,7 +1,7 @@
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::HashMap, hash::Hash, ops::Deref};
 
 use crate::{
-    GraphColor,
+    ConstantColor, GraphColor,
     app::TespatBuilder,
     index_to_position,
     pattern::transform::{Symmetry, TransformedPattern},
@@ -22,7 +22,10 @@ pub struct Pattern<T: 'static> {
     colors: ReadSlice<(PatColor<T>, usize)>,
 }
 
-impl<T: GraphColor> Pattern<T> {
+impl<T> Pattern<T>
+where
+    T: Clone + Eq + Hash,
+{
     pub fn new(width: usize, grid: Vec<PatColor<T>>) -> Self {
         Self {
             width,
@@ -41,6 +44,15 @@ impl<T: GraphColor> Pattern<T> {
         }
     }
 
+    pub fn literal<const W: usize, const H: usize>(grid: [[PatColor<T>; W]; H]) -> Self {
+        Self::new(
+            W,
+            grid.into_iter().flat_map(|arr| arr.into_iter()).collect(),
+        )
+    }
+}
+
+impl<T> Pattern<T> {
     pub const fn from_static(
         width: usize,
         grid: &'static [PatColor<T>],
@@ -54,23 +66,23 @@ impl<T: GraphColor> Pattern<T> {
         }
     }
 
-    pub fn literal<const W: usize, const H: usize>(grid: [[PatColor<T>; W]; H]) -> Self {
-        Self::new(
-            W,
-            grid.into_iter().flat_map(|arr| arr.into_iter()).collect(),
-        )
-    }
-
     /// 将自身视为初始图创建一个 Tespat
-    pub fn create_tespat(&self) -> Option<TespatBuilder<impl ExactSizeIterator<Item = T> + '_>> {
+    pub fn create_tespat<C>(&self) -> Option<TespatBuilder<impl ExactSizeIterator<Item = C> + '_>>
+    where
+        T: ConstantColor<C>,
+        C: GraphColor,
+    {
         if self.colors.iter().any(|(color, _)| color.is_none()) {
             return None;
         }
 
         Some(TespatBuilder::new(
-            self.grid
-                .iter()
-                .map(|color| color.clone().unwrap_or_else(|| unreachable!())),
+            self.grid.iter().map(|color| {
+                color
+                    .as_ref()
+                    .unwrap_or_else(|| unreachable!())
+                    .get_color_with_symmetry(Symmetry::Id)
+            }),
             self.width,
         ))
     }

@@ -1,3 +1,5 @@
+use crate::pattern::transform::Symmetry;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Direction {
     Up,
@@ -6,37 +8,54 @@ pub enum Direction {
     Right,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Rotation {
-    Id,
-    CCW90,
-    Flip,
-    CW90,
-}
-
 impl Direction {
-    pub const fn rotate(self, rotation: Rotation) -> Self {
-        const ARRAY: [Direction; 4] = [
-            Direction::Up,
-            Direction::Left,
-            Direction::Down,
-            Direction::Right,
-        ];
+    pub const fn rotate(self, sym: Symmetry) -> Self {
+        use Direction::*;
 
-        let mut index = match self {
-            Self::Up => 0,
-            Self::Left => 1,
-            Self::Down => 2,
-            Self::Right => 3,
-        };
-
-        index += match rotation {
-            Rotation::Id => 0,
-            Rotation::CCW90 => 1,
-            Rotation::Flip => 2,
-            Rotation::CW90 => 3,
-        };
-
-        ARRAY[index % 4]
+        match sym {
+            Symmetry::Id => self,
+            Symmetry::Rot90 => match self {
+                Up => Left,
+                Right => Up,
+                Down => Right,
+                Left => Down,
+            },
+            Symmetry::Rot180 => match self {
+                Up => Down,
+                Right => Left,
+                Down => Up,
+                Left => Right,
+            },
+            Symmetry::Rot270 => match self {
+                Up => Right,
+                Right => Down,
+                Down => Left,
+                Left => Up,
+            },
+            Symmetry::FlipH => match self {
+                Up => Up,
+                Right => Left,
+                Down => Down,
+                Left => Right,
+            },
+            Symmetry::FlipV => match self {
+                Up => Down,
+                Right => Right,
+                Down => Up,
+                Left => Left,
+            },
+            Symmetry::FlipD1 => match self {
+                Up => Left,
+                Right => Down,
+                Down => Right,
+                Left => Up,
+            },
+            Symmetry::FlipD2 => match self {
+                Up => Right,
+                Right => Up,
+                Down => Left,
+                Left => Down,
+            },
+        }
     }
 }
