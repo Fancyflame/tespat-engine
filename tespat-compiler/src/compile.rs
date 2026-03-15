@@ -60,6 +60,15 @@ fn generate_color_enum(colors: &HashMap<&str, &str>) -> TokenStream {
 
         impl ::tespat::GraphColor for Color {}
 
+        impl ::tespat::ConstantColor<Color> for Color {
+            fn get_color_with_symmetry(
+                &self,
+                _symmetry: ::tespat::pattern::transform::Symmetry,
+            ) -> Color {
+                *self
+            }
+        }
+
         impl Color {
             pub const fn unit_pattern(self) -> &'static ::tespat::Pattern<Self> {
                 match self {

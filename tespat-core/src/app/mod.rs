@@ -1,7 +1,7 @@
 use std::{array, cell::RefCell};
 
 use crate::{
-    GraphColor, Pattern,
+    CaptureColor, GraphColor, Pattern, ReplaceColor,
     app::history::HistoryData,
     layer::{Layer, pattern_match::Match},
     pattern::transform::SymmetryList,
@@ -12,7 +12,7 @@ pub mod matches;
 
 use matches::Matches;
 
-type PatternPair<'a, T> = (&'a Pattern<T>, &'a Pattern<T>);
+type PatternPair<'a, C, R> = (&'a Pattern<C>, &'a Pattern<R>);
 
 #[derive(Clone)]
 pub struct Tespat<T> {
@@ -44,7 +44,10 @@ impl<T: GraphColor> Tespat<T> {
         this
     }
 
-    pub fn capture(&self, pattern: &Pattern<T>, transforms: SymmetryList) -> Matches {
+    pub fn capture<P>(&self, pattern: &Pattern<P>, transforms: SymmetryList) -> Matches
+    where
+        P: CaptureColor<T> + 'static,
+    {
         Matches(
             transforms
                 .as_array()
@@ -59,7 +62,10 @@ impl<T: GraphColor> Tespat<T> {
         )
     }
 
-    pub fn replace(&mut self, positions: &Matches, replace_to: &Pattern<T>) {
+    pub fn replace<P>(&mut self, positions: &Matches, replace_to: &Pattern<P>)
+    where
+        P: ReplaceColor<T> + 'static,
+    {
         if positions.0.is_empty() {
             return;
         }
@@ -79,12 +85,16 @@ impl<T: GraphColor> Tespat<T> {
         }
     }
 
-    pub fn execute(
+    pub fn execute<C, R>(
         &mut self,
-        capture_and_replace: impl AsPatternPair<T>,
+        capture_and_replace: impl AsPatternPair<C, R>,
         filter: MatchFilter,
         transforms: SymmetryList,
-    ) -> bool {
+    ) -> bool
+    where
+        C: CaptureColor<T> + 'static,
+        R: ReplaceColor<T> + 'static,
+    {
         let (capture, replace_to) = capture_and_replace.as_pattern_pair();
 
         let mut matches = self.capture(capture, transforms);
@@ -213,27 +223,27 @@ pub enum MatchFilter {
     All,
 }
 
-pub trait AsPatternPair<T> {
-    fn as_pattern_pair(&self) -> PatternPair<'_, T>;
+pub trait AsPatternPair<C, R> {
+    fn as_pattern_pair(&self) -> PatternPair<'_, C, R>;
 }
 
-impl<T> AsPatternPair<T> for PatternPair<'_, T> {
-    fn as_pattern_pair(&self) -> PatternPair<'_, T> {
+impl<C, R> AsPatternPair<C, R> for PatternPair<'_, C, R> {
+    fn as_pattern_pair(&self) -> PatternPair<'_, C, R> {
         *self
     }
 }
 
-impl<T> AsPatternPair<T> for (Pattern<T>, Pattern<T>) {
-    fn as_pattern_pair(&self) -> PatternPair<'_, T> {
+impl<C, R> AsPatternPair<C, R> for (Pattern<C>, Pattern<R>) {
+    fn as_pattern_pair(&self) -> PatternPair<'_, C, R> {
         (&self.0, &self.1)
     }
 }
 
-impl<T, R> AsPatternPair<T> for &R
+impl<C, R, P> AsPatternPair<C, R> for &P
 where
-    R: AsPatternPair<T>,
+    P: AsPatternPair<C, R>,
 {
-    fn as_pattern_pair(&self) -> PatternPair<'_, T> {
+    fn as_pattern_pair(&self) -> PatternPair<'_, C, R> {
         (**self).as_pattern_pair()
     }
 }

@@ -1,12 +1,14 @@
-use crate::{GraphColor, layer::Layer, pattern::transform::TransformedPattern};
+use crate::{GraphColor, ReplaceColor, layer::Layer, pattern::transform::TransformedPattern};
 
 impl<T: GraphColor> Layer<T> {
     /// 将给定位置作为左上角，将模式放在该位置上
-    pub fn pattern_replace(
+    pub fn pattern_replace<P>(
         &mut self,
         position: (usize, usize),
-        replaced_by: TransformedPattern<T>,
-    ) {
+        replaced_by: TransformedPattern<P>,
+    ) where
+        P: ReplaceColor<T>,
+    {
         let (left, top) = position;
 
         assert!(
@@ -22,8 +24,11 @@ impl<T: GraphColor> Layer<T> {
 
             let lx = left + x;
             let ly = top + y;
+            let index = lx + ly * self.row_width;
+            let place_graph_color = &self.pixel_info_table[index].color;
+            let replaced_color = replace.replace(place_graph_color, replaced_by.symmetry);
 
-            self.mutate_color(lx + ly * self.row_width, replace.clone());
+            self.mutate_color(index, replaced_color);
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    GraphColor,
+    CaptureColor, GraphColor,
     layer::Layer,
     pattern::transform::{Symmetry, TransformedPattern},
 };
@@ -20,7 +20,10 @@ pub struct Match {
 
 impl<T: GraphColor> Layer<T> {
     /// 查找出层中所有匹配该模式的位置。不保证任何顺序。
-    pub fn match_pattern(&self, pattern: TransformedPattern<T>) -> PatternMatchResult {
+    pub fn match_pattern<P>(&self, pattern: TransformedPattern<P>) -> PatternMatchResult
+    where
+        P: CaptureColor<T>,
+    {
         let (p_width, p_height) = pattern.size();
 
         let Some(check_positions) = self.compute_check_positions_by_color(pattern) else {
@@ -53,7 +56,8 @@ impl<T: GraphColor> Layer<T> {
                     let lx = pos_x + px;
                     let ly = pos_y + py;
 
-                    if !matches!(self.read(lx, ly), Some(c) if c == p_color) {
+                    if !matches!(self.read(lx, ly), Some(c) if p_color.matches(c, pattern.symmetry))
+                    {
                         return false;
                     }
                 } // 如果是None则代表匹配任意
@@ -67,16 +71,19 @@ impl<T: GraphColor> Layer<T> {
     }
 
     /// 以模式中的最罕见颜色快速筛选出模式可能在层中匹配的位置。如果模式中没有颜色，则返回None
-    fn compute_check_positions_by_color(
+    fn compute_check_positions_by_color<P>(
         &self,
-        pattern: TransformedPattern<T>,
-    ) -> Option<Vec<Match>> {
+        pattern: TransformedPattern<P>,
+    ) -> Option<Vec<Match>>
+    where
+        P: CaptureColor<T>,
+    {
         let mut positions = Vec::new();
 
         let (color, (off_x, off_y)) = self.find_fewest_color(pattern)?;
 
         // 对于 layer 中每个该颜色的位置，计算对应的模式左上角坐标
-        for (x, y) in self.get_color_positions(color) {
+        for (x, y) in self.get_color_positions(&color) {
             // 如果该位置在左上偏移之前，则会发生 underflow，跳过
             if x < off_x || y < off_y {
                 continue;

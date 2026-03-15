@@ -18,4 +18,7 @@ TESPAT Engine 是一个基于 Rust 的二维网格模式匹配与替换引擎，
 
 ## 提醒事项
 
-- 搜索代码目录时，记得避开 `tespat-web/node_modules`、`tespat-web/dist` 和 `./target` 目录。
+- 搜索代码目录时，记得避开 `<workspace_root>/tespat-web/node_modules`、`<workspace_root>/tespat-web/dist` 和 `<workspace_root>/target` 目录。
+- 若无特定要求，不要添加测试代码
+- 若无特定要求：生成代码时模仿附近代码风格格式化代码，不要格式化你不需要修改的代码
+- 生成代码时，如果需要生成新的块级定义（例如函数、接口定义、结构体定义等），给这个新生成的item上方（而不是内容）添加简短注释
