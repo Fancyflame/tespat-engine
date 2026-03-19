@@ -1,11 +1,20 @@
 use std::fs;
 
-use tespat::include_tespat;
-
 mod generate_paths;
 mod generate_rooms;
 
-include_tespat!();
+// 引入 build.rs 生成的规则代码。
+mod imports {
+    // 引入路径生成规则。
+    pub mod generate_paths {
+        tespat::include_tespat!("patterns/generate_paths");
+    }
+
+    // 引入房间生成规则。
+    pub mod generate_rooms {
+        tespat::include_tespat!("patterns/generate_rooms");
+    }
+}
 
 fn main() {
     let tespat = generate_rooms::generate(false, 17, 21);

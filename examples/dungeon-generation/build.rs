@@ -1,6 +1,6 @@
 fn main() {
     tespat_compiler::TespatCompiler::new()
-        .include("./patterns", "imports")
+        .include("./patterns")
         .compile()
         .unwrap();
 }

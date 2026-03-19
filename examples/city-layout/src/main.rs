@@ -1,6 +1,9 @@
-use tespat::{app::MatchFilter, include_tespat, pattern::transform::SymmetryList};
+use tespat::{app::MatchFilter, pattern::transform::SymmetryList};
 
-include_tespat!();
+// 引入 build.rs 生成的规则代码。
+mod example {
+    tespat::include_tespat!("city-layout");
+}
 
 fn main() {
     use example::*;

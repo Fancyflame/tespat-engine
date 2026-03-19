@@ -10,8 +10,13 @@ pub mod pattern;
 
 #[macro_export]
 macro_rules! include_tespat {
-    () => {
-        include!(concat!(env!("OUT_DIR"), "/tespat_generated.rs"));
+    ($relative_path:literal) => {
+        include!(concat!(
+            env!("OUT_DIR"),
+            "/tespat_generated/",
+            $relative_path,
+            ".rs"
+        ));
     };
 }
 

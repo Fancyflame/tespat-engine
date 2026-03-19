@@ -79,7 +79,7 @@ npm run dev
 ```rust
 fn main() {
     tespat_compiler::TespatCompiler::new()
-        .include("your_rules.json", "example")
+        .include("your_rules.json")
         .compile()
         .unwrap();
 }
@@ -88,10 +88,21 @@ fn main() {
 3. 在代码中引入生成结果并使用 pattern：
 
 ```rust
-use tespat::include_tespat;
-
-include_tespat!();
+// 引入 build.rs 生成的规则代码。
+mod example {
+    tespat::include_tespat!("your_rules.rs");
+}
 
 // 之后即可使用生成的模块，例如：
 // example::pattern::YOUR_PATTERN_NAME
+```
+
+如果 `build.rs` 编译的是目录，例如 `.include("./patterns")`，
+则会生成到 `OUT_DIR/tespat_generated/patterns/...`，需要按相对路径分别引入：
+
+```rust
+// 引入某个生成文件。
+mod generate_paths {
+    tespat::include_tespat!("patterns/generate_paths.rs");
+}
 ```
