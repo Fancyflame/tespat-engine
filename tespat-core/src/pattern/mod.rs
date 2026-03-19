@@ -53,6 +53,7 @@ where
 }
 
 impl<T> Pattern<T> {
+    #[doc(hidden)]
     pub const fn from_static(
         width: usize,
         grid: &'static [PatColor<T>],

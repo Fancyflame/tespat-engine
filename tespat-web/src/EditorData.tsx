@@ -41,8 +41,9 @@ interface EditorContextType {
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
-export const EditorProvider = ({ children }: { children: ReactNode }) => {
-    const [editor, setEditor] = useState<EditorData>({
+/** 创建编辑器初始状态，便于在切换工程时完整重置。 */
+export function createInitialEditorData(): EditorData {
+    return {
         selectedColor: null,
         editingRule: {
             width: 0,
@@ -51,7 +52,11 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         },
         enableEdit: false,
         displayMode: { mode: "welcome" },
-    });
+    };
+}
+
+export const EditorProvider = ({ children }: { children: ReactNode }) => {
+    const [editor, setEditor] = useState<EditorData>(createInitialEditorData);
 
     return (
         <EditorContext.Provider value={{ editor, setEditor }}>

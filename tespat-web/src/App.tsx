@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { AppShell, Group, Text, Button, ActionIcon } from "@mantine/core";
+import { AppShell, Group, Text, ActionIcon } from "@mantine/core";
 import {
     IconDeviceFloppy,
     IconFileImport,
