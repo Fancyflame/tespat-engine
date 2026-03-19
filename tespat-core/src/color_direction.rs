@@ -1,6 +1,27 @@
-use crate::pattern::transform::Symmetry;
+use crate::{GraphColor, StaticColor, pattern::transform::Symmetry};
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
+pub struct DirectionalColor<T> {
+    pub kind: T,
+    pub direction: Option<Direction>,
+}
+
+impl<T: GraphColor> GraphColor for DirectionalColor<T> {}
+
+impl<T, C> StaticColor<DirectionalColor<C>> for DirectionalColor<T>
+where
+    C: GraphColor,
+    C: for<'a> From<&'a T>,
+{
+    fn get_color_with_symmetry(&self, symmetry: Symmetry) -> DirectionalColor<C> {
+        DirectionalColor {
+            direction: self.direction.map(|d| d.rotate(symmetry)),
+            kind: C::from(&self.kind),
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum Direction {
     Up,
     Left,

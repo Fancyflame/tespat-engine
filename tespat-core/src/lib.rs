@@ -24,7 +24,7 @@ macro_rules! include_tespat {
 pub trait GraphColor: Hash + Eq + Clone + Debug + 'static {}
 
 /// 固定颜色，可同时用于捕获（包括索引）和替换
-pub trait ConstantColor<T: GraphColor> {
+pub trait StaticColor<T: GraphColor> {
     fn get_color_with_symmetry(&self, symmetry: Symmetry) -> T;
 }
 
@@ -41,7 +41,7 @@ pub trait ReplaceColor<T: GraphColor> {
 
 impl<T, C> CaptureColor<C> for T
 where
-    T: ConstantColor<C>,
+    T: StaticColor<C>,
     C: GraphColor,
 {
     fn as_index(&self, symmetry: Symmetry) -> Option<C> {
@@ -54,7 +54,7 @@ where
 
 impl<T, C> ReplaceColor<C> for T
 where
-    T: ConstantColor<C>,
+    T: StaticColor<C>,
     C: GraphColor,
 {
     fn replace(&self, _place_graph_color: &C, symmetry: Symmetry) -> C {

@@ -1,7 +1,7 @@
 use std::{collections::HashMap, hash::Hash, ops::Deref};
 
 use crate::{
-    ConstantColor, GraphColor,
+    GraphColor, StaticColor,
     app::TespatBuilder,
     index_to_position,
     pattern::transform::{Symmetry, TransformedPattern},
@@ -69,7 +69,7 @@ impl<T> Pattern<T> {
     /// 将自身视为初始图创建一个 Tespat
     pub fn create_tespat<C>(&self) -> Option<TespatBuilder<impl ExactSizeIterator<Item = C> + '_>>
     where
-        T: ConstantColor<C>,
+        T: StaticColor<C>,
         C: GraphColor,
     {
         if self.colors.iter().any(|(color, _)| color.is_none()) {
