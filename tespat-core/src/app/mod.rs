@@ -118,8 +118,8 @@ impl<T: GraphColor> Tespat<T> {
         self.layer.color_count(color)
     }
 
-    pub fn export(&self) -> Vec<T> {
-        self.layer.export().cloned().collect()
+    pub fn export(&self) -> impl Iterator<Item = &T> {
+        self.layer.export()
     }
 
     pub fn is_history_enabled(&self) -> bool {
@@ -132,21 +132,22 @@ impl<T: GraphColor> Tespat<T> {
             width: self.width(),
             frames: match &self.history {
                 Some(h) => h.clone(),
-                None => vec![self.export()],
+                None => vec![self.export().cloned().collect()],
             },
         }
     }
 
     /// 导出到二维数组。如果形状不匹配则返回None
     pub fn export_to_2d_array<const W: usize, const H: usize>(&self) -> Option<[[T; W]; H]> {
-        let export = self.export();
-        if export.len() != W * H {
+        let mut export = self.export();
+
+        let len = self.width() * self.height();
+        if len != W * H {
             return None;
         }
-        let mut colors = export.into_iter();
 
         Some(array::from_fn(|_| {
-            array::from_fn(|_| colors.next().unwrap())
+            array::from_fn(|_| export.next().cloned().unwrap())
         }))
     }
 

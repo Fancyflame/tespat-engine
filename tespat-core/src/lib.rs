@@ -64,6 +64,7 @@ where
 
 pub trait StrColor: GraphColor {
     fn to_str(&self) -> &'static str;
+    fn from_str(s: &str) -> Option<Self>;
 }
 
 fn index_to_position(index: usize, row_width: usize) -> (usize, usize) {

@@ -56,6 +56,12 @@ fn generate_color_enum(colors: &HashMap<&str, &str>) -> TokenStream {
                     #(Self::#color_variants => #color_names,)*
                 }
             }
+            fn from_str(s: &str) -> Option<Self> {
+                match s {
+                    #(#color_names => Some(Self::#color_variants),)*
+                    _ => None
+                }
+            }
         }
 
         impl ::tespat::GraphColor for Color {}
@@ -70,6 +76,7 @@ fn generate_color_enum(colors: &HashMap<&str, &str>) -> TokenStream {
         }
 
         impl Color {
+            #[allow(dead_code)]
             pub const fn unit_pattern(self) -> &'static ::tespat::Pattern<Self> {
                 match self {
                     #(#unit_pattern_match_arms,)*
