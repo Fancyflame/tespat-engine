@@ -9,7 +9,7 @@ use serde::Deserialize;
 pub fn compile(file_content: String) -> Result<TokenStream> {
     let project: ProjectFile = serde_json::from_str(&file_content).context("解析 JSON 失败")?;
 
-    let color_enum = generate_color_enum(&project.colors);
+    let color_enum = generate_color_enum(&project.palette);
     let pattern_mod = generate_pattern_module(&project.patterns)?;
 
     Ok(quote! {
@@ -19,8 +19,8 @@ pub fn compile(file_content: String) -> Result<TokenStream> {
     })
 }
 
-fn generate_color_enum(colors: &HashMap<&str, &str>) -> TokenStream {
-    let mut color_names: Vec<_> = colors.keys().filter(|name| **name != "*").collect();
+fn generate_color_enum(palette: &HashMap<&str, PaletteConfig>) -> TokenStream {
+    let mut color_names: Vec<_> = palette.keys().filter(|name| **name != "*").collect();
     color_names.sort();
 
     let color_variants: Vec<_> = color_names
@@ -161,8 +161,18 @@ fn generate_pattern_expr(width: usize, pattern: &[&str]) -> TokenStream {
 #[derive(Deserialize)]
 struct ProjectFile<'a> {
     #[serde(borrow)]
-    colors: HashMap<&'a str, &'a str>,
+    palette: HashMap<&'a str, PaletteConfig<'a>>,
     patterns: HashMap<&'a str, PatternConfig<'a>>,
+}
+
+#[derive(Deserialize)]
+struct PaletteConfig<'a> {
+    #[allow(dead_code)]
+    #[serde(borrow)]
+    color: &'a str,
+    #[allow(dead_code)]
+    #[serde(borrow)]
+    icon: Option<&'a str>,
 }
 
 #[derive(Deserialize)]

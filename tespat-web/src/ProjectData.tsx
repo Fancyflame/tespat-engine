@@ -1,12 +1,3 @@
-import {
-    createContext,
-    useContext,
-    useState,
-    ReactNode,
-    Dispatch,
-    SetStateAction,
-} from "react";
-
 // 数据结构定义
 export interface PatternRule {
     width: number;
@@ -14,6 +5,29 @@ export interface PatternRule {
     replace: string[];
 }
 
+// 调色板条目定义
+export interface PaletteEntry {
+    color: string;
+    icon: string | null;
+}
+
+// 项目结构定义
+export interface ProjectData {
+    patterns: Map<string, PatternRule>;
+    patternOrder: string[];
+    palette: Map<string, PaletteEntry>;
+}
+
+// 新建 pattern 时的空规则
+export function createEmptyPatternRule(): PatternRule {
+    return {
+        width: 0,
+        capture: [],
+        replace: [],
+    };
+}
+
+// 复制单条 pattern 规则
 export function clonePatternRule(rule: PatternRule): PatternRule {
     return {
         width: rule.width,
@@ -22,15 +36,15 @@ export function clonePatternRule(rule: PatternRule): PatternRule {
     };
 }
 
-export interface ProjectData {
-    patterns: Map<string, PatternRule>;
-    patternOrder: string[];
-
-    // 根据颜色名显示对应颜色值
-    colors: Map<string, string>;
+// 复制单条调色板条目
+export function clonePaletteEntry(entry: PaletteEntry): PaletteEntry {
+    return {
+        color: entry.color,
+        icon: entry.icon,
+    };
 }
 
-/** 新建项目时的默认数据 */
+// 新建项目时的默认数据
 export const DEFAULT_PROJECT: ProjectData = {
     patterns: new Map([
         [
@@ -43,12 +57,25 @@ export const DEFAULT_PROJECT: ProjectData = {
         ],
     ]),
     patternOrder: ["BlackAndWhite"],
-    colors: new Map([
-        ["Black", "#000000"],
-        ["White", "#ffffff"],
+    palette: new Map([
+        [
+            "Black",
+            {
+                color: "#000000",
+                icon: null,
+            },
+        ],
+        [
+            "White",
+            {
+                color: "#ffffff",
+                icon: null,
+            },
+        ],
     ]),
 };
 
+// 深复制整个项目对象
 export function cloneProject(project: ProjectData): ProjectData {
     return {
         patterns: new Map(
@@ -58,33 +85,74 @@ export function cloneProject(project: ProjectData): ProjectData {
             ]),
         ),
         patternOrder: [...project.patternOrder],
-        colors: new Map(project.colors),
+        palette: new Map(
+            Array.from(project.palette.entries()).map(([id, entry]) => [
+                id,
+                clonePaletteEntry(entry),
+            ]),
+        ),
     };
 }
 
-// Context 类型：只暴露数据本身和原生的 setState
-interface ProjectContextType {
-    project: ProjectData;
-    setProject: Dispatch<SetStateAction<ProjectData>>;
+// 结合排序字段与实际集合，得到稳定且去重的 pattern 顺序
+export function getOrderedPatternIds(
+    patternOrder: string[],
+    patterns: Map<string, PatternRule>,
+) {
+    const orderedIds: string[] = [];
+    const seen = new Set<string>();
+
+    for (const id of patternOrder) {
+        if (!patterns.has(id) || seen.has(id)) continue;
+        seen.add(id);
+        orderedIds.push(id);
+    }
+
+    for (const id of patterns.keys()) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+        orderedIds.push(id);
+    }
+
+    return orderedIds;
 }
 
-const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
+// 将某个 palette 名称在单元格数组中整体替换
+export function replacePaletteNameInCells(
+    cells: string[],
+    oldName: string,
+    newName: string,
+) {
+    let changed = false;
+    const nextCells = cells.map((cell) => {
+        if (cell !== oldName) return cell;
+        changed = true;
+        return newName;
+    });
 
-export const ProjectProvider = ({ children }: { children: ReactNode }) => {
-    const [project, setProject] = useState<ProjectData>(() =>
-        cloneProject(DEFAULT_PROJECT),
-    );
+    return changed ? nextCells : cells;
+}
 
-    return (
-        <ProjectContext.Provider value={{ project, setProject }}>
-            {children}
-        </ProjectContext.Provider>
-    );
-};
+// 统计某个 palette 在所有 pattern 中被引用的次数
+export function countPaletteReferences(
+    project: ProjectData,
+    paletteId: string,
+) {
+    let count = 0;
 
-export const useProject = () => {
-    const context = useContext(ProjectContext);
-    if (!context)
-        throw new Error("useProject must be used within ProjectProvider");
-    return context;
-};
+    for (const rule of project.patterns.values()) {
+        for (const cell of rule.capture) {
+            if (cell === paletteId) {
+                count += 1;
+            }
+        }
+
+        for (const cell of rule.replace) {
+            if (cell === paletteId) {
+                count += 1;
+            }
+        }
+    }
+
+    return count;
+}

@@ -7,9 +7,7 @@ import { Notifications } from "@mantine/notifications";
 import "@mantine/notifications/styles.css";
 import App from "./App";
 import "./index.css";
-import { ProjectProvider } from "./ProjectData";
-import { EditorProvider } from "./EditorData";
-import { FileSyncProvider } from "./FileSyncContext";
+import { WorkspaceProvider } from "./Workspace";
 
 const theme = createTheme({
     primaryColor: "blue",
@@ -19,13 +17,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
         <MantineProvider theme={theme} defaultColorScheme="dark">
             <Notifications position="top-right" zIndex={2000} />
-            <ProjectProvider>
-                <EditorProvider>
-                    <FileSyncProvider>
-                        <App />
-                    </FileSyncProvider>
-                </EditorProvider>
-            </ProjectProvider>
+            <WorkspaceProvider>
+                <App />
+            </WorkspaceProvider>
         </MantineProvider>
     </React.StrictMode>,
 );

@@ -13,9 +13,11 @@ import { GridDisplay2D } from "../components/GridDisplay2D/GridDisplay2D";
 import GridDisplaySlider from "../components/GridDisplaySlider/GridDisplaySlider";
 import styles from "../App.module.css";
 import { parseReplayJson, type ReplayData } from "../replay/parseReplayJson";
+import { useWorkspace } from "../Workspace";
 
 /** 主舞台 - 回放模式：可拖拽的中央网格显示 + 演化时间轴 */
 export function PlaybackStage() {
+    const workspace = useWorkspace();
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const dragDepthRef = useRef(0);
     const isFilePickerSupported =
@@ -252,7 +254,7 @@ export function PlaybackStage() {
                         <GridDisplay2D
                             width={displayWidth}
                             data={displayFrame}
-                            enableEdit={false}
+                            palette={workspace.project.palette}
                         />
                     ) : (
                         <Stack align="center" gap="xs">

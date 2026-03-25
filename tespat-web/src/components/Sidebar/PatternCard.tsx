@@ -13,12 +13,13 @@ import {
     IconArrowRight,
 } from "@tabler/icons-react";
 import type { DragEventHandler } from "react";
-import { PatternRule } from "../../ProjectData";
+import type { PaletteEntry, PatternRule } from "../../ProjectData";
 import { GridDisplay2D } from "../GridDisplay2D/GridDisplay2D";
 
 interface PatternCardProps {
     id: string;
     rule: PatternRule;
+    palette: ReadonlyMap<string, PaletteEntry>;
     selected?: boolean;
     dragging?: boolean;
     dropIndicator?: "before" | "after" | null;
@@ -34,6 +35,7 @@ interface PatternCardProps {
 export const PatternCard = ({
     id,
     rule,
+    palette,
     selected = false,
     dragging = false,
     dropIndicator = null,
@@ -139,13 +141,21 @@ export const PatternCard = ({
                 </Group>
                 <Group justify="center" align="center" wrap="nowrap" gap="xs">
                     <Center w={56} h={56} flex="0 0 auto">
-                        <GridDisplay2D width={rule.width} data={rule.capture} />
+                        <GridDisplay2D
+                            width={rule.width}
+                            data={rule.capture}
+                            palette={palette}
+                        />
                     </Center>
                     <Center flex="0 0 auto" c={selected ? "blue.1" : "gray.4"}>
                         <IconArrowRight size={16} />
                     </Center>
                     <Center w={56} h={56} flex="0 0 auto">
-                        <GridDisplay2D width={rule.width} data={rule.replace} />
+                        <GridDisplay2D
+                            width={rule.width}
+                            data={rule.replace}
+                            palette={palette}
+                        />
                     </Center>
                 </Group>
             </Stack>

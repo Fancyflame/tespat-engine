@@ -1,32 +1,34 @@
 import { Box } from "@mantine/core";
 import type { ReactNode } from "react";
-import { useEffect, useRef } from "react";
-import { notifications } from "@mantine/notifications";
-import { IconInfoCircle, IconInfoSmall, IconX } from "@tabler/icons-react";
-import { useEditor } from "../../EditorData";
+import { useRef } from "react";
 import { ResizeBar, type ResizeDirection, type ResizeDelta } from "./ResizeBar";
-import { applyResizeGrid } from "./applyResizeGrid";
 
+// GridEditResizer 的输入参数
 export interface GridEditResizerProps {
     children: ReactNode;
+    onResize: (direction: ResizeDirection, deltaUnits: number) => void;
+    onResizeStart?: () => void;
+    onResizeEnd?: () => void;
 }
 
-export function GridEditResizer({ children }: GridEditResizerProps) {
-    const { editor, setEditor } = useEditor();
-
-    // 记录当前拖拽已经应用了多少「格子增量」
+// GridEditResizer 负责把像素拖拽换算成网格单位增量
+export function GridEditResizer({
+    children,
+    onResize,
+    onResizeStart,
+    onResizeEnd,
+}: GridEditResizerProps) {
     const appliedDeltaRef = useRef(0);
 
-    // 记录"当前拖拽周期"是否已经提示过未选择颜色，避免疯狂弹通知
-    const noColorWarnedRef = useRef(false);
-
-    // 当重新开启编辑（拖拽结束）时，重置累计偏移与提示状态
-    useEffect(() => {
-        if (!editor.enableEdit) return;
-
+    const handleDragStart = () => {
         appliedDeltaRef.current = 0;
-        noColorWarnedRef.current = false;
-    }, [editor.enableEdit]);
+        onResizeStart?.();
+    };
+
+    const handleDragEnd = () => {
+        appliedDeltaRef.current = 0;
+        onResizeEnd?.();
+    };
 
     const handleDeltaChange =
         (direction: ResizeDirection) =>
@@ -42,65 +44,13 @@ export function GridEditResizer({ children }: GridEditResizerProps) {
                 rawUnits = Math.trunc((dy * sign) / PX_PER_CELL);
             }
 
-            const prevUnits = appliedDeltaRef.current;
-            if (rawUnits === prevUnits) return;
-
-            if (!editor.selectedColor) {
-                if (!noColorWarnedRef.current) {
-                    notifications.show({
-                        title: "无法调整尺寸",
-                        message:
-                            "请先在左侧选择一个颜色后再拖拽调整尺寸，\
-                            将使用选中的颜色填充增添的区域。",
-                        icon: <IconInfoSmall size={48} />,
-                        color: "blue",
-                    });
-                    noColorWarnedRef.current = true;
-                }
+            const previousUnits = appliedDeltaRef.current;
+            if (rawUnits === previousUnits) {
                 return;
             }
 
-            const deltaUnits = rawUnits - prevUnits;
             appliedDeltaRef.current = rawUnits;
-
-            const fillColor = editor.selectedColor;
-            if (!fillColor) return;
-
-            setEditor((prev) => {
-                const { width, capture, replace } = prev.editingRule;
-                const nextCapture = applyResizeGrid({
-                    direction,
-                    deltaUnits,
-                    fillColor,
-                    width,
-                    data: capture,
-                });
-                const nextReplace = applyResizeGrid({
-                    direction,
-                    deltaUnits,
-                    fillColor,
-                    width,
-                    data: replace,
-                });
-
-                if (
-                    nextCapture.width === width &&
-                    nextCapture.data === capture &&
-                    nextReplace.data === replace
-                ) {
-                    return prev;
-                }
-
-                return {
-                    ...prev,
-                    editingRule: {
-                        ...prev.editingRule,
-                        width: nextCapture.width,
-                        capture: nextCapture.data,
-                        replace: nextReplace.data,
-                    },
-                };
-            });
+            onResize(direction, rawUnits - previousUnits);
         };
 
     return (
@@ -123,28 +73,29 @@ export function GridEditResizer({ children }: GridEditResizerProps) {
                 {children}
             </Box>
 
-            {/* 顶部拖拽条 */}
             <ResizeBar
                 direction="top"
+                onDragStart={handleDragStart}
                 onDeltaChange={handleDeltaChange("top")}
+                onDragEnd={handleDragEnd}
             />
-
-            {/* 底部拖拽条 */}
             <ResizeBar
                 direction="bottom"
+                onDragStart={handleDragStart}
                 onDeltaChange={handleDeltaChange("bottom")}
+                onDragEnd={handleDragEnd}
             />
-
-            {/* 左侧拖拽条 */}
             <ResizeBar
                 direction="left"
+                onDragStart={handleDragStart}
                 onDeltaChange={handleDeltaChange("left")}
+                onDragEnd={handleDragEnd}
             />
-
-            {/* 右侧拖拽条 */}
             <ResizeBar
                 direction="right"
+                onDragStart={handleDragStart}
                 onDeltaChange={handleDeltaChange("right")}
+                onDragEnd={handleDragEnd}
             />
         </Box>
     );

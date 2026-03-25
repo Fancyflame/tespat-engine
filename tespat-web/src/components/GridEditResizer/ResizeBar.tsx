@@ -1,37 +1,44 @@
 import { Box } from "@mantine/core";
 import type React from "react";
 import { useRef } from "react";
-import { useEditor } from "../../EditorData";
 import styles from "./ResizeBar.module.css";
 
+// 可拖拽的四个尺寸方向
 export type ResizeDirection = "top" | "bottom" | "left" | "right";
 
+// 单次拖拽的像素偏移量
 export interface ResizeDelta {
     dx: number;
     dy: number;
 }
 
+// 单条 resize bar 的输入参数
 export interface ResizeBarProps {
     direction: ResizeDirection;
     barThickness?: number;
-    /** 拖拽过程中偏移变化回调 */
+    onDragStart?: () => void;
     onDeltaChange?: (delta: ResizeDelta) => void;
+    onDragEnd?: () => void;
     className?: string;
 }
 
+// ResizeBar 只负责抛出拖拽交互，不直接修改业务状态
 export function ResizeBar({
     direction,
     barThickness = 5,
+    onDragStart,
     onDeltaChange,
+    onDragEnd,
     className,
 }: ResizeBarProps) {
-    const { setEditor } = useEditor();
     const offset = "-20px";
     const isDraggingRef = useRef(false);
     const startPointRef = useRef<{ x: number; y: number } | null>(null);
 
     const handlePointerMove = (event: PointerEvent) => {
-        if (!isDraggingRef.current || !startPointRef.current) return;
+        if (!isDraggingRef.current || !startPointRef.current) {
+            return;
+        }
 
         const dx = event.clientX - startPointRef.current.x;
         const dy = event.clientY - startPointRef.current.y;
@@ -40,16 +47,13 @@ export function ResizeBar({
     };
 
     const handlePointerUp = () => {
-        if (!isDraggingRef.current) return;
+        if (!isDraggingRef.current) {
+            return;
+        }
 
         isDraggingRef.current = false;
         startPointRef.current = null;
-
-        // 结束拖拽时重新开启编辑
-        setEditor((prev) => ({
-            ...prev,
-            enableEdit: true,
-        }));
+        onDragEnd?.();
 
         window.removeEventListener("pointermove", handlePointerMove);
         window.removeEventListener("pointerup", handlePointerUp);
@@ -61,12 +65,7 @@ export function ResizeBar({
 
         isDraggingRef.current = true;
         startPointRef.current = { x: event.clientX, y: event.clientY };
-
-        // 开始拖拽时临时关闭编辑
-        setEditor((prev) => ({
-            ...prev,
-            enableEdit: false,
-        }));
+        onDragStart?.();
 
         window.addEventListener("pointermove", handlePointerMove);
         window.addEventListener("pointerup", handlePointerUp);
@@ -114,7 +113,7 @@ export function ResizeBar({
 
     return (
         <Box
-            className={`${styles.resizeBar} ${className}`}
+            className={`${styles.resizeBar} ${className ?? ""}`}
             onPointerDown={handlePointerDown}
             style={directionalStyle}
         />

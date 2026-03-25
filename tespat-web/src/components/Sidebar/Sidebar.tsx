@@ -1,18 +1,18 @@
 import { Stack, Button, Group, Divider, ScrollArea, Box } from "@mantine/core";
 import { IconPlayerPlayFilled } from "@tabler/icons-react";
-import { useEditor } from "../../EditorData";
+import { useWorkspaceActions } from "../../Workspace";
 import { PatternRulesSection } from "./PatternRulesSection";
-import { ColorSection } from "./ColorSection";
+import { PaletteSection } from "./PaletteSection";
 
 export const Sidebar = () => {
-    const { setEditor } = useEditor();
+    const actions = useWorkspaceActions();
 
     return (
         <Stack p="md" h="100%" style={{ minHeight: 0 }}>
             <Box style={{ flex: 1, minHeight: 0 }}>
                 <ScrollArea h="100%" type="auto" offsetScrollbars="y">
                     <Stack gap="md">
-                        <ColorSection />
+                        <PaletteSection />
                         <PatternRulesSection />
                     </Stack>
                 </ScrollArea>
@@ -24,12 +24,7 @@ export const Sidebar = () => {
                     variant="light"
                     size="xs"
                     leftSection={<IconPlayerPlayFilled size={14} />}
-                    onClick={() =>
-                        setEditor((prev) => ({
-                            ...prev,
-                            displayMode: { mode: "playback" },
-                        }))
-                    }
+                    onClick={actions.openPlayback}
                 >
                     回放录制
                 </Button>

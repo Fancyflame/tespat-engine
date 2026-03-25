@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { AppShell, Group, Text, ActionIcon } from "@mantine/core";
 import {
     IconDeviceFloppy,
@@ -10,99 +9,12 @@ import styles from "./App.module.css";
 import { EditorStage } from "./stages/EditorStage";
 import { PlaybackStage } from "./stages/PlaybackStage";
 import { WelcomeStage } from "./stages/WelcomeStage";
-import { useEditor, getSelectedPatternId } from "./EditorData";
-import { useProject } from "./ProjectData";
-import { useFileSync } from "./FileSyncContext";
-import { projectToJson } from "./projectSerialization";
+import { useWorkspace, useWorkspaceActions } from "./Workspace";
 
-const SYNC_DEBOUNCE_MS = 1000;
-
-function areCellsEqual(left: string[], right: string[]) {
-    return (
-        left.length === right.length &&
-        left.every((cell, index) => cell === right[index])
-    );
-}
-
+// 应用壳层负责切换主舞台与顶部工具栏动作
 export default function App() {
-    const { editor, setEditor } = useEditor();
-    const { setProject, project } = useProject();
-    const {
-        fileHandle,
-        fileName,
-        isSupported,
-        openWithFilePicker,
-        createNewFile,
-        syncToFile,
-    } = useFileSync();
-
-    useEffect(() => {
-        // 仅在选中某个 pattern 时，将主编辑区内容实时回写到该规则
-        const selectedPatternId = getSelectedPatternId(editor.displayMode);
-        if (!selectedPatternId) return;
-
-        setProject((prev) => {
-            const rule = prev.patterns.get(selectedPatternId);
-            if (!rule) return prev;
-
-            // 先做一次轻量比较，避免无变化时频繁触发 patterns 的新引用
-            const sameWidth = rule.width === editor.editingRule.width;
-            const sameCapture = areCellsEqual(
-                rule.capture,
-                editor.editingRule.capture,
-            );
-            const sameReplace = areCellsEqual(
-                rule.replace,
-                editor.editingRule.replace,
-            );
-
-            if (sameWidth && sameCapture && sameReplace) return prev;
-
-            // 网格有变化时，复制 Map 并仅更新当前选中规则
-            const patterns = new Map(prev.patterns);
-            patterns.set(selectedPatternId, {
-                ...rule,
-                width: editor.editingRule.width,
-                capture: editor.editingRule.capture,
-                replace: editor.editingRule.replace,
-            });
-            return { ...prev, patterns };
-        });
-    }, [
-        editor.displayMode,
-        editor.editingRule.width,
-        editor.editingRule.capture,
-        editor.editingRule.replace,
-        setProject,
-    ]);
-
-    // 打开文件时，project 变化后 debounce 同步到本地
-    useEffect(() => {
-        if (!fileHandle) return;
-        const timer = setTimeout(() => {
-            syncToFile(projectToJson(project));
-        }, SYNC_DEBOUNCE_MS);
-        return () => clearTimeout(timer);
-    }, [project, fileHandle, syncToFile]);
-
-    // 点击保存下载
-    const handleDownloadProject = () => {
-        const content = projectToJson(project);
-        const blob = new Blob([content], {
-            type: "application/json;charset=utf-8",
-        });
-        const downloadUrl = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.download = fileName ?? "untitled.tsp";
-        document.body.appendChild(link);
-        try {
-            link.click();
-        } finally {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(downloadUrl);
-        }
-    };
+    const workspace = useWorkspace();
+    const actions = useWorkspaceActions();
 
     return (
         <AppShell
@@ -112,7 +24,6 @@ export default function App() {
             w="100vw"
             h="100vh"
         >
-            {/* 顶部工具栏 */}
             <AppShell.Header className={styles.header} bd={0}>
                 <Group h="100%" px="xl" justify="space-between">
                     <Group gap="xl">
@@ -124,30 +35,25 @@ export default function App() {
                                 userSelect: "none",
                                 cursor: "pointer",
                             }}
-                            onClick={() =>
-                                setEditor((prev) => ({
-                                    ...prev,
-                                    displayMode: { mode: "welcome" },
-                                }))
-                            }
+                            onClick={actions.goToWelcome}
                         >
                             {"TESPAT EDITOR"}
                         </Text>
                     </Group>
                     <Group gap="xs">
-                        {isSupported && (
+                        {actions.isFileSystemAccessSupported && (
                             <>
                                 <ActionIcon
                                     size="md"
                                     variant="light"
-                                    onClick={createNewFile}
+                                    onClick={actions.createNewFile}
                                 >
                                     <IconFilePlus size={16} />
                                 </ActionIcon>
                                 <ActionIcon
                                     size="md"
                                     variant="light"
-                                    onClick={openWithFilePicker}
+                                    onClick={actions.openWithFilePicker}
                                 >
                                     <IconFileImport size={16} />
                                 </ActionIcon>
@@ -156,7 +62,7 @@ export default function App() {
                         <ActionIcon
                             size="md"
                             variant="light"
-                            onClick={handleDownloadProject}
+                            onClick={actions.downloadProject}
                         >
                             <IconDeviceFloppy size={16} />
                         </ActionIcon>
@@ -164,16 +70,14 @@ export default function App() {
                 </Group>
             </AppShell.Header>
 
-            {/* 侧边栏 */}
             <AppShell.Navbar bg="gray.9" className={styles.navbar}>
                 <Sidebar />
             </AppShell.Navbar>
 
-            {/* 中央主舞台 */}
             <AppShell.Main className={styles.main}>
-                {editor.displayMode.mode === "editor" && <EditorStage />}
-                {editor.displayMode.mode === "playback" && <PlaybackStage />}
-                {editor.displayMode.mode === "welcome" && <WelcomeStage />}
+                {workspace.viewMode === "editor" && <EditorStage />}
+                {workspace.viewMode === "playback" && <PlaybackStage />}
+                {workspace.viewMode === "welcome" && <WelcomeStage />}
             </AppShell.Main>
         </AppShell>
     );

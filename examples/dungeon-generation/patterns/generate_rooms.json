@@ -1,226 +1,256 @@
 {
-  "patterns": {
-    "FindBorder": {
-      "width": 3,
-      "capture": [
-        "Border",
-        "Border",
-        "Border",
-        "Border",
-        "Border",
-        "Border",
-        "Border",
-        "Border",
-        "Border"
-      ],
-      "replace": [
-        "*",
-        "*",
-        "*",
-        "*",
-        "Empty",
-        "*",
-        "*",
-        "*",
-        "*"
-      ]
-    },
-    "SpawnFirstAnchor": {
-      "width": 2,
-      "capture": [
-        "Border",
-        "Border",
-        "Border",
-        "Empty"
-      ],
-      "replace": [
-        "Border",
-        "Border",
-        "Border",
-        "Anchor"
-      ]
-    },
-    "SpawnGrid": {
-      "width": 3,
-      "capture": [
-        "Anchor",
-        "Empty",
-        "Empty"
-      ],
-      "replace": [
-        "*",
-        "*",
-        "Anchor"
-      ]
-    },
-    "GenerateSeed": {
-      "width": 3,
-      "capture": [
-        "Anchor",
-        "Empty",
-        "Anchor",
-        "Empty",
-        "Empty",
-        "Empty",
-        "Anchor",
-        "Empty",
-        "Anchor"
-      ],
-      "replace": [
-        "RoomVertex",
-        "Wall",
-        "RoomVertex",
-        "Wall",
-        "RoomFloor",
-        "Wall",
-        "RoomVertex",
-        "Wall",
-        "RoomVertex"
-      ]
-    },
-    "SelectVertex": {
-      "width": 2,
-      "capture": [
-        "Anchor",
-        "Empty",
-        "Empty",
-        "Empty",
-        "RoomVertex",
-        "Wall"
-      ],
-      "replace": [
-        "*",
-        "*",
-        "*",
-        "*",
-        "ActiveRoomVertex",
-        "GrowingWall"
-      ]
-    },
-    "SelectWallToGrow": {
-      "width": 2,
-      "capture": [
-        "Anchor",
-        "Empty",
-        "Empty",
-        "Empty",
-        "GrowingWall",
-        "Wall"
-      ],
-      "replace": [
-        "*",
-        "*",
-        "Empty",
-        "Empty",
-        "GrowingWall",
-        "GrowingWall"
-      ]
-    },
-    "SelectWallToGrow2": {
-      "width": 2,
-      "capture": [
-        "Empty",
-        "Anchor",
-        "Empty",
-        "Empty",
-        "GrowingWall",
-        "Wall"
-      ],
-      "replace": [
-        "*",
-        "*",
-        "Empty",
-        "Empty",
-        "GrowingWall",
-        "GrowingWall"
-      ]
-    },
-    "SelectWallToGrowEnd": {
-      "width": 2,
-      "capture": [
-        "Empty",
-        "Anchor",
-        "Empty",
-        "Empty",
-        "GrowingWall",
-        "RoomVertex"
-      ],
-      "replace": [
-        "*",
-        "*",
-        "*",
-        "*",
-        "GrowingWall",
-        "ActiveRoomVertex"
-      ]
-    },
-    "VertexGrow": {
-      "width": 2,
-      "capture": [
-        "Anchor",
-        "Empty",
-        "Empty",
-        "Empty",
-        "ActiveRoomVertex",
-        "GrowingWall"
-      ],
-      "replace": [
-        "RoomVertex",
-        "Empty",
-        "Wall",
-        "Empty",
-        "Wall",
-        "GrowingWall"
-      ]
-    },
-    "WallGrow": {
-      "width": 1,
-      "capture": [
-        "*",
-        "Empty",
-        "GrowingWall"
-      ],
-      "replace": [
-        "Wall",
-        "RoomFloor",
-        "RoomFloor"
-      ]
-    },
-    "DeactivateWall": {
-      "width": 2,
-      "capture": [
-        "DeactiveWall",
-        "Wall"
-      ],
-      "replace": [
-        "DeactiveWall",
-        "DeactiveWall"
-      ]
-    }
-  },
-  "patternOrder": [
-    "FindBorder",
-    "SpawnFirstAnchor",
-    "SpawnGrid",
-    "GenerateSeed",
-    "SelectVertex",
-    "SelectWallToGrow",
-    "SelectWallToGrow2",
-    "SelectWallToGrowEnd",
-    "VertexGrow",
-    "WallGrow",
-    "DeactivateWall"
-  ],
-  "colors": {
-    "Empty": "#828282",
-    "RoomFloor": "#1751ff",
-    "Wall": "#db965a",
-    "RoomVertex": "#ffe500",
-    "GrowingWall": "#ff9696",
-    "ActiveRoomVertex": "#ff1f1f",
-    "DeactiveWall": "#6b3b00",
-    "*": "#000000",
-    "Anchor": "#752da6",
-    "Border": "#872d3d"
-  }
+    "patterns":  {
+                     "FindBorder":  {
+                                        "width":  3,
+                                        "capture":  [
+                                                        "Border",
+                                                        "Border",
+                                                        "Border",
+                                                        "Border",
+                                                        "Border",
+                                                        "Border",
+                                                        "Border",
+                                                        "Border",
+                                                        "Border"
+                                                    ],
+                                        "replace":  [
+                                                        "*",
+                                                        "*",
+                                                        "*",
+                                                        "*",
+                                                        "Empty",
+                                                        "*",
+                                                        "*",
+                                                        "*",
+                                                        "*"
+                                                    ]
+                                    },
+                     "SpawnFirstAnchor":  {
+                                              "width":  2,
+                                              "capture":  [
+                                                              "Border",
+                                                              "Border",
+                                                              "Border",
+                                                              "Empty"
+                                                          ],
+                                              "replace":  [
+                                                              "Border",
+                                                              "Border",
+                                                              "Border",
+                                                              "Anchor"
+                                                          ]
+                                          },
+                     "SpawnGrid":  {
+                                       "width":  3,
+                                       "capture":  [
+                                                       "Anchor",
+                                                       "Empty",
+                                                       "Empty"
+                                                   ],
+                                       "replace":  [
+                                                       "*",
+                                                       "*",
+                                                       "Anchor"
+                                                   ]
+                                   },
+                     "GenerateSeed":  {
+                                          "width":  3,
+                                          "capture":  [
+                                                          "Anchor",
+                                                          "Empty",
+                                                          "Anchor",
+                                                          "Empty",
+                                                          "Empty",
+                                                          "Empty",
+                                                          "Anchor",
+                                                          "Empty",
+                                                          "Anchor"
+                                                      ],
+                                          "replace":  [
+                                                          "RoomVertex",
+                                                          "Wall",
+                                                          "RoomVertex",
+                                                          "Wall",
+                                                          "RoomFloor",
+                                                          "Wall",
+                                                          "RoomVertex",
+                                                          "Wall",
+                                                          "RoomVertex"
+                                                      ]
+                                      },
+                     "SelectVertex":  {
+                                          "width":  2,
+                                          "capture":  [
+                                                          "Anchor",
+                                                          "Empty",
+                                                          "Empty",
+                                                          "Empty",
+                                                          "RoomVertex",
+                                                          "Wall"
+                                                      ],
+                                          "replace":  [
+                                                          "*",
+                                                          "*",
+                                                          "*",
+                                                          "*",
+                                                          "ActiveRoomVertex",
+                                                          "GrowingWall"
+                                                      ]
+                                      },
+                     "SelectWallToGrow":  {
+                                              "width":  2,
+                                              "capture":  [
+                                                              "Anchor",
+                                                              "Empty",
+                                                              "Empty",
+                                                              "Empty",
+                                                              "GrowingWall",
+                                                              "Wall"
+                                                          ],
+                                              "replace":  [
+                                                              "*",
+                                                              "*",
+                                                              "Empty",
+                                                              "Empty",
+                                                              "GrowingWall",
+                                                              "GrowingWall"
+                                                          ]
+                                          },
+                     "SelectWallToGrow2":  {
+                                               "width":  2,
+                                               "capture":  [
+                                                               "Empty",
+                                                               "Anchor",
+                                                               "Empty",
+                                                               "Empty",
+                                                               "GrowingWall",
+                                                               "Wall"
+                                                           ],
+                                               "replace":  [
+                                                               "*",
+                                                               "*",
+                                                               "Empty",
+                                                               "Empty",
+                                                               "GrowingWall",
+                                                               "GrowingWall"
+                                                           ]
+                                           },
+                     "SelectWallToGrowEnd":  {
+                                                 "width":  2,
+                                                 "capture":  [
+                                                                 "Empty",
+                                                                 "Anchor",
+                                                                 "Empty",
+                                                                 "Empty",
+                                                                 "GrowingWall",
+                                                                 "RoomVertex"
+                                                             ],
+                                                 "replace":  [
+                                                                 "*",
+                                                                 "*",
+                                                                 "*",
+                                                                 "*",
+                                                                 "GrowingWall",
+                                                                 "ActiveRoomVertex"
+                                                             ]
+                                             },
+                     "VertexGrow":  {
+                                        "width":  2,
+                                        "capture":  [
+                                                        "Anchor",
+                                                        "Empty",
+                                                        "Empty",
+                                                        "Empty",
+                                                        "ActiveRoomVertex",
+                                                        "GrowingWall"
+                                                    ],
+                                        "replace":  [
+                                                        "RoomVertex",
+                                                        "Empty",
+                                                        "Wall",
+                                                        "Empty",
+                                                        "Wall",
+                                                        "GrowingWall"
+                                                    ]
+                                    },
+                     "WallGrow":  {
+                                      "width":  1,
+                                      "capture":  [
+                                                      "*",
+                                                      "Empty",
+                                                      "GrowingWall"
+                                                  ],
+                                      "replace":  [
+                                                      "Wall",
+                                                      "RoomFloor",
+                                                      "RoomFloor"
+                                                  ]
+                                  },
+                     "DeactivateWall":  {
+                                            "width":  2,
+                                            "capture":  [
+                                                            "DeactiveWall",
+                                                            "Wall"
+                                                        ],
+                                            "replace":  [
+                                                            "DeactiveWall",
+                                                            "DeactiveWall"
+                                                        ]
+                                        }
+                 },
+    "patternOrder":  [
+                         "FindBorder",
+                         "SpawnFirstAnchor",
+                         "SpawnGrid",
+                         "GenerateSeed",
+                         "SelectVertex",
+                         "SelectWallToGrow",
+                         "SelectWallToGrow2",
+                         "SelectWallToGrowEnd",
+                         "VertexGrow",
+                         "WallGrow",
+                         "DeactivateWall"
+                     ],
+    "palette":  {
+                    "Empty":  {
+                                  "color":  "#828282",
+                                  "icon":  null
+                              },
+                    "RoomFloor":  {
+                                      "color":  "#1751ff",
+                                      "icon":  null
+                                  },
+                    "Wall":  {
+                                 "color":  "#db965a",
+                                 "icon":  null
+                             },
+                    "RoomVertex":  {
+                                       "color":  "#ffe500",
+                                       "icon":  null
+                                   },
+                    "GrowingWall":  {
+                                        "color":  "#ff9696",
+                                        "icon":  null
+                                    },
+                    "ActiveRoomVertex":  {
+                                             "color":  "#ff1f1f",
+                                             "icon":  null
+                                         },
+                    "DeactiveWall":  {
+                                         "color":  "#6b3b00",
+                                         "icon":  null
+                                     },
+                    "*":  {
+                              "color":  "#000000",
+                              "icon":  null
+                          },
+                    "Anchor":  {
+                                   "color":  "#752da6",
+                                   "icon":  null
+                               },
+                    "Border":  {
+                                   "color":  "#872d3d",
+                                   "icon":  null
+                               }
+                }
 }

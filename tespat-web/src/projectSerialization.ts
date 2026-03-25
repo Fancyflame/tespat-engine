@@ -1,50 +1,47 @@
-import type { ProjectData, PatternRule } from "./ProjectData";
+import type {
+    PaletteEntry,
+    PatternRule,
+    ProjectData,
+} from "./ProjectData";
+import { getOrderedPatternIds } from "./ProjectData";
 
-/** JSON 可序列化的 ProjectData 格式 */
+// JSON 中的 pattern 结构
 interface PatternRuleJson {
     width: number;
     capture: string[];
     replace: string[];
 }
 
+// JSON 中的 palette 条目结构
+interface PaletteEntryJson {
+    color: string;
+    icon: string | null;
+}
+
+// 项目文件的 JSON 结构
 interface ProjectDataJson {
     patterns?: Record<string, PatternRuleJson>;
     patternOrder?: string[];
-    colors?: Record<string, string>;
+    palette?: Record<string, PaletteEntryJson>;
 }
 
-/** 结合显式排序和实际规则集合，输出去重后的稳定规则顺序。 */
-function normalizePatternOrder(
-    patternOrder: string[] | undefined,
-    patterns: Record<string, PatternRule>,
-) {
-    const normalized: string[] = [];
-    const seen = new Set<string>();
-
-    for (const id of patternOrder ?? []) {
-        if (!(id in patterns) || seen.has(id)) continue;
-        seen.add(id);
-        normalized.push(id);
-    }
-
-    for (const id of Object.keys(patterns)) {
-        if (seen.has(id)) continue;
-        seen.add(id);
-        normalized.push(id);
-    }
-
-    return normalized;
+// 判断值是否为普通对象
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** 将单个网格数据补齐到指定长度，缺失位置统一填充为 "Empty"。 */
+// 将单个网格数据补齐到指定长度
 function padCells(cells: string[], targetLength: number) {
-    if (cells.length === targetLength) return cells;
+    if (cells.length === targetLength) {
+        return cells;
+    }
+
     return Array.from({ length: targetLength }, (_, index) => {
         return cells[index] ?? "Empty";
     });
 }
 
-/** 将 capture/replace 网格归一化为统一尺寸的 PatternRule。 */
+// 将 capture/replace 归一化为统一尺寸的 pattern
 function normalizeRuleShape(
     width: number,
     capture: string[],
@@ -75,16 +72,54 @@ function normalizeRuleShape(
     };
 }
 
-/** 将 JSON 中的单条规则配置转换为前端内部使用的 PatternRule 结构。 */
-function normalizeRuleJson(rule: PatternRuleJson): PatternRule {
-    return normalizeRuleShape(rule.width, rule.capture, rule.replace);
+// 校验并转换单条 pattern 配置
+function parsePatternRuleJson(id: string, value: unknown): PatternRule {
+    if (!isRecord(value)) {
+        throw new Error(`patterns.${id} 必须是对象`);
+    }
+
+    const { width, capture, replace } = value;
+    if (!Number.isInteger(width)) {
+        throw new Error(`patterns.${id}.width 必须是整数`);
+    }
+
+    if (!Array.isArray(capture) || !capture.every((cell) => typeof cell === "string")) {
+        throw new Error(`patterns.${id}.capture 必须是字符串数组`);
+    }
+
+    if (!Array.isArray(replace) || !replace.every((cell) => typeof cell === "string")) {
+        throw new Error(`patterns.${id}.replace 必须是字符串数组`);
+    }
+
+    return normalizeRuleShape(width, capture, replace);
 }
 
-/** 将当前 ProjectData 序列化为可持久化保存的 JSON 字符串。 */
+// 校验并转换单条 palette 配置
+function parsePaletteEntryJson(id: string, value: unknown): PaletteEntry {
+    if (!isRecord(value)) {
+        throw new Error(`palette.${id} 必须是对象`);
+    }
+
+    const { color, icon } = value;
+    if (typeof color !== "string") {
+        throw new Error(`palette.${id}.color 必须是字符串`);
+    }
+
+    if (icon !== null && typeof icon !== "string") {
+        throw new Error(`palette.${id}.icon 必须是字符串或 null`);
+    }
+
+    return {
+        color,
+        icon,
+    };
+}
+
+// 将当前 ProjectData 序列化为可持久化保存的 JSON 字符串
 export function projectToJson(project: ProjectData): string {
-    const orderedPatternIds = normalizePatternOrder(
+    const orderedPatternIds = getOrderedPatternIds(
         project.patternOrder,
-        Object.fromEntries(project.patterns),
+        project.patterns,
     );
     const orderedPatterns = Object.fromEntries(
         orderedPatternIds
@@ -94,26 +129,53 @@ export function projectToJson(project: ProjectData): string {
             })
             .filter((entry): entry is readonly [string, PatternRule] => entry !== null),
     );
+
     const json: ProjectDataJson = {
         patterns: orderedPatterns,
         patternOrder: orderedPatternIds,
-        colors: Object.fromEntries(project.colors),
+        palette: Object.fromEntries(project.palette),
     };
+
     return JSON.stringify(json, null, 2);
 }
 
-/** 将项目 JSON 反序列化为前端内部使用的 ProjectData。 */
+// 将项目 JSON 反序列化为前端内部使用的 ProjectData
 export function jsonToProject(json: string): ProjectData {
-    const parsed = JSON.parse(json) as ProjectDataJson;
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(json);
+    } catch {
+        throw new Error("JSON 解析失败，请检查项目文件格式");
+    }
+
+    if (!isRecord(parsed)) {
+        throw new Error("项目文件必须是对象结构");
+    }
+
+    if (!isRecord(parsed.palette)) {
+        throw new Error("项目文件缺少 palette 对象");
+    }
+
+    const patternsRecord = isRecord(parsed.patterns) ? parsed.patterns : {};
     const normalizedPatterns = Object.fromEntries(
-        Object.entries(parsed.patterns ?? {}).map(([id, rule]) => [
+        Object.entries(patternsRecord).map(([id, rule]) => [
             id,
-            normalizeRuleJson(rule),
+            parsePatternRuleJson(id, rule),
         ]),
     );
-    const patternOrder = normalizePatternOrder(
-        parsed.patternOrder,
-        normalizedPatterns,
+    const patternOrder = getOrderedPatternIds(
+        Array.isArray(parsed.patternOrder)
+            ? parsed.patternOrder.filter((id): id is string => typeof id === "string")
+            : [],
+        new Map(
+            Object.entries(normalizedPatterns).map(([id, rule]) => [id, rule] as const),
+        ),
+    );
+    const palette = new Map(
+        Object.entries(parsed.palette).map(([id, entry]) => [
+            id,
+            parsePaletteEntryJson(id, entry),
+        ]),
     );
 
     return {
@@ -121,6 +183,6 @@ export function jsonToProject(json: string): ProjectData {
             patternOrder.map((id) => [id, normalizedPatterns[id]] as const),
         ),
         patternOrder,
-        colors: new Map(Object.entries(parsed.colors ?? {})),
+        palette,
     };
 }
