@@ -4,21 +4,16 @@ import {
     Box,
     Button,
     ColorPicker,
-    ColorSwatch,
     Group,
     Popover,
     Stack,
     Text,
     TextInput,
 } from "@mantine/core";
-import {
-    IconPhoto,
-    IconPencil,
-    IconPlus,
-    IconTrash,
-} from "@tabler/icons-react";
+import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import type { PaletteEntry } from "../../ProjectData";
 import { useWorkspace, useWorkspaceActions } from "../../Workspace";
+import { PalettePreview } from "../GridDisplay2D/GridDisplay2D";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 type PaletteChipProps = {
@@ -39,8 +34,8 @@ export function PaletteSection() {
 
     const paletteItems = useMemo(
         () =>
-            Array.from(workspace.project.palette.entries()).sort((left, right) =>
-                left[0].localeCompare(right[0]),
+            Array.from(workspace.project.palette.entries()).sort(
+                (left, right) => left[0].localeCompare(right[0]),
             ),
         [workspace.project.palette],
     );
@@ -141,7 +136,7 @@ const PaletteChip = memo(function PaletteChip({
             }}
         >
             <Group gap={8} wrap="nowrap">
-                <ColorSwatch color={entry.color} radius="sm" size={16} />
+                <PalettePreview entry={entry} size={18} borderRadius={4} />
                 <Text
                     size="xs"
                     c={selected ? "dark" : "dimmed"}
@@ -150,21 +145,9 @@ const PaletteChip = memo(function PaletteChip({
                 >
                     {id}
                 </Text>
-                {entry.icon && (
-                    <Group gap={4} wrap="nowrap">
-                        <IconPhoto size={12} />
-                        <Text size="10px" c={selected ? "dark" : "dimmed"}>
-                            ICON
-                        </Text>
-                    </Group>
-                )}
                 <Popover withinPortal={false} shadow="sm" trapFocus>
                     <Popover.Target>
-                        <ActionIcon
-                            variant="subtle"
-                            size="xs"
-                            onClick={(event) => event.stopPropagation()}
-                        >
+                        <ActionIcon variant="subtle" size="xs">
                             <IconPencil size={12} />
                         </ActionIcon>
                     </Popover.Target>
@@ -199,7 +182,8 @@ const PaletteChip = memo(function PaletteChip({
                             <TextInput
                                 label="Icon"
                                 size="xs"
-                                placeholder="image url or asset path"
+                                description="使用 Tabler icon 的 kebab-case 名称"
+                                placeholder="e.g. door, tree, arrow-right"
                                 value={draftIcon}
                                 onChange={(event) =>
                                     setDraftIcon(event.currentTarget.value)

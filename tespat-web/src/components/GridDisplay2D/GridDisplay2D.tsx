@@ -4,14 +4,10 @@ import {
     useEffect,
     useMemo,
     useRef,
-    useState,
     type PointerEvent as ReactPointerEvent,
 } from "react";
 import type { PaletteEntry } from "../../ProjectData";
-
-const ICON_CACHE = new Map<string, HTMLImageElement | null>();
-const ICON_LOADING = new Set<string>();
-const ICON_LISTENERS = new Map<string, Set<() => void>>();
+import { drawPaletteCell, useResolvedPaletteIcons } from "./paletteRendering";
 
 // 网格显示组件的显式输入
 export interface GridDisplay2DProps {
@@ -23,109 +19,11 @@ export interface GridDisplay2DProps {
     onChangeData?: (nextData: string[]) => void;
 }
 
-// 通知订阅者某个 icon 已完成加载
-function notifyIconListeners(iconUrl: string) {
-    ICON_LISTENERS.get(iconUrl)?.forEach((listener) => listener());
-}
-
-// 订阅某个 icon 的加载完成事件
-function subscribeIconListener(iconUrl: string, listener: () => void) {
-    const listeners = ICON_LISTENERS.get(iconUrl) ?? new Set<() => void>();
-    listeners.add(listener);
-    ICON_LISTENERS.set(iconUrl, listeners);
-
-    return () => {
-        listeners.delete(listener);
-        if (listeners.size === 0) {
-            ICON_LISTENERS.delete(iconUrl);
-        }
-    };
-}
-
-// 确保某个 icon 资源开始加载
-function ensureIconLoaded(iconUrl: string) {
-    if (!iconUrl || ICON_CACHE.has(iconUrl) || ICON_LOADING.has(iconUrl)) {
-        return;
-    }
-
-    ICON_LOADING.add(iconUrl);
-
-    const image = new Image();
-    image.onload = () => {
-        ICON_LOADING.delete(iconUrl);
-        ICON_CACHE.set(iconUrl, image);
-        notifyIconListeners(iconUrl);
-    };
-    image.onerror = () => {
-        ICON_LOADING.delete(iconUrl);
-        ICON_CACHE.set(iconUrl, null);
-        notifyIconListeners(iconUrl);
-    };
-    image.src = iconUrl;
-}
-
-// 收集并监听当前 palette 需要的 icon
-function useResolvedPaletteIcons(palette: ReadonlyMap<string, PaletteEntry>) {
-    const [iconVersion, setIconVersion] = useState(0);
-
-    useEffect(() => {
-        const unsubscribes: Array<() => void> = [];
-        const forceRefresh = () => {
-            setIconVersion((prev) => prev + 1);
-        };
-
-        for (const entry of palette.values()) {
-            if (!entry.icon) {
-                continue;
-            }
-
-            ensureIconLoaded(entry.icon);
-
-            if (!ICON_CACHE.has(entry.icon)) {
-                unsubscribes.push(
-                    subscribeIconListener(entry.icon, forceRefresh),
-                );
-            }
-        }
-
-        return () => {
-            unsubscribes.forEach((unsubscribe) => unsubscribe());
-        };
-    }, [palette]);
-
-    return {
-        resolvedIcons: ICON_CACHE,
-        iconVersion,
-    };
-}
-
-// 按 contain 规则在单元格中绘制 icon
-function drawContainedImage(
-    ctx: CanvasRenderingContext2D,
-    image: HTMLImageElement,
-    box: { x: number; y: number; width: number; height: number },
-) {
-    if (image.width <= 0 || image.height <= 0) {
-        return;
-    }
-
-    const padding = Math.min(box.width, box.height) * 0.18;
-    const maxWidth = Math.max(box.width - padding * 2, 0);
-    const maxHeight = Math.max(box.height - padding * 2, 0);
-    if (maxWidth <= 0 || maxHeight <= 0) {
-        return;
-    }
-
-    const imageRatio = image.width / image.height;
-    const boxRatio = maxWidth / maxHeight;
-    const drawWidth =
-        imageRatio > boxRatio ? maxWidth : maxHeight * imageRatio;
-    const drawHeight =
-        imageRatio > boxRatio ? maxWidth / imageRatio : maxHeight;
-    const drawX = box.x + (box.width - drawWidth) / 2;
-    const drawY = box.y + (box.height - drawHeight) / 2;
-
-    ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+// 预览方块的渲染参数
+export interface PalettePreviewProps {
+    entry: PaletteEntry;
+    size?: number;
+    borderRadius?: number;
 }
 
 // 将网格数据绘制到 canvas 上
@@ -167,31 +65,83 @@ function renderWholeGrid({
         for (let x = 0; x < width; x += 1) {
             const index = y * width + x;
             const cellId = data[index] ?? "Empty";
-            const entry = palette.get(cellId);
-            const px = x * tileWidth;
-            const py = y * tileHeight;
+            const entry = palette.get(cellId) ?? null;
 
-            ctx.fillStyle =
-                entry?.color ?? (cellId === "Empty" ? "#111827" : "#4b5563");
-            ctx.fillRect(px, py, tileWidth, tileHeight);
-
-            if (entry?.icon) {
-                const iconImage = resolvedIcons.get(entry.icon);
-                if (iconImage) {
-                    drawContainedImage(ctx, iconImage, {
-                        x: px,
-                        y: py,
-                        width: tileWidth,
-                        height: tileHeight,
-                    });
-                }
-            }
-
-            ctx.strokeStyle = "rgba(15,23,42,0.6)";
-            ctx.lineWidth = 1;
-            ctx.strokeRect(px + 0.5, py + 0.5, tileWidth - 1, tileHeight - 1);
+            drawPaletteCell({
+                ctx,
+                box: {
+                    x: x * tileWidth,
+                    y: y * tileHeight,
+                    width: tileWidth,
+                    height: tileHeight,
+                },
+                entry,
+                fallbackColor: cellId === "Empty" ? "#111827" : "#4b5563",
+                resolvedIcons,
+            });
         }
     }
+}
+
+// PalettePreview 负责在侧边栏中绘制与画布一致的小预览方块
+export function PalettePreview({
+    entry,
+    size = 18,
+    borderRadius = 4,
+}: PalettePreviewProps) {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const palette = useMemo(
+        () => new Map([["__preview__", entry] as const]),
+        [entry],
+    );
+    const { resolvedIcons, iconVersion } = useResolvedPaletteIcons(palette);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) {
+            return;
+        }
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+            return;
+        }
+
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+        canvas.style.width = `${size}px`;
+        canvas.style.height = `${size}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, size, size);
+
+        drawPaletteCell({
+            ctx,
+            box: {
+                x: 0,
+                y: 0,
+                width: size,
+                height: size,
+            },
+            entry,
+            fallbackColor: "#111827",
+            resolvedIcons,
+        });
+    }, [entry, iconVersion, resolvedIcons, size]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            style={{
+                display: "block",
+                width: size,
+                height: size,
+                borderRadius,
+                overflow: "hidden",
+                imageRendering: "pixelated",
+            }}
+        />
+    );
 }
 
 // 网格显示组件
