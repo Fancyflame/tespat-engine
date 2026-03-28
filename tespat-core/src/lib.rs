@@ -1,5 +1,8 @@
 pub use pattern::Pattern;
-use std::{fmt::Debug, hash::Hash};
+use std::{
+    fmt::{Debug, Display},
+    hash::Hash,
+};
 
 use crate::pattern::transform::Symmetry;
 
@@ -64,7 +67,6 @@ where
 
 pub trait StrColor: GraphColor {
     fn to_str(&self) -> &'static str;
-    fn from_str(s: &str) -> Option<Self>;
 }
 
 fn index_to_position(index: usize, row_width: usize) -> (usize, usize) {
@@ -73,5 +75,27 @@ fn index_to_position(index: usize, row_width: usize) -> (usize, usize) {
         (0, 0)
     } else {
         (index % row_width, index / row_width)
+    }
+}
+
+#[derive(Debug)]
+pub struct ParseStrToColorError {
+    pub string: Option<String>,
+}
+
+impl ParseStrToColorError {
+    pub fn from_str(s: &str) -> Self {
+        Self {
+            string: Some(s.to_string()),
+        }
+    }
+}
+
+impl Display for ParseStrToColorError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.string {
+            Some(s) => write!(f, "cannot parse string {s:?} to specified color"),
+            None => write!(f, "cannot parse string to specified color"),
+        }
     }
 }

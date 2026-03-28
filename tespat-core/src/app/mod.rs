@@ -152,15 +152,20 @@ impl<T: GraphColor> Tespat<T> {
     }
 
     /// 将当前的color迁移至新的color
-    pub fn migrate<U>(&self) -> TespatBuilder<impl Iterator<Item = U>>
+    pub fn migrate<U>(&self) -> Result<TespatBuilder<Vec<U>>, U::Error>
     where
-        U: From<T>,
+        U: TryFrom<T>,
     {
-        TespatBuilder {
-            graph: self.layer.export().map(|color| U::from(color.clone())),
-            width: self.width(),
-            enable_history: self.is_history_enabled(),
+        let mut vec = Vec::with_capacity(self.layer.len());
+        for old in self.layer.export() {
+            vec.push(U::try_from(old.clone())?);
         }
+
+        Ok(self.export_config().graph(self.width(), vec))
+    }
+
+    pub fn export_config(&self) -> TespatBuilder<()> {
+        TespatBuilder::new().enable_history(self.is_history_enabled())
     }
 
     pub fn width(&self) -> usize {
@@ -179,6 +184,14 @@ pub struct TespatBuilder<I> {
 }
 
 impl TespatBuilder<()> {
+    pub const fn new() -> Self {
+        Self {
+            graph: (),
+            width: 0,
+            enable_history: false,
+        }
+    }
+
     pub fn new_filled<T: GraphColor>(
         color: T,
         width: usize,
@@ -193,11 +206,11 @@ impl TespatBuilder<()> {
 }
 
 impl<I> TespatBuilder<I> {
-    pub fn new(graph: I, width: usize) -> Self {
-        Self {
+    pub fn graph<I2>(self, width: usize, graph: I2) -> TespatBuilder<I2> {
+        TespatBuilder {
             graph,
             width,
-            enable_history: false,
+            enable_history: self.enable_history,
         }
     }
 
@@ -209,7 +222,7 @@ impl<I> TespatBuilder<I> {
     pub fn build<T>(self) -> Tespat<T>
     where
         T: GraphColor,
-        I: Iterator<Item = T>,
+        I: IntoIterator<Item = T>,
     {
         Tespat::new(self)
     }

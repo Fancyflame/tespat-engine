@@ -50,16 +50,20 @@ fn generate_color_enum(palette: &HashMap<&str, PaletteConfig>) -> TokenStream {
             #(#color_variants,)*
         }
 
+        impl ::std::str::FromStr for Color {
+            type Err = ::tespat::ParseStrToColorError;
+            fn from_str(s: &str) -> ::std::result::Result<Self, Self::Err> {
+                match s {
+                    #(#color_names => Ok(Self::#color_variants),)*
+                    _ => Err(::tespat::ParseStrToColorError::from_str(s))
+                }
+            }
+        }
+
         impl ::tespat::StrColor for Color {
             fn to_str(&self) -> &'static str {
                 match self {
                     #(Self::#color_variants => #color_names,)*
-                }
-            }
-            fn from_str(s: &str) -> Option<Self> {
-                match s {
-                    #(#color_names => Some(Self::#color_variants),)*
-                    _ => None
                 }
             }
         }

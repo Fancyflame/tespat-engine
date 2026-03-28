@@ -54,7 +54,7 @@ impl Matches {
     ) -> &Self {
         let mut bitset = tespat.overlapping_bitset.borrow_mut();
         bitset.fill(false);
-        bitset.resize(tespat.layer.size(), false);
+        bitset.resize(tespat.layer.len(), false);
 
         let pattern_size = match_pattern.grid().len();
 

@@ -68,7 +68,7 @@ impl<T> Pattern<T> {
     }
 
     /// 将自身视为初始图创建一个 Tespat
-    pub fn create_tespat<C>(&self) -> Option<TespatBuilder<impl ExactSizeIterator<Item = C> + '_>>
+    pub fn create_tespat<C>(&self) -> Option<TespatBuilder<impl Iterator<Item = C> + '_>>
     where
         T: StaticColor<C>,
         C: GraphColor,
@@ -77,14 +77,14 @@ impl<T> Pattern<T> {
             return None;
         }
 
-        Some(TespatBuilder::new(
+        Some(TespatBuilder::new().graph(
+            self.width,
             self.grid.iter().map(|color| {
                 color
                     .as_ref()
                     .unwrap_or_else(|| unreachable!())
                     .get_color_with_symmetry(Symmetry::Id)
             }),
-            self.width,
         ))
     }
 }

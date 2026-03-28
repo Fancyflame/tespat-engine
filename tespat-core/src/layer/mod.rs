@@ -214,7 +214,7 @@ impl<T> Layer<T> {
         self.pixel_info_table.len() / self.row_width
     }
 
-    pub fn size(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.pixel_info_table.len()
     }
 }
