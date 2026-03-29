@@ -11,6 +11,9 @@ pub mod color_direction;
 mod layer;
 pub mod pattern;
 
+#[cfg(feature = "web-editor")]
+pub mod web_editor;
+
 #[macro_export]
 macro_rules! include_tespat {
     ($relative_path:literal) => {

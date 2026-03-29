@@ -44,6 +44,27 @@ fn generate_color_enum(palette: &HashMap<&str, PaletteConfig>) -> TokenStream {
         })
         .collect();
 
+    let as_editor_palette_match_arms: Vec<_> = color_names
+        .iter()
+        .zip(color_variants.iter())
+        .map(|(name, variant)| {
+            let palette_config = palette
+                .get(*name)
+                .expect("palette entry should exist for each color variant");
+            let color = palette_config.color;
+            let icon = match palette_config.icon {
+                Some(icon) => quote! { Some(#icon) },
+                None => quote! { None },
+            };
+
+            quote! {
+                Self::#variant => const {
+                    &::tespat::web_editor::EditorPalette::new_static(#color, #icon)
+                }
+            }
+        })
+        .collect();
+
     quote! {
         #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
         pub enum Color {
@@ -69,6 +90,14 @@ fn generate_color_enum(palette: &HashMap<&str, PaletteConfig>) -> TokenStream {
         }
 
         impl ::tespat::GraphColor for Color {}
+
+        impl ::std::convert::AsRef<::tespat::web_editor::EditorPalette> for Color {
+            fn as_ref(&self) -> &::tespat::web_editor::EditorPalette {
+                match self {
+                    #(#as_editor_palette_match_arms,)*
+                }
+            }
+        }
 
         impl ::tespat::StaticColor<Color> for Color {
             fn get_color_with_symmetry(

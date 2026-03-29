@@ -42,7 +42,7 @@ fn main() {
             "{}/exported.json",
             std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default()
         ),
-        tespat.export_history().to_json(),
+        tespat.export_history().to_editor_playback_file(),
     )
     .unwrap();
 }

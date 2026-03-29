@@ -3,10 +3,14 @@ name = "tespat"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = ["web-editor"]
+web-editor = ["dep:serde", "dep:serde_json"]
+
 [dependencies]
 anyhow.workspace = true
 rand.workspace = true
-serde.workspace = true
-serde_json.workspace = true
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 tracing.workspace = true
 smallvec.workspace = true
