@@ -36,7 +36,7 @@ name = "city-layout"
 version = "0.1.0"
 dependencies = [
  "tespat",
- "tespat-compiler",
+ "tespat-build",
 ]
 
 [[package]]
@@ -61,7 +61,7 @@ dependencies = [
  "log",
  "rand",
  "tespat",
- "tespat-compiler",
+ "tespat-build",
 ]
 
 [[package]]
@@ -276,7 +276,7 @@ name = "slime-eat-apple"
 version = "0.1.0"
 dependencies = [
  "tespat",
- "tespat-compiler",
+ "tespat-build",
 ]
 
 [[package]]
@@ -309,7 +309,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tespat-compiler"
+name = "tespat-build"
 version = "0.1.0"
 dependencies = [
  "anyhow",

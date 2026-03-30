@@ -5,7 +5,7 @@ edition.workspace = true
 publish = false
 
 [build-dependencies]
-tespat-compiler = { version = "0.1.0", path = "../../tespat-compiler" }
+tespat-build = { version = "0.1.0", path = "../../tespat-build" }
 
 [dependencies]
 tespat = { version = "0.1.0", path = "../../tespat-core" }

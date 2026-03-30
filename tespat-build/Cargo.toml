@@ -1,5 +1,5 @@
 [package]
-name = "tespat-compiler"
+name = "tespat-build"
 version.workspace = true
 edition.workspace = true
 

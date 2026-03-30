@@ -1,5 +1,5 @@
 fn main() {
-    tespat_compiler::TespatCompiler::new()
+    tespat_build::TespatCompiler::new()
         .include("./patterns")
         .compile()
         .unwrap();

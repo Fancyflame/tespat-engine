@@ -9,12 +9,12 @@ TESPAT Engine 是一个基于 Rust 的二维网格模式匹配与替换引擎，
 代码根目录下的大结构主要分为三部分：
 - 前端：`tespat-web`
 - 模式替换核心引擎：`tespat-core`
-- 编译到 Rust 的 tespat 编译器：`tespat-compiler`
+- 编译到 Rust 的 tespat 编译器：`tespat-build`
 
 按功能查找代码时，可优先按职责定位：
 - 编辑规则、导入导出、回放与界面交互：看 `tespat-web`
 - 模式匹配、替换执行、对称变换、历史帧记录：看 `tespat-core`
-- JSON 规则转 Rust 静态代码、编译期生成：看 `tespat-compiler`
+- JSON 规则转 Rust 静态代码、编译期生成：看 `tespat-build`
 
 ## 提醒事项
 

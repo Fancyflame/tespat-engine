@@ -1,4 +1,4 @@
-use tespat_compiler::TespatCompiler;
+use tespat_build::TespatCompiler;
 
 fn main() {
     TespatCompiler::new()

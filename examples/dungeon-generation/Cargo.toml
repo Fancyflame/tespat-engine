@@ -9,4 +9,4 @@ tespat = { version = "0.1.0", path = "../../tespat-core" }
 log.workspace = true
 
 [build-dependencies]
-tespat-compiler = { path = "../../tespat-compiler" }
+tespat-build = { path = "../../tespat-build" }
