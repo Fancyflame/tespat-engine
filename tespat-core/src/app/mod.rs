@@ -3,7 +3,7 @@ use std::{array, cell::RefCell};
 use crate::{
     CaptureColor, GraphColor, Pattern, ReplaceColor,
     app::history::HistoryData,
-    layer::{Layer, pattern_match::Match},
+    layer::{ExportLayerIter, Layer, pattern_match::Match},
     pattern::transform::SymmetryList,
 };
 
@@ -118,8 +118,22 @@ impl<T: GraphColor> Tespat<T> {
         self.layer.color_count(color)
     }
 
-    pub fn export(&self) -> impl Iterator<Item = &T> {
+    pub fn export(&self) -> ExportLayerIter<'_, T> {
         self.layer.export()
+    }
+
+    /// 用邻近算法将当前画面细化为新的 Tespat
+    pub fn refine(&self, n: usize) -> Tespat<T> {
+        let refined_layer = self.layer.refine(n);
+        let history = self
+            .is_history_enabled()
+            .then(|| vec![history::capture_frame(&refined_layer)]);
+
+        Tespat {
+            layer: refined_layer,
+            history,
+            overlapping_bitset: Default::default(),
+        }
     }
 
     pub fn is_history_enabled(&self) -> bool {

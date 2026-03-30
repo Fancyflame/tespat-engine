@@ -1,4 +1,7 @@
-use std::collections::{HashMap, hash_map::Entry};
+use std::{
+    collections::{HashMap, hash_map::Entry},
+    iter::FusedIterator,
+};
 
 use crate::{CaptureColor, index_to_position, pattern::transform::TransformedPattern};
 
@@ -192,8 +195,10 @@ impl<T: GraphColor> Layer<T> {
     }
 
     /// 导出图
-    pub fn export(&self) -> impl Iterator<Item = &T> {
-        self.pixel_info_table.iter().map(|el| &el.color)
+    pub fn export(&self) -> ExportLayerIter<'_, T> {
+        ExportLayerIter {
+            table: self.pixel_info_table.as_slice(),
+        }
     }
 
     /// 获取一种颜色在图中的数量。复杂度为O(1)。
@@ -203,6 +208,38 @@ impl<T: GraphColor> Layer<T> {
             None => 0,
         }
     }
+
+    /// 用邻近算法将当前图像细化为新的层
+    pub fn refine(&self, n: usize) -> Self {
+        if n == 0 || self.row_width == 0 || self.pixel_info_table.is_empty() {
+            return Self::new();
+        }
+
+        let src_width = self.row_width;
+        let src_height = self.height();
+        let mut refined = Self {
+            colors: HashMap::new(),
+            row_width: src_width * n,
+            pixel_info_table: Vec::with_capacity(self.pixel_info_table.len() * n * n),
+        };
+
+        for src_y in 0..src_height {
+            let row_start = src_y * src_width;
+
+            for _ in 0..n {
+                for src_x in 0..src_width {
+                    let color = self.pixel_info_table[row_start + src_x].color.clone();
+
+                    for _ in 0..n {
+                        let index = refined.pixel_info_table.len();
+                        refined.write_color(index, color.clone(), true);
+                    }
+                }
+            }
+        }
+
+        refined
+    }
 }
 
 impl<T> Layer<T> {
@@ -211,13 +248,64 @@ impl<T> Layer<T> {
     }
 
     pub fn height(&self) -> usize {
-        self.pixel_info_table.len() / self.row_width
+        if self.row_width == 0 {
+            debug_assert!(self.pixel_info_table.is_empty());
+            0
+        } else {
+            self.pixel_info_table.len() / self.row_width
+        }
     }
 
     pub fn len(&self) -> usize {
         self.pixel_info_table.len()
     }
 }
+
+/// 导出层颜色的自定义迭代器
+#[derive(Clone, Copy)]
+pub struct ExportLayerIter<'a, T> {
+    table: &'a [Element<T>],
+}
+
+/// 导出迭代器的便捷操作
+impl<'a, T> ExportLayerIter<'a, T> {
+    pub fn skip_n(&mut self, n: usize) -> &mut Self {
+        let (_, rest) = self.table.split_at_checked(n).unwrap_or_default();
+        self.table = rest;
+        self
+    }
+}
+
+/// 导出迭代器的标准迭代实现
+impl<'a, T> Iterator for ExportLayerIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (first, rest) = self.table.split_first()?;
+        self.table = rest;
+        Some(&first.color)
+    }
+
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        self.skip_n(n);
+        self.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.len();
+        (len, Some(len))
+    }
+}
+
+/// 导出迭代器的精确长度实现
+impl<'a, T> ExactSizeIterator for ExportLayerIter<'a, T> {
+    fn len(&self) -> usize {
+        self.table.len()
+    }
+}
+
+/// 导出迭代器的融合迭代特性
+impl<'a, T> FusedIterator for ExportLayerIter<'a, T> {}
 
 pub struct ColorPositions<'a, T> {
     layer: &'a Layer<T>,
