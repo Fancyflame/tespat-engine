@@ -3,6 +3,7 @@ use std::{
     fmt::{Debug, Display},
     hash::Hash,
 };
+pub use tespat_macros::*;
 
 use crate::pattern::transform::Symmetry;
 
@@ -68,6 +69,7 @@ where
     }
 }
 
+/// 颜色导出字符串，作为标识
 pub trait StrColor: GraphColor {
     fn to_str(&self) -> &'static str;
 }
@@ -102,3 +104,6 @@ impl Display for ParseStrToColorError {
         }
     }
 }
+
+#[doc(hidden)]
+pub type SelfAlias<T> = T;

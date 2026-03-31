@@ -10,13 +10,13 @@ impl<T: GraphColor> GraphColor for DirectionalColor<T> {}
 
 impl<T, C> StaticColor<DirectionalColor<C>> for DirectionalColor<T>
 where
-    C: GraphColor,
-    C: for<'a> From<&'a T>,
+    T: GraphColor,
+    C: GraphColor + From<T>,
 {
     fn get_color_with_symmetry(&self, symmetry: Symmetry) -> DirectionalColor<C> {
         DirectionalColor {
             direction: self.direction.map(|d| d.rotate(symmetry)),
-            kind: C::from(&self.kind),
+            kind: C::from(self.kind.clone()),
         }
     }
 }

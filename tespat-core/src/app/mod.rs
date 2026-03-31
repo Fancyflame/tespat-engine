@@ -136,10 +136,6 @@ impl<T: GraphColor> Tespat<T> {
         }
     }
 
-    pub fn is_history_enabled(&self) -> bool {
-        self.history.is_some()
-    }
-
     /// 返回历史记录。如果未启用历史记录则仅返回最后一帧
     pub fn export_history(&self) -> HistoryData<T> {
         HistoryData {
@@ -164,10 +160,13 @@ impl<T: GraphColor> Tespat<T> {
             array::from_fn(|_| export.next().cloned().unwrap())
         }))
     }
+}
 
+impl<T> Tespat<T> {
     /// 将当前的color迁移至新的color
     pub fn migrate<U>(&self) -> Result<TespatBuilder<Vec<U>>, U::Error>
     where
+        T: Clone,
         U: TryFrom<T>,
     {
         let mut vec = Vec::with_capacity(self.layer.len());
@@ -180,6 +179,10 @@ impl<T: GraphColor> Tespat<T> {
 
     pub fn export_config(&self) -> TespatBuilder<()> {
         TespatBuilder::new().enable_history(self.is_history_enabled())
+    }
+
+    pub fn is_history_enabled(&self) -> bool {
+        self.history.is_some()
     }
 
     pub fn width(&self) -> usize {

@@ -14,3 +14,4 @@ serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 tracing.workspace = true
 smallvec.workspace = true
+tespat-macros = { version = "0.1.0", path = "../tespat-macros" }

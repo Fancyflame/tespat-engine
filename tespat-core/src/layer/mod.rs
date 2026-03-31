@@ -194,13 +194,6 @@ impl<T: GraphColor> Layer<T> {
         self.pixel_info_table.get(index).map(|el| &el.color)
     }
 
-    /// 导出图
-    pub fn export(&self) -> ExportLayerIter<'_, T> {
-        ExportLayerIter {
-            table: self.pixel_info_table.as_slice(),
-        }
-    }
-
     /// 获取一种颜色在图中的数量。复杂度为O(1)。
     pub fn color_count(&self, color: &T) -> usize {
         match self.colors.get(color) {
@@ -243,6 +236,13 @@ impl<T: GraphColor> Layer<T> {
 }
 
 impl<T> Layer<T> {
+    /// 导出图
+    pub fn export(&self) -> ExportLayerIter<'_, T> {
+        ExportLayerIter {
+            table: self.pixel_info_table.as_slice(),
+        }
+    }
+
     pub fn width(&self) -> usize {
         self.row_width
     }
