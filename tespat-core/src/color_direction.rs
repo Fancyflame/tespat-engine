@@ -35,7 +35,7 @@ impl Direction {
 
         match sym {
             Symmetry::Id => self,
-            Symmetry::Rot90 => match self {
+            Symmetry::CCW90 => match self {
                 Up => Left,
                 Right => Up,
                 Down => Right,
@@ -47,7 +47,7 @@ impl Direction {
                 Down => Up,
                 Left => Right,
             },
-            Symmetry::Rot270 => match self {
+            Symmetry::CW90 => match self {
                 Up => Right,
                 Right => Down,
                 Down => Left,

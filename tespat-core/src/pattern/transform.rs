@@ -61,9 +61,9 @@ impl SymmetryList {
     pub fn as_array(&self) -> SmallVec<[Symmetry; 8]> {
         [
             (self.id, Symmetry::Id),
-            (self.rot_90, Symmetry::Rot90),
+            (self.rot_90, Symmetry::CCW90),
             (self.rot_180, Symmetry::Rot180),
-            (self.rot_270, Symmetry::Rot270),
+            (self.rot_270, Symmetry::CW90),
             (self.flip_h, Symmetry::FlipH),
             (self.flip_v, Symmetry::FlipV),
             (self.flip_d1, Symmetry::FlipD1),
@@ -78,9 +78,9 @@ impl SymmetryList {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Symmetry {
     Id,     // 0
-    Rot90,  // 1 CCW
-    Rot180, // 2 CCW
-    Rot270, // 3 CCW
+    CCW90,  // 1
+    Rot180, // 2
+    CW90,   // 3
     FlipH,  // 4
     FlipV,  // 5
     FlipD1, // 6 (Main Diagonal \)
@@ -90,15 +90,15 @@ pub enum Symmetry {
 impl Symmetry {
     pub const NONE: [Self; 1] = [Self::Id];
 
-    pub const ROTATE_ONLY: [Self; 4] = [Self::Id, Self::Rot90, Self::Rot180, Self::Rot270];
+    pub const ROTATE_ONLY: [Self; 4] = [Self::Id, Self::CCW90, Self::Rot180, Self::CW90];
 
     pub const FLIP_ONLY: [Self; 3] = [Self::Id, Self::FlipH, Self::FlipV];
 
     pub const ROTATE_AND_FLIP: [Self; 8] = [
         Self::Id,
-        Self::Rot90,
+        Self::CCW90,
         Self::Rot180,
-        Self::Rot270,
+        Self::CW90,
         Self::FlipH,
         Self::FlipV,
         Self::FlipD1,
@@ -106,13 +106,13 @@ impl Symmetry {
     ];
 
     /// 将原始坐标 (x, y) 映射到变换后的坐标
-    /// w, h 为变换前（原始）的宽度和高度
+    /// 以 x 向右、y 向下的屏幕坐标系为准；w, h 为变换前（原始）的宽度和高度
     pub const fn map(&self, x: usize, y: usize, w: usize, h: usize) -> (usize, usize) {
         match self {
             Symmetry::Id => (x, y),
-            Symmetry::Rot90 => (h - 1 - y, x),
+            Symmetry::CCW90 => (y, w - 1 - x),
             Symmetry::Rot180 => (w - 1 - x, h - 1 - y),
-            Symmetry::Rot270 => (y, w - 1 - x),
+            Symmetry::CW90 => (h - 1 - y, x),
             Symmetry::FlipH => (w - 1 - x, y),
             Symmetry::FlipV => (x, h - 1 - y),
             Symmetry::FlipD1 => (y, x),
@@ -124,11 +124,11 @@ impl Symmetry {
     /// 如果你用操作 S 变换了坐标，再用 S.inverse() 变换回来，就能得到原始坐标。
     pub const fn inverse(&self) -> Self {
         match self {
-            // 顺时针旋转 90 的逆操作是顺时针旋转 270 (即逆时针 90)
-            Symmetry::Rot90 => Symmetry::Rot270,
+            // 逆时针旋转 90 的逆操作是顺时针旋转 90
+            Symmetry::CCW90 => Symmetry::CW90,
 
-            // 顺时针旋转 270 的逆操作是顺时针旋转 90
-            Symmetry::Rot270 => Symmetry::Rot90,
+            // 顺时针旋转 90 的逆操作是逆时针旋转 90
+            Symmetry::CW90 => Symmetry::CCW90,
 
             // 其余所有操作的逆操作都是它们本身 (Self-inverse)
             _ => *self,
@@ -141,7 +141,7 @@ impl Symmetry {
     pub const fn map_size(&self, w: usize, h: usize) -> (usize, usize) {
         match self {
             Symmetry::Id | Symmetry::Rot180 | Symmetry::FlipH | Symmetry::FlipV => (w, h),
-            Symmetry::Rot90 | Symmetry::Rot270 | Symmetry::FlipD1 | Symmetry::FlipD2 => (h, w),
+            Symmetry::CCW90 | Symmetry::CW90 | Symmetry::FlipD1 | Symmetry::FlipD2 => (h, w),
         }
     }
 

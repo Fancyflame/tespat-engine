@@ -80,14 +80,12 @@ impl<T: GraphColor> Layer<T> {
 
     /// 变更颜色
     pub fn mutate_color(&mut self, index: usize, color: T) {
-        let place = &mut self.data_vec[index];
-
-        if *place == color {
+        if self.data_vec[index] == color {
             return;
         }
 
-        *place = color;
         self.invalidate_color(index);
+        self.data_vec[index] = color;
         self.record_color(index);
     }
 
