@@ -2,6 +2,10 @@ use std::borrow::Cow;
 
 use serde::Serialize;
 
+pub trait GetEditorPalette {
+    fn get_editor_palette(&self) -> EditorPalette;
+}
+
 #[derive(Clone, Serialize)]
 pub struct EditorPalette {
     pub color: Cow<'static, str>,

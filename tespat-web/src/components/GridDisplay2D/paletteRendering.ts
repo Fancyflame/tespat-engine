@@ -61,7 +61,7 @@ function getHexColorLuminance(hexColor: string) {
 // 根据底色自动选择 icon 的深浅描边色
 function getIconStrokeColor(backgroundHex: string) {
     const luminance = getHexColorLuminance(backgroundHex);
-    return luminance < 0.45
+    return luminance < 0.3
         ? TABLER_STROKE_COLORS.light
         : TABLER_STROKE_COLORS.dark;
 }

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::{Context, Result};
+use convert_case::Case;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use serde::Deserialize;
@@ -28,18 +29,18 @@ fn generate_color_enum(palette: &HashMap<&str, PaletteConfig>) -> TokenStream {
         .map(|name| color_variant_ident(name))
         .collect();
 
-    let unit_pattern_match_arms: Vec<_> = color_variants
+    let unit_pattern_items: Vec<_> = color_names
         .iter()
-        .map(|variant| {
+        .zip(color_variants.iter())
+        .map(|(&&name, variant)| {
+            let static_pattern_ident = pattern_static_ident(name);
             quote! {
-                Self::#variant => {
-                    static PATTERN: ::tespat::Pattern<Color> = ::tespat::Pattern::from_static(
+                pub static #static_pattern_ident: ::tespat::Pattern<Color> =
+                    ::tespat::Pattern::from_static(
                         1,
                         &[Some(Color::#variant)],
                         &[(Some(Color::#variant), 0)],
                     );
-                    &PATTERN
-                }
             }
         })
         .collect();
@@ -59,7 +60,7 @@ fn generate_color_enum(palette: &HashMap<&str, PaletteConfig>) -> TokenStream {
 
             quote! {
                 Self::#variant => const {
-                    &::tespat::web_editor::EditorPalette::new_static(#color, #icon)
+                    ::tespat::web_editor::EditorPalette::new_static(#color, #icon)
                 }
             }
         })
@@ -91,8 +92,8 @@ fn generate_color_enum(palette: &HashMap<&str, PaletteConfig>) -> TokenStream {
 
         impl ::tespat::GraphColor for Color {}
 
-        impl ::std::convert::AsRef<::tespat::web_editor::EditorPalette> for Color {
-            fn as_ref(&self) -> &::tespat::web_editor::EditorPalette {
+        impl ::tespat::web_editor::GetEditorPalette for Color {
+            fn get_editor_palette(&self) -> ::tespat::web_editor::EditorPalette {
                 match self {
                     #(#as_editor_palette_match_arms,)*
                 }
@@ -108,13 +109,10 @@ fn generate_color_enum(palette: &HashMap<&str, PaletteConfig>) -> TokenStream {
             }
         }
 
-        impl Color {
-            #[allow(dead_code)]
-            pub const fn unit_pattern(self) -> &'static ::tespat::Pattern<Self> {
-                match self {
-                    #(#unit_pattern_match_arms,)*
-                }
-            }
+        #[allow(dead_code)]
+        pub mod unit_pattern {
+            use super::Color;
+            #(#unit_pattern_items)*
         }
     }
 }
@@ -217,23 +215,23 @@ struct PatternConfig<'a> {
 }
 
 fn color_variant_ident(name: &str) -> Ident {
-    format_ident!("{}", sanitize_ident(&to_pascal_case(name)))
+    cased_ident(name, Case::Pascal)
 }
 
 fn pattern_static_ident(name: &str) -> Ident {
-    format_ident!("{}", sanitize_ident(&to_upper_snake_case(name)))
+    cased_ident(name, Case::UpperSnake)
 }
 
-/// 转换为 PascalCase（用于 enum 变体）
-fn to_pascal_case(s: &str) -> String {
-    use convert_case::{Case, Casing};
-    s.to_case(Case::Pascal)
-}
+/// 保留下划线前缀进行case转换
+fn cased_ident(s: &str, case: Case) -> Ident {
+    let underline_prefix = s.starts_with('_');
+    let mut string = sanitize_ident(s);
+    string = convert_case::Casing::to_case(&string, case);
+    if underline_prefix {
+        string.insert(0, '_');
+    }
 
-/// 转换为 UPPER_SNAKE_CASE（用于静态字段名）
-fn to_upper_snake_case(s: &str) -> String {
-    use convert_case::{Case, Casing};
-    s.to_case(Case::UpperSnake)
+    format_ident!("{string}")
 }
 
 /// 名称限制：只允许字母、数字和下划线

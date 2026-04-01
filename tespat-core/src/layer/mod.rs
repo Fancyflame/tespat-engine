@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, hash_map::Entry},
-    iter::FusedIterator,
-};
+use std::collections::{HashMap, hash_map::Entry};
 
 use crate::{CaptureColor, index_to_position, pattern::transform::TransformedPattern};
 
@@ -22,10 +19,7 @@ struct ColorChain {
 
 /// 索引表中的每个元素
 #[derive(Clone, Copy)]
-struct Element<T> {
-    /// 该元素的颜色
-    color: T,
-
+struct Metadata {
     /// 相同颜色的前一个元素的索引
     prev_index: Option<usize>,
 
@@ -33,109 +27,119 @@ struct Element<T> {
     next_index: Option<usize>,
 }
 
+impl Metadata {
+    const PLACEHOLDER: Self = Metadata {
+        prev_index: None,
+        next_index: None,
+    };
+}
+
 #[derive(Clone)]
 pub struct Layer<T> {
     /// 所有颜色对应的链表
-    colors: HashMap<T, ColorChain>,
+    color_indexes: HashMap<T, ColorChain>,
 
     /// 行宽
     row_width: usize,
 
+    /// 每个颜色的元信息
+    metadata_vec: Vec<Metadata>,
+
     /// 根据位置获取信息的表
-    pixel_info_table: Vec<Element<T>>,
+    data_vec: Vec<T>,
 }
 
 // 写入实现
 impl<T: GraphColor> Layer<T> {
     pub fn new() -> Self {
         Self {
-            colors: HashMap::new(),
+            color_indexes: HashMap::new(),
             row_width: 0,
-            pixel_info_table: Vec::new(),
+            metadata_vec: Vec::new(),
+            data_vec: Vec::new(),
         }
     }
 
     /// 用数据初始化
-    pub fn initialize<I>(&mut self, row_width: usize, grid: I)
+    pub fn initialize<F>(&mut self, row_width: usize, mutate_data: F)
     where
-        I: Iterator<Item = T>,
+        F: FnOnce(&mut Vec<T>),
     {
-        self.colors.clear();
-        self.pixel_info_table.clear();
+        self.color_indexes.clear();
         self.row_width = row_width;
 
-        let mut count = 0usize;
+        mutate_data(&mut self.data_vec);
 
-        for (i, data) in grid.enumerate() {
-            count += 1;
-            self.write_color(i, data, true);
-        }
+        self.metadata_vec
+            .resize(self.data_vec.len(), Metadata::PLACEHOLDER);
 
-        if let Some(additional) = count.checked_sub(self.pixel_info_table.len()) {
-            self.pixel_info_table.reserve_exact(additional);
+        for i in 0..self.data_vec.len() {
+            self.record_color(i);
         }
     }
 
     /// 变更颜色
     pub fn mutate_color(&mut self, index: usize, color: T) {
-        if self.pixel_info_table[index].color == color {
+        let place = &mut self.data_vec[index];
+
+        if *place == color {
             return;
         }
 
+        *place = color;
         self.invalidate_color(index);
-        self.write_color(index, color, false);
+        self.record_color(index);
     }
 
     /// 将一个位置的颜色在索引中无效化。需要尽快为该位置写入颜色。
     fn invalidate_color(&mut self, index: usize) {
-        let element = self.pixel_info_table[index].clone();
+        let color = &self.data_vec[index];
+        let metadata = self.metadata_vec[index];
 
-        let chain = self.colors.get_mut(&element.color).unwrap();
+        let chain = self.color_indexes.get_mut(color).unwrap();
         chain.len -= 1;
 
-        match (element.prev_index, element.next_index) {
+        match (metadata.prev_index, metadata.next_index) {
             (Some(prev_index), Some(next_index)) => {
                 // 这是在链中间的元素
-                self.pixel_info_table[prev_index].next_index = element.next_index;
-                self.pixel_info_table[next_index].prev_index = element.prev_index;
+                self.metadata_vec[prev_index].next_index = metadata.next_index;
+                self.metadata_vec[next_index].prev_index = metadata.prev_index;
             }
             (None, Some(next_index)) => {
                 // 这是第一个元素
-                self.pixel_info_table[next_index].prev_index = None;
+                self.metadata_vec[next_index].prev_index = None;
                 chain.head_index = next_index;
             }
             (Some(prev_index), None) => {
                 // 这是最后一个元素
-                self.pixel_info_table[prev_index].next_index = None;
+                self.metadata_vec[prev_index].next_index = None;
             }
             (None, None) => {
                 // 这是唯一的元素
-                self.colors.remove(&element.color);
+                self.color_indexes.remove(&color);
             }
         }
     }
 
     /// 将新颜色填入一个位置。将会将旧颜色视为未初始化，直接覆写旧颜色。
-    fn write_color(&mut self, index: usize, data: T, push_mode: bool) {
-        let new_el;
+    fn record_color(&mut self, index: usize) {
+        let color = &self.data_vec[index];
 
-        match self.colors.entry(data.clone()) {
+        match self.color_indexes.entry(color.clone()) {
             Entry::Vacant(vac) => {
                 vac.insert(ColorChain {
                     head_index: index,
                     len: 1,
                 });
-                new_el = Element {
-                    color: data,
+                self.metadata_vec[index] = Metadata {
                     prev_index: None,
                     next_index: None,
                 };
             }
             Entry::Occupied(mut occ) => {
                 let head_index = &mut occ.get_mut().head_index;
-                self.pixel_info_table[*head_index].prev_index = Some(index);
-                new_el = Element {
-                    color: data,
+                self.metadata_vec[*head_index].prev_index = Some(index);
+                self.metadata_vec[index] = Metadata {
                     prev_index: None,
                     next_index: Some(*head_index),
                 };
@@ -143,12 +147,6 @@ impl<T: GraphColor> Layer<T> {
                 *head_index = index;
                 occ.get_mut().len += 1;
             }
-        };
-
-        if push_mode {
-            self.pixel_info_table.push(new_el);
-        } else {
-            self.pixel_info_table[index] = new_el;
         }
     }
 }
@@ -177,7 +175,7 @@ impl<T: GraphColor> Layer<T> {
 
     /// 获得对应颜色在图像中的所有位置
     fn get_color_positions<'a>(&'a self, color: &T) -> ColorPositions<'a, T> {
-        let next_index = self.colors.get(color).map(|chain| chain.head_index);
+        let next_index = self.color_indexes.get(color).map(|chain| chain.head_index);
         ColorPositions {
             layer: self,
             next_index,
@@ -191,56 +189,51 @@ impl<T: GraphColor> Layer<T> {
         }
 
         let index = x + y * self.row_width;
-        self.pixel_info_table.get(index).map(|el| &el.color)
+        self.data_vec.get(index)
     }
 
     /// 获取一种颜色在图中的数量。复杂度为O(1)。
     pub fn color_count(&self, color: &T) -> usize {
-        match self.colors.get(color) {
+        match self.color_indexes.get(color) {
             Some(chain) => chain.len,
             None => 0,
         }
     }
 
     /// 用邻近算法将当前图像细化为新的层
-    pub fn refine(&self, n: usize) -> Self {
-        if n == 0 || self.row_width == 0 || self.pixel_info_table.is_empty() {
-            return Self::new();
-        }
-
+    pub fn refine(&mut self, n: usize) {
         let src_width = self.row_width;
         let src_height = self.height();
-        let mut refined = Self {
-            colors: HashMap::new(),
-            row_width: src_width * n,
-            pixel_info_table: Vec::with_capacity(self.pixel_info_table.len() * n * n),
-        };
+        let src_data = self.data_vec.clone();
 
-        for src_y in 0..src_height {
-            let row_start = src_y * src_width;
+        if n == 0 {
+            self.initialize(0, |vec| vec.clear());
+            return;
+        }
 
-            for _ in 0..n {
-                for src_x in 0..src_width {
-                    let color = self.pixel_info_table[row_start + src_x].color.clone();
+        self.initialize(src_width.saturating_mul(n), move |vec| {
+            vec.clear();
+            vec.reserve(src_data.len() * n * n);
 
-                    for _ in 0..n {
-                        let index = refined.pixel_info_table.len();
-                        refined.write_color(index, color.clone(), true);
+            for src_y in 0..src_height {
+                let src_row_start = src_y * src_width;
+                for _ in 0..n {
+                    for src_x in 0..src_width {
+                        let color = &src_data[src_row_start + src_x];
+                        for _ in 0..n {
+                            vec.push(color.clone());
+                        }
                     }
                 }
             }
-        }
-
-        refined
+        });
     }
 }
 
 impl<T> Layer<T> {
     /// 导出图
-    pub fn export(&self) -> ExportLayerIter<'_, T> {
-        ExportLayerIter {
-            table: self.pixel_info_table.as_slice(),
-        }
+    pub fn export(&self) -> &Vec<T> {
+        &self.data_vec
     }
 
     pub fn width(&self) -> usize {
@@ -249,63 +242,17 @@ impl<T> Layer<T> {
 
     pub fn height(&self) -> usize {
         if self.row_width == 0 {
-            debug_assert!(self.pixel_info_table.is_empty());
+            debug_assert!(self.data_vec.is_empty());
             0
         } else {
-            self.pixel_info_table.len() / self.row_width
+            self.data_vec.len() / self.row_width
         }
     }
 
     pub fn len(&self) -> usize {
-        self.pixel_info_table.len()
+        self.data_vec.len()
     }
 }
-
-/// 导出层颜色的自定义迭代器
-#[derive(Clone, Copy)]
-pub struct ExportLayerIter<'a, T> {
-    table: &'a [Element<T>],
-}
-
-/// 导出迭代器的便捷操作
-impl<'a, T> ExportLayerIter<'a, T> {
-    pub fn skip_n(&mut self, n: usize) -> &mut Self {
-        let (_, rest) = self.table.split_at_checked(n).unwrap_or_default();
-        self.table = rest;
-        self
-    }
-}
-
-/// 导出迭代器的标准迭代实现
-impl<'a, T> Iterator for ExportLayerIter<'a, T> {
-    type Item = &'a T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let (first, rest) = self.table.split_first()?;
-        self.table = rest;
-        Some(&first.color)
-    }
-
-    fn nth(&mut self, n: usize) -> Option<Self::Item> {
-        self.skip_n(n);
-        self.next()
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.len();
-        (len, Some(len))
-    }
-}
-
-/// 导出迭代器的精确长度实现
-impl<'a, T> ExactSizeIterator for ExportLayerIter<'a, T> {
-    fn len(&self) -> usize {
-        self.table.len()
-    }
-}
-
-/// 导出迭代器的融合迭代特性
-impl<'a, T> FusedIterator for ExportLayerIter<'a, T> {}
 
 pub struct ColorPositions<'a, T> {
     layer: &'a Layer<T>,
@@ -316,7 +263,7 @@ impl<'a, T> Iterator for ColorPositions<'a, T> {
     type Item = (usize, usize);
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.next_index?;
-        self.next_index = self.layer.pixel_info_table[index].next_index;
+        self.next_index = self.layer.metadata_vec[index].next_index;
         Some(index_to_position(index, self.layer.row_width))
     }
 }

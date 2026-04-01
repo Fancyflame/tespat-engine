@@ -23,7 +23,7 @@ where
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum Direction {
-    Up,
+    Up = 0,
     Left,
     Down,
     Right,

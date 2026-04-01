@@ -68,24 +68,22 @@ impl<T> Pattern<T> {
     }
 
     /// 将自身视为初始图创建一个 Tespat
-    pub fn create_tespat<C>(&self) -> Option<TespatBuilder<impl Iterator<Item = C> + '_>>
+    pub fn create_tespat<C>(&self) -> Option<TespatBuilder<C>>
     where
         T: StaticColor<C>,
         C: GraphColor,
     {
-        if self.colors.iter().any(|(color, _)| color.is_none()) {
-            return None;
-        }
-
-        Some(TespatBuilder::new().graph(
-            self.width,
-            self.grid.iter().map(|color| {
+        let data: Vec<C> = self
+            .grid
+            .iter()
+            .map(|color| {
                 color
                     .as_ref()
-                    .unwrap_or_else(|| unreachable!())
-                    .get_color_with_symmetry(Symmetry::Id)
-            }),
-        ))
+                    .map(|c| c.get_color_with_symmetry(Symmetry::Id))
+            })
+            .collect::<Option<_>>()?;
+
+        Some(TespatBuilder::new().graph(self.width, data))
     }
 }
 

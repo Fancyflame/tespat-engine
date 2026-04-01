@@ -16,7 +16,7 @@ pub fn generate(tespat: &mut Tespat<Color>) {
         }
 
         if tespat.execute(
-            (Color::Anchor.unit_pattern(), Color::PathHead.unit_pattern()),
+            (&unit_pattern::ANCHOR, &unit_pattern::PATH_HEAD),
             MatchFilter::One,
             SymmetryList::ID,
         ) {
@@ -28,14 +28,14 @@ pub fn generate(tespat: &mut Tespat<Color>) {
 
     // 留一个路径头做下一轮凿墙寻路
     tespat.execute(
-        (Color::PathHead.unit_pattern(), Color::Anchor.unit_pattern()),
+        (&unit_pattern::PATH_HEAD, &unit_pattern::ANCHOR),
         MatchFilter::One,
         SymmetryList::ID,
     );
 
     // 清除剩下的寻路头
     tespat.execute(
-        (Color::PathHead.unit_pattern(), Color::Path.unit_pattern()),
+        (&unit_pattern::PATH_HEAD, &unit_pattern::PATH),
         MatchFilter::All,
         SymmetryList::ID,
     );
@@ -45,7 +45,7 @@ pub fn generate(tespat: &mut Tespat<Color>) {
 
     // 将房间地面替换为路径
     tespat.execute(
-        (Color::Room.unit_pattern(), Color::Path.unit_pattern()),
+        (&unit_pattern::ROOM, &unit_pattern::PATH),
         MatchFilter::All,
         SymmetryList::ID,
     );
@@ -67,7 +67,7 @@ pub fn generate(tespat: &mut Tespat<Color>) {
     }
 
     tespat.execute(
-        (Color::Anchor.unit_pattern(), Color::Path.unit_pattern()),
+        (&unit_pattern::ANCHOR, &unit_pattern::PATH),
         MatchFilter::All,
         SymmetryList::ID,
     );
@@ -84,7 +84,7 @@ pub fn generate(tespat: &mut Tespat<Color>) {
 
     // 恢复房间
     {
-        let m = rooms_info.capture(Color::Room.unit_pattern(), SymmetryList::ID);
-        tespat.replace(&m, Color::Room.unit_pattern());
+        let m = rooms_info.capture(&unit_pattern::ROOM, SymmetryList::ID);
+        tespat.replace(&m, &unit_pattern::ROOM);
     }
 }

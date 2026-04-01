@@ -1,4 +1,7 @@
-use tespat::{app::MatchFilter, pattern::transform::SymmetryList};
+use tespat::{
+    app::{MatchFilter, TespatBuilder},
+    pattern::transform::SymmetryList,
+};
 
 // 引入 build.rs 生成的规则代码。
 mod example {
@@ -8,10 +11,7 @@ mod example {
 fn main() {
     use example::*;
 
-    let mut tespat = pattern::GRAPH
-        .0
-        .create_tespat()
-        .unwrap()
+    let mut tespat = TespatBuilder::new_filled(Color::Active, 20, 30)
         .enable_history(true)
         .build();
 
@@ -27,20 +27,14 @@ fn main() {
 
         // 随机挑选一个候选点生成种子
         tespat.execute(
-            (
-                Color::SeedCandidate.unit_pattern(),
-                Color::Seed.unit_pattern(),
-            ),
+            (&unit_pattern::SEED_CANDIDATE, &unit_pattern::SEED),
             MatchFilter::One,
             SymmetryList::ID,
         );
 
         // 将所有未使用的候选点替换回active
         tespat.execute(
-            (
-                Color::SeedCandidate.unit_pattern(),
-                Color::Active.unit_pattern(),
-            ),
+            (&unit_pattern::SEED_CANDIDATE, &unit_pattern::ACTIVE),
             MatchFilter::All,
             SymmetryList::ID,
         );
@@ -60,13 +54,13 @@ fn main() {
         ) {}
 
         tespat.execute(
-            (Color::Growth.unit_pattern(), Color::Wall.unit_pattern()),
+            (&unit_pattern::GROWTH, &unit_pattern::WALL),
             MatchFilter::All,
             SymmetryList::ID,
         );
 
         tespat.execute(
-            (Color::Seed.unit_pattern(), Color::Wall.unit_pattern()),
+            (&unit_pattern::SEED, &unit_pattern::WALL),
             MatchFilter::All,
             SymmetryList::ID,
         );

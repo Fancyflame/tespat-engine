@@ -5,7 +5,7 @@ use serde_json::json;
 use crate::{GraphColor, layer::Layer};
 
 pub(super) fn capture_frame<T: GraphColor>(layer: &Layer<T>) -> Vec<T> {
-    layer.export().cloned().collect()
+    layer.export().clone()
 }
 
 pub struct HistoryData<T> {
@@ -16,7 +16,7 @@ pub struct HistoryData<T> {
 #[cfg(feature = "web-editor")]
 impl<T> HistoryData<T>
 where
-    T: GraphColor + AsRef<crate::web_editor::EditorPalette>,
+    T: GraphColor + crate::web_editor::GetEditorPalette,
 {
     pub fn to_editor_playback_file(&self) -> String {
         let mut palettes = Vec::new();
@@ -31,7 +31,7 @@ where
                     .map(|color| {
                         let &mut id = palette_map.entry(color.clone()).or_insert_with(|| {
                             let id = palettes.len();
-                            palettes.push(color.as_ref());
+                            palettes.push(color.get_editor_palette());
                             id
                         });
                         id

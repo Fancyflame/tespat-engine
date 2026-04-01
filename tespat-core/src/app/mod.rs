@@ -3,7 +3,7 @@ use std::{array, cell::RefCell};
 use crate::{
     CaptureColor, GraphColor, Pattern, ReplaceColor,
     app::history::HistoryData,
-    layer::{ExportLayerIter, Layer, pattern_match::Match},
+    layer::{Layer, pattern_match::Match},
     pattern::transform::SymmetryList,
 };
 
@@ -24,18 +24,22 @@ pub struct Tespat<T> {
 }
 
 impl<T: GraphColor> Tespat<T> {
-    pub fn new<I>(options: TespatBuilder<I>) -> Self
-    where
-        I: IntoIterator<Item = T>,
-    {
+    pub fn new(options: TespatBuilder<T>) -> Self {
+        let TespatBuilder {
+            graph,
+            width,
+            enable_history,
+        } = options;
+
         let mut this = Self {
             layer: Layer::new(),
-            history: options.enable_history.then(Vec::new),
+            history: enable_history.then(Vec::new),
             overlapping_bitset: Default::default(),
         };
 
-        this.layer
-            .initialize(options.width, options.graph.into_iter());
+        this.layer.initialize(width, move |vec| {
+            *vec = graph;
+        });
 
         if let Some(history) = this.history.as_mut() {
             history.push(history::capture_frame(&this.layer));
@@ -118,21 +122,16 @@ impl<T: GraphColor> Tespat<T> {
         self.layer.color_count(color)
     }
 
-    pub fn export(&self) -> ExportLayerIter<'_, T> {
+    pub fn export(&self) -> &Vec<T> {
         self.layer.export()
     }
 
-    /// 用邻近算法将当前画面细化为新的 Tespat
-    pub fn refine(&self, n: usize) -> Tespat<T> {
-        let refined_layer = self.layer.refine(n);
-        let history = self
-            .is_history_enabled()
-            .then(|| vec![history::capture_frame(&refined_layer)]);
+    /// 用邻近算法原地细化当前画面
+    pub fn refine(&mut self, n: usize) {
+        self.layer.refine(n);
 
-        Tespat {
-            layer: refined_layer,
-            history,
-            overlapping_bitset: Default::default(),
+        if let Some(history) = self.history.as_mut() {
+            history.push(history::capture_frame(&self.layer));
         }
     }
 
@@ -142,14 +141,14 @@ impl<T: GraphColor> Tespat<T> {
             width: self.width(),
             frames: match &self.history {
                 Some(h) => h.clone(),
-                None => vec![self.export().cloned().collect()],
+                None => vec![self.export().clone()],
             },
         }
     }
 
     /// 导出到二维数组。如果形状不匹配则返回None
     pub fn export_to_2d_array<const W: usize, const H: usize>(&self) -> Option<[[T; W]; H]> {
-        let mut export = self.export();
+        let mut export = self.export().iter();
 
         let len = self.width() * self.height();
         if len != W * H {
@@ -164,15 +163,17 @@ impl<T: GraphColor> Tespat<T> {
 
 impl<T> Tespat<T> {
     /// 将当前的color迁移至新的color
-    pub fn migrate<U>(&self) -> Result<TespatBuilder<Vec<U>>, U::Error>
+    pub fn migrate<U, F>(&self, mut map: F) -> Result<TespatBuilder<U>, TespatMigrateError<&T>>
     where
-        T: Clone,
-        U: TryFrom<T>,
+        U: GraphColor,
+        F: FnMut(&T) -> Option<U>,
     {
-        let mut vec = Vec::with_capacity(self.layer.len());
-        for old in self.layer.export() {
-            vec.push(U::try_from(old.clone())?);
-        }
+        let vec: Vec<U> = self
+            .layer
+            .export()
+            .iter()
+            .map(|old| map(old).ok_or_else(|| TespatMigrateError { value: old }))
+            .collect::<Result<_, _>>()?;
 
         Ok(self.export_config().graph(self.width(), vec))
     }
@@ -194,8 +195,8 @@ impl<T> Tespat<T> {
     }
 }
 
-pub struct TespatBuilder<I> {
-    pub graph: I,
+pub struct TespatBuilder<T> {
+    pub graph: Vec<T>,
     pub width: usize,
     pub enable_history: bool,
 }
@@ -203,27 +204,29 @@ pub struct TespatBuilder<I> {
 impl TespatBuilder<()> {
     pub const fn new() -> Self {
         Self {
-            graph: (),
+            graph: Vec::new(),
             width: 0,
-            enable_history: false,
-        }
-    }
-
-    pub fn new_filled<T: GraphColor>(
-        color: T,
-        width: usize,
-        height: usize,
-    ) -> TespatBuilder<impl Iterator<Item = T>> {
-        TespatBuilder {
-            graph: std::iter::repeat_n(color, width * height),
-            width,
             enable_history: false,
         }
     }
 }
 
-impl<I> TespatBuilder<I> {
-    pub fn graph<I2>(self, width: usize, graph: I2) -> TespatBuilder<I2> {
+impl<T> TespatBuilder<T> {
+    pub fn new_filled(color: T, width: usize, height: usize) -> TespatBuilder<T>
+    where
+        T: Clone,
+    {
+        TespatBuilder {
+            graph: std::iter::repeat_n(color, width * height).collect(),
+            width,
+            enable_history: false,
+        }
+    }
+
+    pub fn graph<U>(self, width: usize, graph: Vec<U>) -> TespatBuilder<U>
+    where
+        U: GraphColor,
+    {
         TespatBuilder {
             graph,
             width,
@@ -236,10 +239,9 @@ impl<I> TespatBuilder<I> {
         self
     }
 
-    pub fn build<T>(self) -> Tespat<T>
+    pub fn build(self) -> Tespat<T>
     where
         T: GraphColor,
-        I: IntoIterator<Item = T>,
     {
         Tespat::new(self)
     }
@@ -277,4 +279,10 @@ where
     fn as_pattern_pair(&self) -> PatternPair<'_, C, R> {
         (**self).as_pattern_pair()
     }
+}
+
+#[derive(Debug, thiserror::Error, Clone, Copy)]
+#[error("cannot migrate Tespat because of unexpected source `{value:?}`")]
+pub struct TespatMigrateError<T> {
+    pub value: T,
 }
