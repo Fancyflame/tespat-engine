@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     CaptureColor, GraphColor,
     layer::Layer,
@@ -18,59 +20,104 @@ pub struct Match {
     pub symmetry: Symmetry,
 }
 
+/// 预筛候选位的三种路径
+enum CheckPositions {
+    /// 不进行检查全量点位放行
+    Unconstrained,
+    /// 将全量点位进行检查
+    FullScan,
+    /// 需要根据缩小的候选集进行检查
+    Indexed(Vec<Match>),
+}
+
 impl<T: GraphColor> Layer<T> {
     /// 查找出层中所有匹配该模式的位置。不保证任何顺序。
+    /// 先决定候选生成策略，再对候选做统一的逐格验证。
     pub fn match_pattern<P>(&self, pattern: TransformedPattern<P>) -> PatternMatchResult
     where
         P: CaptureColor<T>,
     {
         let (p_width, p_height) = pattern.size();
+        if self.row_width < p_width || self.height() < p_height {
+            return PatternMatchResult::default();
+        }
 
-        let Some(check_positions) = self.compute_check_positions_by_color(pattern) else {
-            // 模式中没有颜色：只要 layer 能容纳该模式尺寸的所有位置都是候选
-            if self.row_width < p_width || self.height() < p_height {
-                return PatternMatchResult::default();
+        let positions = match self.compute_check_positions(pattern) {
+            CheckPositions::Unconstrained => self.all_positions(pattern),
+            CheckPositions::FullScan => {
+                self.filter_matching_positions(self.all_positions(pattern), pattern)
             }
-
-            let max_left = self.row_width - p_width;
-            let max_top = self.height() - p_height;
-
-            return PatternMatchResult {
-                positions: (0..=max_top)
-                    .flat_map(|y| {
-                        (0..=max_left).map(move |x| Match {
-                            pos_x: x,
-                            pos_y: y,
-                            symmetry: pattern.symmetry,
-                        })
-                    })
-                    .collect(),
-            };
+            CheckPositions::Indexed(check_positions) => {
+                self.filter_matching_positions(check_positions, pattern)
+            }
         };
 
-        let mut final_positions = check_positions;
-        // 对所有检查点位进行逐颜色检查
-        final_positions.retain(|&Match { pos_x, pos_y, .. }| {
-            for ((px, py), opt_color) in pattern.iter() {
-                if let Some(p_color) = opt_color.as_ref() {
-                    let lx = pos_x + px;
-                    let ly = pos_y + py;
+        PatternMatchResult { positions }
+    }
 
-                    if !matches!(self.read(lx, ly), Some(c) if p_color.matches(c, pattern.symmetry))
-                    {
-                        return false;
-                    }
-                } // 如果是None则代表匹配任意
+    fn filter_matching_positions<P>(
+        &self,
+        mut positions: Vec<Match>,
+        pattern: TransformedPattern<P>,
+    ) -> Vec<Match>
+    where
+        P: CaptureColor<T>,
+    {
+        // 所有路径最终都汇总到这里，确保 `Exact/AnyOf/NotIn/Ignore` 的判定一致。
+        positions.retain(|&Match { pos_x, pos_y, .. }| {
+            for ((px, py), pattern_color) in pattern.iter() {
+                let lx = pos_x + px;
+                let ly = pos_y + py;
+
+                if !matches!(
+                    self.read(lx, ly),
+                    Some(color) if pattern_color.matches_graph_color(color, pattern.symmetry)
+                ) {
+                    return false;
+                }
             }
+
             true
         });
 
-        PatternMatchResult {
-            positions: final_positions,
+        positions
+    }
+
+    /// 枚举模式尺寸可落下的所有左上角位置。
+    fn all_positions<P>(&self, pattern: TransformedPattern<P>) -> Vec<Match> {
+        let max_left = self.row_width - pattern.width();
+        let max_top = self.height() - pattern.height();
+
+        (0..=max_top)
+            .flat_map(|y| {
+                (0..=max_left).map(move |x| Match {
+                    pos_x: x,
+                    pos_y: y,
+                    symmetry: pattern.symmetry,
+                })
+            })
+            .collect()
+    }
+
+    fn compute_check_positions<P>(&self, pattern: TransformedPattern<P>) -> CheckPositions
+    where
+        P: CaptureColor<T>,
+    {
+        // 全 Ignore 的 pattern 不需要逐格验证，所有合法位置都成立。
+        if pattern
+            .color_kinds()
+            .all(|(pattern_color, _)| pattern_color.is_ignore())
+        {
+            return CheckPositions::Unconstrained;
+        }
+
+        match self.compute_check_positions_by_color(pattern) {
+            Some(positions) => CheckPositions::Indexed(positions),
+            None => CheckPositions::FullScan,
         }
     }
 
-    /// 以模式中的最罕见颜色快速筛选出模式可能在层中匹配的位置。如果模式中没有颜色，则返回None
+    /// 用出现次数最少的索引锚点生成候选位置；`AnyOf` 会合并多个颜色来源并去重。
     fn compute_check_positions_by_color<P>(
         &self,
         pattern: TransformedPattern<P>,
@@ -79,29 +126,40 @@ impl<T: GraphColor> Layer<T> {
         P: CaptureColor<T>,
     {
         let mut positions = Vec::new();
+        let mut seen_positions = HashSet::new();
 
-        let (color, (off_x, off_y)) = self.find_fewest_color(pattern)?;
+        let (colors, (off_x, off_y)) = self.find_fewest_color(pattern)?;
 
-        // 对于 layer 中每个该颜色的位置，计算对应的模式左上角坐标
-        for (x, y) in self.get_color_positions(&color) {
-            // 如果该位置在左上偏移之前，则会发生 underflow，跳过
-            if x < off_x || y < off_y {
-                continue;
+        for match_color in colors.iter() {
+            let graph_color = match_color.as_index(pattern.symmetry).unwrap();
+
+            // 对于 layer 中每个该颜色的位置，计算对应的模式左上角坐标
+            for (x, y) in self.get_color_positions(&graph_color) {
+                // 如果该位置在左上偏移之前，则会发生 underflow，跳过
+                if x < off_x || y < off_y {
+                    continue;
+                }
+
+                let left = x - off_x;
+                let top = y - off_y;
+
+                // 如果模式放在 (left, top) 会超出 layer 边界，则丢弃
+                if left + pattern.width() > self.row_width || top + pattern.height() > self.height()
+                {
+                    continue;
+                }
+
+                // `AnyOf` 可能从多个颜色命中同一个左上角，这里只保留一次。
+                if !seen_positions.insert((left, top)) {
+                    continue;
+                }
+
+                positions.push(Match {
+                    pos_x: left,
+                    pos_y: top,
+                    symmetry: pattern.symmetry,
+                });
             }
-
-            let left = x - off_x;
-            let top = y - off_y;
-
-            // 如果模式放在 (left, top) 会超出 layer 边界，则丢弃
-            if left + pattern.width() > self.row_width || top + pattern.height() > self.height() {
-                continue;
-            }
-
-            positions.push(Match {
-                pos_x: left,
-                pos_y: top,
-                symmetry: pattern.symmetry,
-            });
         }
 
         Some(positions)

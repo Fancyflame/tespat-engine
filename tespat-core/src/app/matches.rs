@@ -64,12 +64,12 @@ impl Matches {
             "size of match pattern must equal to replace pattern"
         );
 
-        // 只有输入和输出中都是通配符的部分才透过
+        // 只有“捕获侧 Ignore 且替换侧不会实际写入”的格子才不参与重叠判定。
         let mask: Vec<bool> = match_pattern
             .grid()
             .iter()
             .zip(replace_pattern.grid().iter())
-            .map(|(m_c, r_c)| m_c.is_some() || r_c.is_some())
+            .map(|(m_c, r_c)| !(m_c.is_ignore() && !r_c.is_exact()))
             .collect();
 
         self.all();

@@ -11,6 +11,8 @@ pub mod app;
 pub mod color_direction;
 mod layer;
 pub mod pattern;
+#[cfg(test)]
+mod tests;
 
 #[cfg(feature = "web-editor")]
 pub mod web_editor;

@@ -151,24 +151,31 @@ impl<T: GraphColor> Layer<T> {
 
 // 读取实现
 impl<T: GraphColor> Layer<T> {
-    /// 找出出现频率最低的颜色。如果迭代器中没有颜色，则返回None。
+    /// 找出总候选量最小的索引锚点；`AnyOf` 会按并集频率参与比较。
     fn find_fewest_color<'a, P>(
         &self,
         pattern: TransformedPattern<'a, P>,
-    ) -> Option<(T, (usize, usize))>
+    ) -> Option<(&'a [P], (usize, usize))>
     where
         P: CaptureColor<T>,
     {
         pattern
             .color_kinds()
             .filter_map(|(color, i)| {
-                color.as_ref().and_then(|color| {
-                    color
-                        .as_index(pattern.symmetry)
-                        .map(|graph_color| (graph_color, i))
-                })
+                let indexed_colors = color.indexed_colors()?;
+
+                let total_count = indexed_colors
+                    .iter()
+                    .filter_map(|match_color| {
+                        let graph_color = match_color.as_index(pattern.symmetry)?;
+                        Some(self.color_count(&graph_color))
+                    })
+                    .sum::<usize>();
+
+                Some((total_count, indexed_colors, i))
             })
-            .min_by_key(|(color, _)| self.color_count(color))
+            .min_by_key(|(total_count, _, _)| *total_count)
+            .map(|(_, colors, position)| (colors, position))
     }
 
     /// 获得对应颜色在图像中的所有位置

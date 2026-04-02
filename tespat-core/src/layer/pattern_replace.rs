@@ -18,7 +18,8 @@ impl<T: GraphColor> Layer<T> {
         );
 
         for ((x, y), replace) in replaced_by.iter() {
-            let Some(replace) = replace else {
+            // `PatColor` 的特殊规则只服务于捕获；替换侧只有 `Exact` 会真正生效。
+            let Some(replace) = replace.to_exact() else {
                 continue;
             };
 

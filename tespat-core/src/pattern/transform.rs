@@ -1,6 +1,6 @@
 use smallvec::SmallVec;
 
-use crate::{Pattern, index_to_position, pattern::PatColor};
+use crate::{Pattern, index_to_position, pattern::MatchColor};
 
 #[derive(Clone, Copy, Debug)]
 pub struct SymmetryList {
@@ -177,7 +177,7 @@ impl<'a, T> TransformedPattern<'a, T> {
         self.symmetry.iter_on(self.pattern)
     }
 
-    pub fn color_kinds(&self) -> impl Iterator<Item = (&'a PatColor<T>, (usize, usize))> + '_ {
+    pub fn color_kinds(&self) -> impl Iterator<Item = (&'a MatchColor<T>, (usize, usize))> + '_ {
         self.pattern.color_kinds().iter().map(|(color, index)| {
             let (x, y) = index_to_position(*index, self.pattern.width);
             let pos = self
@@ -205,7 +205,7 @@ pub struct SymmetryPatternIter<'a, T: 'static> {
 }
 
 impl<'a, T> Iterator for SymmetryPatternIter<'a, T> {
-    type Item = ((usize, usize), &'a Option<T>);
+    type Item = ((usize, usize), &'a MatchColor<T>);
 
     fn next(&mut self) -> Option<Self::Item> {
         let (x, y) = &mut self.position;
