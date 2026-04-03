@@ -6,6 +6,14 @@ use tespat::{
 // 引入 build.rs 生成的规则代码。
 mod example {
     tespat::include_tespat!("city-layout");
+
+    impl ColorMapTrait for () {
+        type Mapped = Color;
+        const MAP: ColorMapStruct<Self::Mapped> = ColorMapStruct {
+            any: tespat::MatchColor::Ignore,
+            ..ColorMapStruct::DEFAULT
+        };
+    }
 }
 
 fn main() {

@@ -14,15 +14,15 @@
                                                         "Border"
                                                     ],
                                         "replace":  [
-                                                        "*",
-                                                        "*",
-                                                        "*",
-                                                        "*",
+                                                        "Any",
+                                                        "Any",
+                                                        "Any",
+                                                        "Any",
                                                         "Empty",
-                                                        "*",
-                                                        "*",
-                                                        "*",
-                                                        "*"
+                                                        "Any",
+                                                        "Any",
+                                                        "Any",
+                                                        "Any"
                                                     ]
                                     },
                      "SpawnFirstAnchor":  {
@@ -48,8 +48,8 @@
                                                        "Empty"
                                                    ],
                                        "replace":  [
-                                                       "*",
-                                                       "*",
+                                                       "Any",
+                                                       "Any",
                                                        "Anchor"
                                                    ]
                                    },
@@ -89,10 +89,10 @@
                                                           "Wall"
                                                       ],
                                           "replace":  [
-                                                          "*",
-                                                          "*",
-                                                          "*",
-                                                          "*",
+                                                          "Any",
+                                                          "Any",
+                                                          "Any",
+                                                          "Any",
                                                           "ActiveRoomVertex",
                                                           "GrowingWall"
                                                       ]
@@ -108,8 +108,8 @@
                                                               "Wall"
                                                           ],
                                               "replace":  [
-                                                              "*",
-                                                              "*",
+                                                              "Any",
+                                                              "Any",
                                                               "Empty",
                                                               "Empty",
                                                               "GrowingWall",
@@ -127,8 +127,8 @@
                                                                "Wall"
                                                            ],
                                                "replace":  [
-                                                               "*",
-                                                               "*",
+                                                               "Any",
+                                                               "Any",
                                                                "Empty",
                                                                "Empty",
                                                                "GrowingWall",
@@ -146,10 +146,10 @@
                                                                  "RoomVertex"
                                                              ],
                                                  "replace":  [
-                                                                 "*",
-                                                                 "*",
-                                                                 "*",
-                                                                 "*",
+                                                                 "Any",
+                                                                 "Any",
+                                                                 "Any",
+                                                                 "Any",
                                                                  "GrowingWall",
                                                                  "ActiveRoomVertex"
                                                              ]
@@ -176,7 +176,7 @@
                      "WallGrow":  {
                                       "width":  1,
                                       "capture":  [
-                                                      "*",
+                                                      "Any",
                                                       "Empty",
                                                       "GrowingWall"
                                                   ],
@@ -240,7 +240,7 @@
                                          "color":  "#6b3b00",
                                          "icon":  null
                                      },
-                    "*":  {
+                    "Any":  {
                               "color":  "#000000",
                               "icon":  null
                           },

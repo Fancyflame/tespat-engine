@@ -6,22 +6,67 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use serde::Deserialize;
 
+mod pattern_module;
+
 /// 编译 tespat-web 项目文件
 pub fn compile(file_content: String) -> Result<TokenStream> {
     let project: ProjectFile = serde_json::from_str(&file_content).context("解析 JSON 失败")?;
 
-    let color_enum = generate_color_enum(&project.palette);
-    let pattern_mod = generate_pattern_module(&project.patterns)?;
+    let color_enum = generate_color_enum(&project);
+    let color_map_support = generate_color_map_support(&project);
+    let pattern_mod = pattern_module::generate_pattern_pair_module(&project)?;
 
     Ok(quote! {
         #color_enum
 
+        static COLOR_MAP: ColorMapStruct<<() as ColorMapTrait>::Mapped> = <() as ColorMapTrait>::MAP;
+
+        #color_map_support
         #pattern_mod
     })
 }
 
-fn generate_color_enum(palette: &HashMap<&str, PaletteConfig>) -> TokenStream {
-    let mut color_names: Vec<_> = palette.keys().filter(|name| **name != "*").collect();
+fn generate_color_map_support(project: &ProjectFile) -> TokenStream {
+    let mut color_names: Vec<_> = project.palette.keys().copied().collect();
+    color_names.sort();
+
+    let field_idents = color_names.iter().map(|name| color_map_field_ident(name));
+
+    let default_fields = color_names.iter().map(|name| {
+        let field_ident = color_map_field_ident(name);
+        let variant = color_variant_ident(name);
+
+        quote! {
+            #field_ident: ::tespat::MatchColor::Exact(Color::#variant),
+        }
+    });
+
+    let color_map_type_doc = "A match-color table keyed by generated color names. \
+                              Use `ColorMapStruct::DEFAULT` for the one-to-one `Color` mapping, \
+                              or override individual fields to provide a custom mapping.";
+
+    quote! {
+        #[derive(Clone)]
+        #[doc = #color_map_type_doc]
+        pub struct ColorMapStruct<T: 'static> {
+            #(pub #field_idents: ::tespat::MatchColor<T>,)*
+        }
+
+        impl ColorMapStruct<Color> {
+            pub const DEFAULT: ColorMapStruct<Color> = ColorMapStruct {
+                #(#default_fields)*
+            };
+        }
+
+        pub trait ColorMapTrait {
+            type Mapped: ::tespat::GraphColor;
+            const MAP: ColorMapStruct<Self::Mapped>;
+        }
+    }
+}
+
+fn generate_color_enum(ProjectFile { palette, .. }: &ProjectFile) -> TokenStream {
+    let mut color_names: Vec<_> = palette.keys().collect();
     color_names.sort();
 
     let color_variants: Vec<_> = color_names
@@ -31,16 +76,13 @@ fn generate_color_enum(palette: &HashMap<&str, PaletteConfig>) -> TokenStream {
 
     let unit_pattern_items: Vec<_> = color_names
         .iter()
-        .zip(color_variants.iter())
-        .map(|(&&name, variant)| {
+        .map(|&&name| {
             let static_pattern_ident = pattern_static_ident(name);
+
+            let expr = pattern_module::generate_pattern_expr(1, &[name]);
             quote! {
-                pub static #static_pattern_ident: ::tespat::Pattern<Color> =
-                    ::tespat::Pattern::from_static(
-                        1,
-                        &[Some(Color::#variant)],
-                        &[(Some(Color::#variant), 0)],
-                    );
+                pub static #static_pattern_ident:
+                    ::tespat::Pattern<<() as ColorMapTrait>::Mapped> = #expr;
             }
         })
         .collect();
@@ -111,80 +153,8 @@ fn generate_color_enum(palette: &HashMap<&str, PaletteConfig>) -> TokenStream {
 
         #[allow(dead_code)]
         pub mod unit_pattern {
-            use super::Color;
+            use super::{ColorMapTrait, COLOR_MAP};
             #(#unit_pattern_items)*
-        }
-    }
-}
-
-fn generate_pattern_module(patterns: &HashMap<&str, PatternConfig>) -> Result<TokenStream> {
-    let mut pattern_items = Vec::with_capacity(patterns.len());
-    for (name, pattern) in patterns.iter() {
-        pattern_items.push(generate_pattern_pair_item(name, pattern));
-    }
-
-    Ok(quote! {
-        pub mod pattern {
-            #[allow(unused_imports)]
-            use super::Color;
-
-            #(#pattern_items)*
-        }
-    })
-}
-
-fn generate_pattern_pair_item(name: &str, config: &PatternConfig) -> TokenStream {
-    let capture = generate_pattern_expr(config.width, &config.capture);
-    let replace = generate_pattern_expr(config.width, &config.replace);
-    let static_name = pattern_static_ident(name);
-
-    quote! {
-        pub static #static_name: (
-            ::tespat::Pattern<Color>,
-            ::tespat::Pattern<Color>
-        ) = (
-            #capture,
-            #replace,
-        );
-    }
-}
-
-fn generate_pattern_expr(width: usize, pattern: &[&str]) -> TokenStream {
-    let mut grid_items = Vec::with_capacity(pattern.len());
-    let mut first_seen_entries: HashMap<Option<&str>, usize> = HashMap::new();
-
-    for (idx, &color_name) in pattern.iter().enumerate() {
-        if color_name == "*" {
-            grid_items.push(quote! {None});
-            first_seen_entries.entry(None).or_insert(idx);
-        } else {
-            let variant = color_variant_ident(color_name);
-            grid_items.push(quote! { Some(Color::#variant) });
-            first_seen_entries.entry(Some(color_name)).or_insert(idx);
-        }
-    }
-
-    let color_items: Vec<TokenStream> = first_seen_entries
-        .into_iter()
-        .map(|(entry, idx)| match entry {
-            Some(color_name) => {
-                let variant = color_variant_ident(color_name);
-                quote! { (Some(Color::#variant), #idx) }
-            }
-            None => quote! { (None, #idx) },
-        })
-        .collect();
-
-    quote! {
-        {
-            const WIDTH: usize = #width;
-            const GRID: &[Option<Color>] = &[
-                #(#grid_items,)*
-            ];
-            const COLORS: &[(Option<Color>, usize)] = &[
-                #(#color_items,)*
-            ];
-            ::tespat::Pattern::from_static(WIDTH, GRID, COLORS)
         }
     }
 }
@@ -222,11 +192,21 @@ fn pattern_static_ident(name: &str) -> Ident {
     cased_ident(name, Case::UpperSnake)
 }
 
+fn color_map_field_ident(name: &str) -> Ident {
+    cased_ident(name, Case::Snake)
+}
+
 /// 保留下划线前缀进行case转换
 fn cased_ident(s: &str, case: Case) -> Ident {
     let underline_prefix = s.starts_with('_');
     let mut string = sanitize_ident(s);
     string = convert_case::Casing::to_case(&string, case);
+    if string.is_empty() {
+        string.push('_');
+    }
+    if string.chars().all(|c| c == '_') {
+        string.push('_');
+    }
     if underline_prefix {
         string.insert(0, '_');
     }

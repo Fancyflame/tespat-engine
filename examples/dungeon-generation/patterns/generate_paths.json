@@ -55,26 +55,26 @@
                      "DestroyWall":  {
                                          "width":  3,
                                          "capture":  [
-                                                         "*",
+                                                         "Any",
                                                          "Empty",
-                                                         "*",
+                                                         "Any",
                                                          "Path",
                                                          "Empty",
                                                          "Path",
-                                                         "*",
+                                                         "Any",
                                                          "Empty",
-                                                         "*"
+                                                         "Any"
                                                      ],
                                          "replace":  [
-                                                         "*",
+                                                         "Any",
                                                          "Empty",
-                                                         "*",
+                                                         "Any",
                                                          "Path",
                                                          "Path",
                                                          "Path",
-                                                         "*",
+                                                         "Any",
                                                          "Empty",
-                                                         "*"
+                                                         "Any"
                                                      ]
                                      },
                      "ClearDeadEnd":  {
@@ -126,7 +126,7 @@
                                      "color":  "#ff0303",
                                      "icon":  null
                                  },
-                    "*":  {
+                    "Any":  {
                               "color":  "#000000",
                               "icon":  null
                           },

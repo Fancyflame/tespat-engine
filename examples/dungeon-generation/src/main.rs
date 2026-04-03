@@ -7,12 +7,30 @@ mod generate_rooms;
 mod imports {
     // 引入路径生成规则。
     pub mod generate_paths {
+        use tespat::MatchColor;
+
         tespat::include_tespat!("patterns/generate_paths");
+
+        impl ColorMapTrait for () {
+            type Mapped = Color;
+            const MAP: ColorMapStruct<Self::Mapped> = ColorMapStruct {
+                any: MatchColor::Ignore,
+                ..ColorMapStruct::DEFAULT
+            };
+        }
     }
 
     // 引入房间生成规则。
     pub mod generate_rooms {
         tespat::include_tespat!("patterns/generate_rooms");
+
+        impl ColorMapTrait for () {
+            type Mapped = Color;
+            const MAP: ColorMapStruct<Self::Mapped> = ColorMapStruct {
+                any: tespat::MatchColor::Ignore,
+                ..ColorMapStruct::DEFAULT
+            };
+        }
     }
 }
 

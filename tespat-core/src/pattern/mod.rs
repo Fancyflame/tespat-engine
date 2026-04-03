@@ -21,20 +21,33 @@ pub enum MatchColor<T: 'static> {
 }
 
 impl<T: 'static> MatchColor<T> {
-    pub fn any_of(colors: Vec<T>) -> Self {
-        Self::AnyOf(ReadSlice::Own(colors))
+    pub const fn const_copy(&self) -> Self
+    where
+        T: Copy,
+    {
+        match self {
+            &Self::Exact(v) => Self::Exact(v),
+            &Self::AnyOf(ReadSlice::Ref(r)) => Self::AnyOf(ReadSlice::Ref(r)),
+            &Self::NotIn(ReadSlice::Ref(r)) => Self::NotIn(ReadSlice::Ref(r)),
+            &Self::Ignore => Self::Ignore,
+            _ => panic!("copy failed: do not use Vec in ReadSlice"),
+        }
     }
 
     pub const fn any_of_ref(colors: &'static [T]) -> Self {
         Self::AnyOf(ReadSlice::Ref(colors))
     }
 
-    pub fn not_in(colors: Vec<T>) -> Self {
-        Self::NotIn(ReadSlice::Own(colors))
+    pub fn any_of(colors: impl Into<ReadSlice<T>>) -> Self {
+        Self::AnyOf(colors.into())
     }
 
     pub const fn not_in_ref(colors: &'static [T]) -> Self {
         Self::NotIn(ReadSlice::Ref(colors))
+    }
+
+    pub fn not_in(colors: impl Into<ReadSlice<T>>) -> Self {
+        Self::NotIn(colors.into())
     }
 
     pub const fn is_ignore(&self) -> bool {
@@ -217,5 +230,17 @@ impl<T> Deref for ReadSlice<T> {
             Self::Own(o) => o.as_slice(),
             Self::Ref(r) => r,
         }
+    }
+}
+
+impl<T> From<&'static [T]> for ReadSlice<T> {
+    fn from(value: &'static [T]) -> Self {
+        Self::Ref(value)
+    }
+}
+
+impl<T> From<Vec<T>> for ReadSlice<T> {
+    fn from(value: Vec<T>) -> Self {
+        Self::Own(value)
     }
 }

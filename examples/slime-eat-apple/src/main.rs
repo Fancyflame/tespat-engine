@@ -3,6 +3,10 @@ use tespat::{app::MatchFilter, pattern::transform::SymmetryList};
 // 引入 build.rs 生成的规则代码。
 mod example {
     tespat::include_tespat!("slime_eat_apple");
+    impl ColorMapTrait for () {
+        type Mapped = Color;
+        const MAP: ColorMapStruct<Self::Mapped> = ColorMapStruct::DEFAULT;
+    }
 }
 
 fn main() {

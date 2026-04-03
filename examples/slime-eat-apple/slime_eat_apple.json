@@ -1,126 +1,110 @@
 {
-    "patterns":  {
-                     "EatApple":  {
-                                      "width":  2,
-                                      "capture":  [
-                                                      "Slime",
-                                                      "Apple"
-                                                  ],
-                                      "replace":  [
-                                                      "Empty",
-                                                      "SatiatedSlime"
-                                                  ]
-                                  },
-                     "SlimeMove":  {
-                                       "width":  2,
-                                       "capture":  [
-                                                       "Slime",
-                                                       "Empty"
-                                                   ],
-                                       "replace":  [
-                                                       "Empty",
-                                                       "Slime"
-                                                   ]
-                                   },
-                     "Graph":  {
-                                   "width":  7,
-                                   "capture":  [
-                                                   "Slime",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Apple"
-                                               ],
-                                   "replace":  [
-                                                   "Slime",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Empty",
-                                                   "Apple"
-                                               ]
-                               }
-                 },
-    "patternOrder":  [
-                         "Graph",
-                         "EatApple",
-                         "SlimeMove"
-                     ],
-    "palette":  {
-                    "Slime":  {
-                                  "color":  "#22c55e",
-                                  "icon":  null
-                              },
-                    "Empty":  {
-                                  "color":  "#1f2937",
-                                  "icon":  null
-                              },
-                    "SatiatedSlime":  {
-                                          "color":  "#facc15",
-                                          "icon":  null
-                                      },
-                    "Apple":  {
-                                  "color":  "#ff4040",
-                                  "icon":  null
-                              }
-                }
+    "patterns": {
+        "EatApple": {
+            "width": 2,
+            "capture": ["Slime", "Apple"],
+            "replace": ["Empty", "SatiatedSlime"]
+        },
+        "SlimeMove": {
+            "width": 2,
+            "capture": ["Slime", "Empty"],
+            "replace": ["Empty", "Slime"]
+        },
+        "Graph": {
+            "width": 7,
+            "capture": [
+                "Slime",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Apple"
+            ],
+            "replace": [
+                "Slime",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Empty",
+                "Apple"
+            ]
+        }
+    },
+    "patternOrder": ["Graph", "EatApple", "SlimeMove"],
+    "palette": {
+        "Slime": {
+            "color": "#22c55e",
+            "icon": null
+        },
+        "Empty": {
+            "color": "#1f2937",
+            "icon": null
+        },
+        "SatiatedSlime": {
+            "color": "#facc15",
+            "icon": null
+        },
+        "Apple": {
+            "color": "#ff4040",
+            "icon": null
+        }
+    }
 }
