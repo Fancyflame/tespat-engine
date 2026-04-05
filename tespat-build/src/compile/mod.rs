@@ -18,9 +18,6 @@ pub fn compile(file_content: String) -> Result<TokenStream> {
 
     Ok(quote! {
         #color_enum
-
-        static COLOR_MAP: ColorMapStruct<<() as ColorMapTrait>::Mapped> = <() as ColorMapTrait>::MAP;
-
         #color_map_support
         #pattern_mod
     })
@@ -30,7 +27,10 @@ fn generate_color_map_support(project: &ProjectFile) -> TokenStream {
     let mut color_names: Vec<_> = project.palette.keys().copied().collect();
     color_names.sort();
 
-    let field_idents = color_names.iter().map(|name| color_map_field_ident(name));
+    let field_idents: Vec<Ident> = color_names
+        .iter()
+        .map(|name| color_map_field_ident(name))
+        .collect();
 
     let default_fields = color_names.iter().map(|name| {
         let field_ident = color_map_field_ident(name);
@@ -48,20 +48,22 @@ fn generate_color_map_support(project: &ProjectFile) -> TokenStream {
     quote! {
         #[derive(Clone)]
         #[doc = #color_map_type_doc]
-        pub struct ColorMapStruct<T: 'static> {
-            #(pub #field_idents: ::tespat::MatchColor<T>,)*
+        pub struct ColorMapStruct {
+            #(pub #field_idents: ::tespat::MatchColor<Color>,)*
         }
 
-        impl ColorMapStruct<Color> {
-            pub const DEFAULT: ColorMapStruct<Color> = ColorMapStruct {
+        impl ColorMapStruct {
+            pub const DEFAULT: Self = Self {
                 #(#default_fields)*
             };
         }
 
         pub trait ColorMapTrait {
-            type Mapped: ::tespat::GraphColor;
-            const MAP: ColorMapStruct<Self::Mapped>;
+            const MAP: ColorMapStruct;
         }
+
+        pub static COLOR_MAP: ColorMapStruct =
+            <() as ColorMapTrait>::MAP;
     }
 }
 
@@ -82,7 +84,7 @@ fn generate_color_enum(ProjectFile { palette, .. }: &ProjectFile) -> TokenStream
             let expr = pattern_module::generate_pattern_expr(1, &[name]);
             quote! {
                 pub static #static_pattern_ident:
-                    ::tespat::Pattern<<() as ColorMapTrait>::Mapped> = #expr;
+                    ::tespat::Pattern<super::Color> = #expr;
             }
         })
         .collect();
@@ -153,7 +155,6 @@ fn generate_color_enum(ProjectFile { palette, .. }: &ProjectFile) -> TokenStream
 
         #[allow(dead_code)]
         pub mod unit_pattern {
-            use super::{ColorMapTrait, COLOR_MAP};
             #(#unit_pattern_items)*
         }
     }

@@ -8,8 +8,7 @@ mod example {
     tespat::include_tespat!("city-layout");
 
     impl ColorMapTrait for () {
-        type Mapped = Color;
-        const MAP: ColorMapStruct<Self::Mapped> = ColorMapStruct {
+        const MAP: ColorMapStruct = ColorMapStruct {
             any: tespat::MatchColor::Ignore,
             ..ColorMapStruct::DEFAULT
         };

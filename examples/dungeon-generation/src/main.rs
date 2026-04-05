@@ -12,8 +12,7 @@ mod imports {
         tespat::include_tespat!("patterns/generate_paths");
 
         impl ColorMapTrait for () {
-            type Mapped = Color;
-            const MAP: ColorMapStruct<Self::Mapped> = ColorMapStruct {
+            const MAP: ColorMapStruct = ColorMapStruct {
                 any: MatchColor::Ignore,
                 ..ColorMapStruct::DEFAULT
             };
@@ -22,12 +21,13 @@ mod imports {
 
     // 引入房间生成规则。
     pub mod generate_rooms {
+        use tespat::MatchColor;
+
         tespat::include_tespat!("patterns/generate_rooms");
 
         impl ColorMapTrait for () {
-            type Mapped = Color;
-            const MAP: ColorMapStruct<Self::Mapped> = ColorMapStruct {
-                any: tespat::MatchColor::Ignore,
+            const MAP: ColorMapStruct = ColorMapStruct {
+                any: MatchColor::Ignore,
                 ..ColorMapStruct::DEFAULT
             };
         }

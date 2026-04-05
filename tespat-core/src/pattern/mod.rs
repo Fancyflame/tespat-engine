@@ -34,20 +34,12 @@ impl<T: 'static> MatchColor<T> {
         }
     }
 
-    pub const fn any_of_ref(colors: &'static [T]) -> Self {
+    pub const fn any_of(colors: &'static [T]) -> Self {
         Self::AnyOf(ReadSlice::Ref(colors))
     }
 
-    pub fn any_of(colors: impl Into<ReadSlice<T>>) -> Self {
-        Self::AnyOf(colors.into())
-    }
-
-    pub const fn not_in_ref(colors: &'static [T]) -> Self {
+    pub const fn not_in(colors: &'static [T]) -> Self {
         Self::NotIn(ReadSlice::Ref(colors))
-    }
-
-    pub fn not_in(colors: impl Into<ReadSlice<T>>) -> Self {
-        Self::NotIn(colors.into())
     }
 
     pub const fn is_ignore(&self) -> bool {

@@ -22,8 +22,6 @@ pub(crate) fn generate_pattern_pair_module(
 
     Ok(quote! {
         pub mod pattern {
-            use super::{COLOR_MAP, ColorMapTrait};
-
             #(#pattern_items)*
         }
     })
@@ -36,8 +34,8 @@ fn generate_pattern_pair_item(name: &str, config: &PatternConfig) -> TokenStream
 
     quote! {
         pub static #static_name: (
-            ::tespat::Pattern<<() as ColorMapTrait>::Mapped>,
-            ::tespat::Pattern<<() as ColorMapTrait>::Mapped>
+            ::tespat::Pattern<super::Color>,
+            ::tespat::Pattern<super::Color>
         ) = (
             #capture,
             #replace,
@@ -52,7 +50,7 @@ pub fn generate_pattern_expr(width: usize, pattern: &[&str]) -> TokenStream {
 
     for (idx, &color_name) in pattern.iter().enumerate() {
         let color_ident = color_map_field_ident(color_name);
-        grid_items.push(quote! { COLOR_MAP.#color_ident.const_copy() });
+        grid_items.push(quote! { super::COLOR_MAP.#color_ident.const_copy() });
         first_seen_entries.entry(color_name).or_insert(idx);
     }
 
@@ -60,17 +58,17 @@ pub fn generate_pattern_expr(width: usize, pattern: &[&str]) -> TokenStream {
         .into_iter()
         .map(|(color_name, idx)| {
             let color_ident = color_map_field_ident(color_name);
-            quote! { (COLOR_MAP.#color_ident.const_copy(), #idx) }
+            quote! { (super::COLOR_MAP.#color_ident.const_copy(), #idx) }
         })
         .collect();
 
     quote! {
         {
             const WIDTH: usize = #width;
-            const GRID: &[::tespat::MatchColor<<() as ColorMapTrait>::Mapped>] = const {
+            const GRID: &[::tespat::MatchColor<super::Color>] = const {
                 &[ #(#grid_items,)* ]
             };
-            const COLORS: &[(::tespat::MatchColor<<() as ColorMapTrait>::Mapped>, usize)] = const {
+            const COLORS: &[(::tespat::MatchColor<super::Color>, usize)] = const {
                 &[ #(#color_items,)* ]
             };
             ::tespat::Pattern::from_static(WIDTH, GRID, COLORS)

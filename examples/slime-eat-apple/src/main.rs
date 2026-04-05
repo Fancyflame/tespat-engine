@@ -4,8 +4,7 @@ use tespat::{app::MatchFilter, pattern::transform::SymmetryList};
 mod example {
     tespat::include_tespat!("slime_eat_apple");
     impl ColorMapTrait for () {
-        type Mapped = Color;
-        const MAP: ColorMapStruct<Self::Mapped> = ColorMapStruct::DEFAULT;
+        const MAP: ColorMapStruct = ColorMapStruct::DEFAULT;
     }
 }
 
