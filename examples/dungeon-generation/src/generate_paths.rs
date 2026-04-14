@@ -7,11 +7,19 @@ use crate::imports::generate_paths::*;
 
 pub fn generate(tespat: &mut Tespat<Color>) {
     loop {
-        if tespat.execute(&pattern::CREATE_PATH, MatchFilter::One, SymmetryList::ROTATE_ONLY) {
+        if tespat.execute(
+            &pattern::CREATE_PATH,
+            MatchFilter::One,
+            SymmetryList::ROTATE_ONLY,
+        ) {
             continue;
         }
 
-        if tespat.execute(&pattern::BACKWARD_PATH, MatchFilter::One, SymmetryList::ROTATE_ONLY) {
+        if tespat.execute(
+            &pattern::BACKWARD_PATH,
+            MatchFilter::One,
+            SymmetryList::ROTATE_ONLY,
+        ) {
             continue;
         }
 
@@ -59,7 +67,11 @@ pub fn generate(tespat: &mut Tespat<Color>) {
             continue;
         }
 
-        if tespat.execute(&pattern::DRIP_DOOR, MatchFilter::One, SymmetryList::ROTATE_ONLY) {
+        if tespat.execute(
+            &pattern::DRIP_DOOR,
+            MatchFilter::One,
+            SymmetryList::ROTATE_ONLY,
+        ) {
             continue;
         }
 
@@ -73,7 +85,11 @@ pub fn generate(tespat: &mut Tespat<Color>) {
     );
 
     // 清除死胡同
-    while tespat.execute(&pattern::CLEAR_DEAD_END, MatchFilter::All, SymmetryList::ROTATE_ONLY) {}
+    while tespat.execute(
+        &pattern::CLEAR_DEAD_END,
+        MatchFilter::All,
+        SymmetryList::ROTATE_ONLY,
+    ) {}
 
     // 随机连通几个区域
     tespat.execute(

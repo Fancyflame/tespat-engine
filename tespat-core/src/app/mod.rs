@@ -1,4 +1,8 @@
-use std::{array, cell::RefCell};
+use std::{
+    array,
+    cell::RefCell,
+    ops::{Deref, DerefMut},
+};
 
 use crate::{
     CaptureColor, GraphColor, Pattern, ReplaceColor,
@@ -7,7 +11,7 @@ use crate::{
     pattern::transform::SymmetryList,
 };
 
-mod history;
+pub mod history;
 pub mod matches;
 
 use matches::Matches;
@@ -37,9 +41,7 @@ impl<T: GraphColor> Tespat<T> {
             overlapping_bitset: Default::default(),
         };
 
-        this.layer.initialize(width, move |vec| {
-            *vec = graph;
-        });
+        this.layer.initialize(width, graph);
 
         if let Some(history) = this.history.as_mut() {
             history.push(history::capture_frame(&this.layer));
@@ -118,21 +120,9 @@ impl<T: GraphColor> Tespat<T> {
         }
     }
 
-    pub fn color_count(&self, color: &T) -> usize {
-        self.layer.color_count(color)
-    }
-
-    pub fn export(&self) -> &Vec<T> {
-        self.layer.export()
-    }
-
-    /// 用邻近算法原地细化当前画面
-    pub fn refine(&mut self, n: usize) {
-        self.layer.refine(n);
-
-        if let Some(history) = self.history.as_mut() {
-            history.push(history::capture_frame(&self.layer));
-        }
+    pub fn set_color_by_position(&mut self, x: usize, y: usize, color: T) {
+        let index = x + y * self.width();
+        self.layer.set_color(index, color);
     }
 
     /// 返回历史记录。如果未启用历史记录则仅返回最后一帧
@@ -185,13 +175,18 @@ impl<T> Tespat<T> {
     pub fn is_history_enabled(&self) -> bool {
         self.history.is_some()
     }
+}
 
-    pub fn width(&self) -> usize {
-        self.layer.width()
+impl<T> Deref for Tespat<T> {
+    type Target = Layer<T>;
+    fn deref(&self) -> &Self::Target {
+        &self.layer
     }
+}
 
-    pub fn height(&self) -> usize {
-        self.layer.height()
+impl<T> DerefMut for Tespat<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.layer
     }
 }
 

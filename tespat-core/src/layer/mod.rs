@@ -39,8 +39,11 @@ pub struct Layer<T> {
     /// 所有颜色对应的链表
     color_indexes: HashMap<T, ColorChain>,
 
-    /// 行宽
-    row_width: usize,
+    /// 宽
+    width: usize,
+
+    /// 高
+    height: usize,
 
     /// 每个颜色的元信息
     metadata_vec: Vec<Metadata>,
@@ -54,21 +57,38 @@ impl<T: GraphColor> Layer<T> {
     pub fn new() -> Self {
         Self {
             color_indexes: HashMap::new(),
-            row_width: 0,
+            width: 0,
+            height: 0,
             metadata_vec: Vec::new(),
             data_vec: Vec::new(),
         }
     }
 
-    /// 用数据初始化
-    pub fn initialize<F>(&mut self, row_width: usize, mutate_data: F)
-    where
-        F: FnOnce(&mut Vec<T>),
-    {
+    pub fn take_data(&mut self) -> Vec<T> {
         self.color_indexes.clear();
-        self.row_width = row_width;
+        self.width = 0;
+        std::mem::take(&mut self.data_vec)
+    }
 
-        mutate_data(&mut self.data_vec);
+    /// 用数据初始化
+    pub fn initialize(&mut self, row_width: usize, data: Vec<T>) {
+        self.take_data();
+        self.data_vec = data;
+
+        self.width = row_width;
+        self.height = if self.width == 0 {
+            assert!(
+                self.data_vec.is_empty(),
+                "data is not empty but row width is 0"
+            );
+            0
+        } else {
+            assert!(
+                self.data_vec.len() % self.width == 0,
+                "data length is not integer multiple of row width"
+            );
+            self.data_vec.len() / self.width
+        };
 
         self.metadata_vec
             .resize(self.data_vec.len(), Metadata::PLACEHOLDER);
@@ -79,7 +99,7 @@ impl<T: GraphColor> Layer<T> {
     }
 
     /// 变更颜色
-    pub fn mutate_color(&mut self, index: usize, color: T) {
+    pub fn set_color(&mut self, index: usize, color: T) {
         if self.data_vec[index] == color {
             return;
         }
@@ -189,11 +209,11 @@ impl<T: GraphColor> Layer<T> {
 
     /// 读取给定位置上的颜色
     pub fn read(&self, x: usize, y: usize) -> Option<&T> {
-        if x >= self.row_width {
+        if x >= self.width {
             return None;
         }
 
-        let index = x + y * self.row_width;
+        let index = x + y * self.width;
         self.data_vec.get(index)
     }
 
@@ -205,7 +225,7 @@ impl<T: GraphColor> Layer<T> {
         }
     }
 
-    /// 用邻近算法将当前图像细化为新的层
+    /* /// 用邻近算法将当前图像细化为新的层
     pub fn refine(&mut self, n: usize) {
         let src_width = self.row_width;
         let src_height = self.height();
@@ -232,7 +252,7 @@ impl<T: GraphColor> Layer<T> {
                 }
             }
         });
-    }
+    } */
 }
 
 impl<T> Layer<T> {
@@ -241,17 +261,12 @@ impl<T> Layer<T> {
         &self.data_vec
     }
 
-    pub fn width(&self) -> usize {
-        self.row_width
+    pub const fn width(&self) -> usize {
+        self.width
     }
 
-    pub fn height(&self) -> usize {
-        if self.row_width == 0 {
-            debug_assert!(self.data_vec.is_empty());
-            0
-        } else {
-            self.data_vec.len() / self.row_width
-        }
+    pub const fn height(&self) -> usize {
+        self.height
     }
 
     pub fn len(&self) -> usize {
@@ -269,6 +284,6 @@ impl<'a, T> Iterator for ColorPositions<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.next_index?;
         self.next_index = self.layer.metadata_vec[index].next_index;
-        Some(index_to_position(index, self.layer.row_width))
+        Some(index_to_position(index, self.layer.width))
     }
 }

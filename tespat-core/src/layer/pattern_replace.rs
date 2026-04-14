@@ -12,8 +12,7 @@ impl<T: GraphColor> Layer<T> {
         let (left, top) = position;
 
         assert!(
-            left + replaced_by.width() <= self.row_width
-                && top + replaced_by.height() <= self.height(),
+            left + replaced_by.width() <= self.width && top + replaced_by.height() <= self.height(),
             "replace pattern will out of bound"
         );
 
@@ -25,11 +24,11 @@ impl<T: GraphColor> Layer<T> {
 
             let lx = left + x;
             let ly = top + y;
-            let index = lx + ly * self.row_width;
+            let index = lx + ly * self.width;
             let place_graph_color = &self.data_vec[index];
             let replaced_color = replace.replace(place_graph_color, replaced_by.symmetry);
 
-            self.mutate_color(index, replaced_color);
+            self.set_color(index, replaced_color);
         }
     }
 }

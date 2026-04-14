@@ -38,7 +38,7 @@ impl<T: GraphColor> Layer<T> {
         P: CaptureColor<T>,
     {
         let (p_width, p_height) = pattern.size();
-        if self.row_width < p_width || self.height() < p_height {
+        if self.width < p_width || self.height() < p_height {
             return PatternMatchResult::default();
         }
 
@@ -85,7 +85,7 @@ impl<T: GraphColor> Layer<T> {
 
     /// 枚举模式尺寸可落下的所有左上角位置。
     fn all_positions<P>(&self, pattern: TransformedPattern<P>) -> Vec<Match> {
-        let max_left = self.row_width - pattern.width();
+        let max_left = self.width - pattern.width();
         let max_top = self.height() - pattern.height();
 
         (0..=max_top)
@@ -144,8 +144,7 @@ impl<T: GraphColor> Layer<T> {
                 let top = y - off_y;
 
                 // 如果模式放在 (left, top) 会超出 layer 边界，则丢弃
-                if left + pattern.width() > self.row_width || top + pattern.height() > self.height()
-                {
+                if left + pattern.width() > self.width || top + pattern.height() > self.height() {
                     continue;
                 }
 
