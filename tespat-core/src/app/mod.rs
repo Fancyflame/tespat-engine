@@ -165,7 +165,7 @@ impl<T> Tespat<T> {
             .map(|old| map(old).ok_or_else(|| TespatMigrateError { value: old }))
             .collect::<Result<_, _>>()?;
 
-        Ok(self.export_config().graph(self.width(), vec))
+        Ok(self.export_config().set_graph(self.width(), vec))
     }
 
     pub fn export_config(&self) -> TespatBuilder<()> {
@@ -218,7 +218,7 @@ impl<T> TespatBuilder<T> {
         }
     }
 
-    pub fn graph<U>(self, width: usize, graph: Vec<U>) -> TespatBuilder<U>
+    pub fn set_graph<U>(&self, width: usize, graph: Vec<U>) -> TespatBuilder<U>
     where
         U: GraphColor,
     {
