@@ -3,6 +3,7 @@ import type { PaletteEntry } from "../../ProjectData";
 
 type IconTone = "light" | "dark";
 type ResolvedIconMap = ReadonlyMap<string, HTMLImageElement | null>;
+type RawSvgManifest = ReadonlyMap<string, string>;
 
 export type PaletteCellBox = {
     x: number;
@@ -24,14 +25,20 @@ const TABLER_STROKE_COLORS: Record<IconTone, string> = {
     light: "#f8fafc",
     dark: "#0f172a",
 };
-const SVG_ICON_RETRY_DELAY_MS = 5000;
-const RAW_SVG_CACHE = new Map<string, string | null>();
-const RAW_SVG_LOADING = new Map<string, Promise<string | null>>();
+const TABLER_ICON_PRELOAD_DELAY_MS = 50;
+const TABLER_ICON_MANIFEST_RETRY_DELAY_MS = 5000;
+const TABLER_ICON_MANIFEST_URL = `${import.meta.env.BASE_URL}tabler-icons/outline.json`;
+
+let RAW_SVG_MANIFEST: RawSvgManifest | null = null;
+let RAW_SVG_MANIFEST_LOADING: Promise<RawSvgManifest | null> | null = null;
+let RAW_SVG_MANIFEST_PRELOAD_TIMER: ReturnType<typeof setTimeout> | null = null;
+let RAW_SVG_MANIFEST_RETRY_TIMER: ReturnType<typeof setTimeout> | null = null;
+
 const SVG_DATA_URL_CACHE = new Map<string, string | null>();
 const SVG_ICON_CACHE = new Map<string, HTMLImageElement | null>();
 const SVG_ICON_LOADING = new Set<string>();
 const SVG_ICON_LISTENERS = new Map<string, Set<() => void>>();
-const SVG_ICON_RETRY_TIMERS = new Map<string, ReturnType<typeof setTimeout>>();
+const SVG_MANIFEST_LISTENERS = new Set<() => void>();
 
 // 计算十六进制颜色的相对亮度
 function getHexColorLuminance(hexColor: string) {
@@ -64,6 +71,11 @@ function notifySvgIconListeners(cacheKey: string) {
     SVG_ICON_LISTENERS.get(cacheKey)?.forEach((listener) => listener());
 }
 
+// 通知订阅者完整图标清单已加载完成
+function notifySvgManifestListeners() {
+    SVG_MANIFEST_LISTENERS.forEach((listener) => listener());
+}
+
 // 订阅某个 SVG icon 的加载完成事件
 function subscribeSvgIconListener(cacheKey: string, listener: () => void) {
     const listeners = SVG_ICON_LISTENERS.get(cacheKey) ?? new Set<() => void>();
@@ -78,34 +90,18 @@ function subscribeSvgIconListener(cacheKey: string, listener: () => void) {
     };
 }
 
-// 当加载失败时，延迟触发一次重试，避免单次失败把图标永久锁死在空状态
-function scheduleSvgIconRetry(cacheKey: string) {
-    if (SVG_ICON_RETRY_TIMERS.has(cacheKey)) {
-        return;
-    }
-
-    const timer = setTimeout(() => {
-        SVG_ICON_RETRY_TIMERS.delete(cacheKey);
-        notifySvgIconListeners(cacheKey);
-    }, SVG_ICON_RETRY_DELAY_MS);
-
-    SVG_ICON_RETRY_TIMERS.set(cacheKey, timer);
+// 订阅整份图标清单的加载完成事件
+function subscribeSvgManifestListener(listener: () => void) {
+    SVG_MANIFEST_LISTENERS.add(listener);
+    return () => {
+        SVG_MANIFEST_LISTENERS.delete(listener);
+    };
 }
 
 // 统一归一化用户输入的图标名
 function normalizeIconName(iconName: string) {
     const normalized = iconName.trim().toLowerCase();
     return normalized || null;
-}
-
-// 生成某个 outline SVG 在 glob 映射中的键名
-function getTablerIconAssetKey(iconName: string) {
-    const normalized = normalizeIconName(iconName);
-    if (!normalized) {
-        return null;
-    }
-
-    return `tabler-icons/outline/${normalized}.svg`;
 }
 
 // 生成某个图标颜色变体对应的缓存键
@@ -118,52 +114,92 @@ function getTablerIconCacheKey(iconName: string, strokeColor: string) {
     return `${normalized}::${strokeColor}`;
 }
 
-// 获取某个 outline SVG 在当前站点下的可访问 URL
-function getTablerIconAssetUrl(iconName: string) {
-    const assetPath = getTablerIconAssetKey(iconName);
-    if (!assetPath) {
+// 判断拉回来的图标清单是否满足 { [iconName]: svg } 结构
+function isRawSvgManifestRecord(
+    value: unknown,
+): value is Record<string, string> {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return false;
+    }
+
+    return Object.values(value).every((entry) => typeof entry === "string");
+}
+
+// 图标清单加载失败后，稍后自动再试一次
+function scheduleRawSvgManifestRetry() {
+    if (RAW_SVG_MANIFEST_RETRY_TIMER !== null) {
+        return;
+    }
+
+    RAW_SVG_MANIFEST_RETRY_TIMER = setTimeout(() => {
+        RAW_SVG_MANIFEST_RETRY_TIMER = null;
+        void loadRawSvgManifest();
+    }, TABLER_ICON_MANIFEST_RETRY_DELAY_MS);
+}
+
+// 页面先完成首屏渲染，再在后台延迟拉整份图标清单
+function scheduleRawSvgManifestPreload() {
+    if (
+        RAW_SVG_MANIFEST !== null ||
+        RAW_SVG_MANIFEST_LOADING !== null ||
+        RAW_SVG_MANIFEST_PRELOAD_TIMER !== null
+    ) {
+        return;
+    }
+
+    RAW_SVG_MANIFEST_PRELOAD_TIMER = setTimeout(() => {
+        RAW_SVG_MANIFEST_PRELOAD_TIMER = null;
+        void loadRawSvgManifest();
+    }, TABLER_ICON_PRELOAD_DELAY_MS);
+}
+
+// 后台一次性加载全部 Tabler outline SVG
+function loadRawSvgManifest() {
+    if (RAW_SVG_MANIFEST !== null) {
+        return Promise.resolve(RAW_SVG_MANIFEST);
+    }
+
+    if (RAW_SVG_MANIFEST_LOADING !== null) {
+        return RAW_SVG_MANIFEST_LOADING;
+    }
+
+    const nextLoading = fetch(TABLER_ICON_MANIFEST_URL)
+        .then((response) => (response.ok ? response.json() : null))
+        .then((manifest) => {
+            if (!isRawSvgManifestRecord(manifest)) {
+                return null;
+            }
+
+            RAW_SVG_MANIFEST = new Map(Object.entries(manifest));
+
+            if (RAW_SVG_MANIFEST_RETRY_TIMER !== null) {
+                clearTimeout(RAW_SVG_MANIFEST_RETRY_TIMER);
+                RAW_SVG_MANIFEST_RETRY_TIMER = null;
+            }
+
+            notifySvgManifestListeners();
+            return RAW_SVG_MANIFEST;
+        })
+        .catch(() => null)
+        .finally(() => {
+            RAW_SVG_MANIFEST_LOADING = null;
+            if (RAW_SVG_MANIFEST === null) {
+                scheduleRawSvgManifestRetry();
+            }
+        });
+
+    RAW_SVG_MANIFEST_LOADING = nextLoading;
+    return nextLoading;
+}
+
+// 从整份图标清单里取出某个原始 SVG
+function getRawTablerIconSvg(iconName: string) {
+    const normalized = normalizeIconName(iconName);
+    if (!normalized || RAW_SVG_MANIFEST === null) {
         return null;
     }
 
-    return `${import.meta.env.BASE_URL}${assetPath}`;
-}
-
-// 按需拉取原始 SVG 文本，并缓存同名图标的结果
-function loadRawTablerIconSvg(iconName: string) {
-    const assetPath = getTablerIconAssetKey(iconName);
-    if (!assetPath) {
-        return Promise.resolve(null);
-    }
-
-    if (RAW_SVG_CACHE.has(assetPath)) {
-        return Promise.resolve(RAW_SVG_CACHE.get(assetPath) ?? null);
-    }
-
-    const loading = RAW_SVG_LOADING.get(assetPath);
-    if (loading) {
-        return loading;
-    }
-
-    const assetUrl = getTablerIconAssetUrl(iconName);
-    if (!assetUrl) {
-        return Promise.resolve(null);
-    }
-
-    const nextLoading = fetch(assetUrl)
-        .then((response) => (response.ok ? response.text() : null))
-        .catch(() => null)
-        .then((rawSvg) => {
-            if (rawSvg) {
-                RAW_SVG_CACHE.set(assetPath, rawSvg);
-            }
-            return rawSvg;
-        })
-        .finally(() => {
-            RAW_SVG_LOADING.delete(assetPath);
-        });
-
-    RAW_SVG_LOADING.set(assetPath, nextLoading);
-    return nextLoading;
+    return RAW_SVG_MANIFEST.get(normalized) ?? null;
 }
 
 // 仅替换描边色，保留 Tabler outline SVG 的原始结构
@@ -200,19 +236,8 @@ function finishTablerIconLoading(
     image: HTMLImageElement | null,
 ) {
     SVG_ICON_LOADING.delete(cacheKey);
-    if (image) {
-        const retryTimer = SVG_ICON_RETRY_TIMERS.get(cacheKey);
-        if (retryTimer) {
-            clearTimeout(retryTimer);
-            SVG_ICON_RETRY_TIMERS.delete(cacheKey);
-        }
-        SVG_ICON_CACHE.set(cacheKey, image);
-        notifySvgIconListeners(cacheKey);
-        return;
-    }
-
-    SVG_ICON_CACHE.delete(cacheKey);
-    scheduleSvgIconRetry(cacheKey);
+    SVG_ICON_CACHE.set(cacheKey, image);
+    notifySvgIconListeners(cacheKey);
 }
 
 // 为指定 iconName 和描边色确保缓存图像已准备好
@@ -226,43 +251,38 @@ function ensureTablerIconLoaded(iconName: string, strokeColor: string) {
         return cacheKey;
     }
 
+    const rawSvg = getRawTablerIconSvg(iconName);
+    if (!rawSvg) {
+        if (RAW_SVG_MANIFEST !== null) {
+            SVG_ICON_CACHE.set(cacheKey, null);
+        }
+        return cacheKey;
+    }
+
+    const dataUrl = getTablerIconDataUrl(cacheKey, rawSvg, strokeColor);
+    if (!dataUrl) {
+        SVG_ICON_CACHE.set(cacheKey, null);
+        return cacheKey;
+    }
+
     SVG_ICON_LOADING.add(cacheKey);
 
-    void loadRawTablerIconSvg(iconName)
-        .then((rawSvg) => {
-            if (!rawSvg) {
-                finishTablerIconLoading(cacheKey, null);
-                return;
-            }
-
-            const dataUrl = getTablerIconDataUrl(
-                cacheKey,
-                rawSvg,
-                strokeColor,
-            );
-            if (!dataUrl) {
-                finishTablerIconLoading(cacheKey, null);
-                return;
-            }
-
-            const image = new Image();
-            image.onload = () => {
-                finishTablerIconLoading(cacheKey, image);
-            };
-            image.onerror = () => {
-                finishTablerIconLoading(cacheKey, null);
-            };
-            image.src = dataUrl;
-        })
-        .catch(() => {
-            finishTablerIconLoading(cacheKey, null);
-        });
+    const image = new Image();
+    image.onload = () => {
+        finishTablerIconLoading(cacheKey, image);
+    };
+    image.onerror = () => {
+        finishTablerIconLoading(cacheKey, null);
+    };
+    image.src = dataUrl;
 
     return cacheKey;
 }
 
 // 收集并监听当前 palette 需要的 Tabler icon
-export function useResolvedPaletteIcons(palette: ReadonlyMap<string, PaletteEntry>) {
+export function useResolvedPaletteIcons(
+    palette: ReadonlyMap<string, PaletteEntry>,
+) {
     const [iconVersion, setIconVersion] = useState(0);
 
     useEffect(() => {
@@ -270,6 +290,12 @@ export function useResolvedPaletteIcons(palette: ReadonlyMap<string, PaletteEntr
         const forceRefresh = () => {
             setIconVersion((prev) => prev + 1);
         };
+
+        scheduleRawSvgManifestPreload();
+
+        if (RAW_SVG_MANIFEST === null) {
+            unsubscribes.push(subscribeSvgManifestListener(forceRefresh));
+        }
 
         for (const entry of palette.values()) {
             if (!entry.icon) {
@@ -292,7 +318,7 @@ export function useResolvedPaletteIcons(palette: ReadonlyMap<string, PaletteEntr
         return () => {
             unsubscribes.forEach((unsubscribe) => unsubscribe());
         };
-    }, [palette]);
+    }, [iconVersion, palette]);
 
     return {
         resolvedIcons: SVG_ICON_CACHE,
