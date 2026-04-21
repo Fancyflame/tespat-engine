@@ -1,6 +1,6 @@
 use crate::compile::ProjectFile;
 
-use super::color_map_field_ident;
+use super::color_variant_ident;
 use super::pattern_static_ident;
 
 use proc_macro2::TokenStream;
@@ -49,16 +49,16 @@ pub fn generate_pattern_expr(width: usize, pattern: &[&str]) -> TokenStream {
     let mut first_seen_entries: HashMap<&str, usize> = HashMap::new();
 
     for (idx, &color_name) in pattern.iter().enumerate() {
-        let color_ident = color_map_field_ident(color_name);
-        grid_items.push(quote! { super::COLOR_MAP.#color_ident.const_copy() });
+        let color_ident = color_variant_ident(color_name);
+        grid_items.push(quote! { super::Color::#color_ident.to_match_color() });
         first_seen_entries.entry(color_name).or_insert(idx);
     }
 
     let color_items: Vec<TokenStream> = first_seen_entries
         .into_iter()
         .map(|(color_name, idx)| {
-            let color_ident = color_map_field_ident(color_name);
-            quote! { (super::COLOR_MAP.#color_ident.const_copy(), #idx) }
+            let color_ident = color_variant_ident(color_name);
+            quote! { (super::Color::#color_ident.to_match_color(), #idx) }
         })
         .collect();
 
