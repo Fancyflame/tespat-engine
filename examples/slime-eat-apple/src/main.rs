@@ -30,7 +30,7 @@ fn main() {
             &pattern::SLIME_MOVE,
             MatchFilter::One,
             SymmetryList {
-                rot_90: true,
+                ccw_90: true,
                 ..SymmetryList::ID
             },
         ) {

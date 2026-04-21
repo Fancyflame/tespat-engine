@@ -5,9 +5,9 @@ use crate::{Pattern, index_to_position, pattern::MatchColor};
 #[derive(Clone, Copy, Debug)]
 pub struct SymmetryList {
     pub id: bool,
-    pub rot_90: bool,
+    pub ccw_90: bool,
     pub rot_180: bool,
-    pub rot_270: bool,
+    pub cw_90: bool,
     pub flip_h: bool,
     pub flip_v: bool,
     pub flip_d1: bool,
@@ -17,9 +17,9 @@ pub struct SymmetryList {
 impl SymmetryList {
     pub const EMPTY: Self = Self {
         id: false,
-        rot_90: false,
+        ccw_90: false,
         rot_180: false,
-        rot_270: false,
+        cw_90: false,
         flip_h: false,
         flip_v: false,
         flip_d1: false,
@@ -33,9 +33,9 @@ impl SymmetryList {
 
     pub const ROTATE_ONLY: Self = Self {
         id: true,
-        rot_90: true,
+        ccw_90: true,
         rot_180: true,
-        rot_270: true,
+        cw_90: true,
         ..Self::EMPTY
     };
 
@@ -49,9 +49,9 @@ impl SymmetryList {
 
     pub const ALL: Self = Self {
         id: true,
-        rot_90: true,
+        ccw_90: true,
         rot_180: true,
-        rot_270: true,
+        cw_90: true,
         flip_h: true,
         flip_v: true,
         flip_d1: true,
@@ -61,9 +61,9 @@ impl SymmetryList {
     pub fn as_array(&self) -> SmallVec<[Symmetry; 8]> {
         [
             (self.id, Symmetry::Id),
-            (self.rot_90, Symmetry::CCW90),
+            (self.ccw_90, Symmetry::CCW90),
             (self.rot_180, Symmetry::Rot180),
-            (self.rot_270, Symmetry::CW90),
+            (self.cw_90, Symmetry::CW90),
             (self.flip_h, Symmetry::FlipH),
             (self.flip_v, Symmetry::FlipV),
             (self.flip_d1, Symmetry::FlipD1),
@@ -150,6 +150,22 @@ impl Symmetry {
             pattern,
             symmetry: *self,
             position: (0, 0),
+        }
+    }
+}
+
+impl From<Symmetry> for SymmetryList {
+    #[rustfmt::skip]
+    fn from(value: Symmetry) -> Self {
+        match value {
+            Symmetry::Id =>     Self { id:      true, ..Self::EMPTY },
+            Symmetry::CCW90 =>  Self { ccw_90:  true, ..Self::EMPTY },
+            Symmetry::Rot180 => Self { rot_180: true, ..Self::EMPTY },
+            Symmetry::CW90 =>   Self { cw_90:   true, ..Self::EMPTY },
+            Symmetry::FlipH =>  Self { flip_h:  true, ..Self::EMPTY },
+            Symmetry::FlipV =>  Self { flip_v:  true, ..Self::EMPTY },
+            Symmetry::FlipD1 => Self { flip_d1: true, ..Self::EMPTY },
+            Symmetry::FlipD2 => Self { flip_d2: true, ..Self::EMPTY },
         }
     }
 }

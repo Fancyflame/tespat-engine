@@ -86,9 +86,7 @@ impl<T: GraphColor> Tespat<T> {
                 .pattern_replace((pos_x, pos_y), replace_to.transform(symmetry));
         }
 
-        if let Some(history) = self.history.as_mut() {
-            history.push(history::capture_frame(&self.layer));
-        }
+        self.push_history_frame();
     }
 
     pub fn execute<C, R>(
@@ -148,6 +146,12 @@ impl<T: GraphColor> Tespat<T> {
         Some(array::from_fn(|_| {
             array::from_fn(|_| export.next().cloned().unwrap())
         }))
+    }
+
+    pub fn push_history_frame(&mut self) {
+        if let Some(history) = self.history.as_mut() {
+            history.push(history::capture_frame(&self.layer));
+        }
     }
 }
 
