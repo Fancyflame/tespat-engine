@@ -26,6 +26,7 @@ import {
 import { projectToJson, jsonToProject } from "./projectSerialization";
 import { applyResizeGrid } from "./components/GridEditResizer/applyResizeGrid";
 import type { ResizeDirection } from "./components/GridEditResizer/ResizeBar";
+import type { ReplayData } from "./replay/parseReplayJson";
 
 const SYNC_DEBOUNCE_MS = 1000;
 
@@ -40,6 +41,10 @@ export interface WorkspaceState {
     selectedPaletteId: string | null;
     fileHandle: FileSystemFileHandle | null;
     fileName: string | null;
+    replayData: ReplayData | null;
+    replayFileHandle: FileSystemFileHandle | null;
+    replayFileName: string | null;
+    replayCurrentStep: number;
 }
 
 // 工作区 reducer 的更新动作
@@ -53,6 +58,13 @@ interface WorkspaceActions {
     isFileSystemAccessSupported: boolean;
     goToWelcome: () => void;
     openPlayback: () => void;
+    setReplayImportResult: (payload: {
+        replayData: ReplayData;
+        fileHandle: FileSystemFileHandle | null;
+        fileName: string | null;
+    }) => void;
+    setReplayCurrentStep: (step: number) => void;
+    clearReplayState: () => void;
     selectPattern: (patternId: string) => void;
     setSelectedPaletteId: (paletteId: string | null) => void;
     createPattern: () => void;
@@ -92,6 +104,16 @@ const WorkspaceActionsContext = createContext<WorkspaceActions | undefined>(
     undefined,
 );
 
+// 生成回放模式的初始状态
+function createInitialReplayState() {
+    return {
+        replayData: null,
+        replayFileHandle: null,
+        replayFileName: null,
+        replayCurrentStep: 0,
+    };
+}
+
 // 创建工作区的初始状态
 function createInitialWorkspaceState(): WorkspaceState {
     return {
@@ -101,6 +123,7 @@ function createInitialWorkspaceState(): WorkspaceState {
         selectedPaletteId: null,
         fileHandle: null,
         fileName: null,
+        ...createInitialReplayState(),
     };
 }
 
@@ -244,6 +267,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 updateState((prev) => ({
                     ...prev,
                     viewMode: "playback",
+                }));
+            },
+            setReplayImportResult({ replayData, fileHandle, fileName }) {
+                updateState((prev) => ({
+                    ...prev,
+                    replayData,
+                    replayFileHandle: fileHandle,
+                    replayFileName: fileName,
+                    replayCurrentStep:
+                        replayData.frames.length > 0
+                            ? replayData.frames.length - 1
+                            : 0,
+                }));
+            },
+            setReplayCurrentStep(step) {
+                updateState((prev) => ({
+                    ...prev,
+                    replayCurrentStep: step,
+                }));
+            },
+            clearReplayState() {
+                updateState((prev) => ({
+                    ...prev,
+                    ...createInitialReplayState(),
                 }));
             },
             selectPattern(patternId) {
@@ -752,6 +799,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                         selectedPaletteId: null,
                         fileHandle: handle,
                         fileName: handle.name,
+                        ...createInitialReplayState(),
                     }));
                 } catch (error) {
                     if ((error as Error).name !== "AbortError") {
@@ -796,6 +844,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                         selectedPaletteId: null,
                         fileHandle: handle,
                         fileName: handle.name,
+                        ...createInitialReplayState(),
                     }));
                 } catch (error) {
                     if ((error as Error).name !== "AbortError") {

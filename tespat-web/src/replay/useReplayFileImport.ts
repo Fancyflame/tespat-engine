@@ -8,6 +8,7 @@ import {
     type RefObject,
 } from "react";
 import { parseReplayJson, type ReplayData } from "./parseReplayJson";
+import { useWorkspace, useWorkspaceActions } from "../Workspace";
 
 // 回放文件导入时的附加元信息
 type ReplayFileImportOptions = {
@@ -34,53 +35,59 @@ export function useReplayFileImport(): ReplayFileImportState {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const isFilePickerSupported =
         typeof window !== "undefined" && "showOpenFilePicker" in window;
+    const workspace = useWorkspace();
+    const actions = useWorkspaceActions();
 
-    const [replayData, setReplayData] = useState<ReplayData | null>(null);
-    const [openedFileHandle, setOpenedFileHandle] =
-        useState<FileSystemFileHandle | null>(null);
-    const [openedFileName, setOpenedFileName] = useState<string | null>(null);
     const [isRefreshingFile, setIsRefreshingFile] = useState(false);
 
     const fileStatusText = useMemo(() => {
-        if (openedFileHandle) {
-            return `当前已打开：${openedFileName}`;
+        if (workspace.replayFileHandle) {
+            return `当前已打开：${workspace.replayFileName}`;
         }
 
-        if (openedFileName) {
-            return `当前文件：${openedFileName}（刷新不可用）`;
+        if (workspace.replayFileName) {
+            return `当前文件：${workspace.replayFileName}（刷新不可用）`;
         }
 
         return "支持拖拽到画布";
-    }, [openedFileHandle, openedFileName]);
+    }, [workspace.replayFileHandle, workspace.replayFileName]);
 
     // 将文本内容解析为回放数据并写入状态
-    const applyReplayText = useCallback((text: string) => {
-        const result = parseReplayJson(text);
-        if (!result.ok) {
-            notifications.show({
-                title: "导入失败",
-                message: result.message,
-                color: "red",
-            });
-            return false;
-        }
+    const applyReplayText = useCallback(
+        (text: string, options?: ReplayFileImportOptions) => {
+            const result = parseReplayJson(text);
+            if (!result.ok) {
+                notifications.show({
+                    title: "导入失败",
+                    message: result.message,
+                    color: "red",
+                });
+                return false;
+            }
 
-        setReplayData(result.data);
-        return true;
-    }, []);
+            actions.setReplayImportResult({
+                replayData: result.data,
+                fileHandle: options?.fileHandle ?? null,
+                fileName: options?.fileName ?? null,
+            });
+            return true;
+        },
+        [actions],
+    );
 
     // 从 File 对象导入回放
     const importReplayFile = useCallback(
         async (file: File, options?: ReplayFileImportOptions) => {
             try {
                 const text = await file.text();
-                const isImported = applyReplayText(text);
+                const isImported = applyReplayText(text, {
+                    fileHandle: options?.fileHandle ?? null,
+                    fileName: options?.fileName ?? file.name,
+                });
                 if (!isImported) {
                     return false;
                 }
 
-                setOpenedFileHandle(options?.fileHandle ?? null);
-                setOpenedFileName(options?.fileName ?? file.name);
                 return true;
             } catch {
                 notifications.show({
@@ -130,16 +137,16 @@ export function useReplayFileImport(): ReplayFileImportState {
 
     // 刷新当前已打开的回放文件
     const refreshReplayFile = useCallback(async () => {
-        if (!openedFileHandle) {
+        if (!workspace.replayFileHandle) {
             return;
         }
 
         setIsRefreshingFile(true);
         try {
-            const file = await openedFileHandle.getFile();
+            const file = await workspace.replayFileHandle.getFile();
             await importReplayFile(file, {
-                fileHandle: openedFileHandle,
-                fileName: openedFileHandle.name,
+                fileHandle: workspace.replayFileHandle,
+                fileName: workspace.replayFileHandle.name,
             });
         } catch {
             notifications.show({
@@ -150,7 +157,7 @@ export function useReplayFileImport(): ReplayFileImportState {
         } finally {
             setIsRefreshingFile(false);
         }
-    }, [importReplayFile, openedFileHandle]);
+    }, [importReplayFile, workspace.replayFileHandle]);
 
     // 处理隐藏文件输入框的上传结果
     const uploadReplayFile = useCallback(
@@ -181,8 +188,8 @@ export function useReplayFileImport(): ReplayFileImportState {
     );
 
     return {
-        replayData,
-        canRefresh: openedFileHandle !== null,
+        replayData: workspace.replayData,
+        canRefresh: workspace.replayFileHandle !== null,
         fileInputRef,
         fileStatusText,
         importDroppedFile,

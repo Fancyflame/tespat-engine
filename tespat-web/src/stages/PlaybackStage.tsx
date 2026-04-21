@@ -1,14 +1,16 @@
 import { Box } from "@mantine/core";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import GridDisplaySlider from "../components/GridDisplaySlider/GridDisplaySlider";
 import styles from "../App.module.css";
 import { ReplayToolbar } from "../replay/ReplayToolbar";
 import { ReplayViewport } from "../replay/ReplayViewport";
 import { useReplayFileImport } from "../replay/useReplayFileImport";
+import { useWorkspace, useWorkspaceActions } from "../Workspace";
 
 /** 主舞台 - 回放模式：可拖拽的中央网格显示 + 演化时间轴 */
 export function PlaybackStage() {
-    const [currentStep, setCurrentStep] = useState(0);
+    const workspace = useWorkspace();
+    const actions = useWorkspaceActions();
     const {
         replayData,
         canRefresh,
@@ -24,32 +26,29 @@ export function PlaybackStage() {
 
     const totalSteps = replayData?.frames.length ?? 0;
     const clampedStep =
-        totalSteps > 0 ? Math.min(currentStep, totalSteps - 1) : 0;
-
-    useEffect(() => {
-        setCurrentStep(
-            replayData && replayData.frames.length > 0
-                ? replayData.frames.length - 1
-                : 0,
-        );
-    }, [replayData]);
+        totalSteps > 0
+            ? Math.min(workspace.replayCurrentStep, totalSteps - 1)
+            : 0;
 
     const handleStepChange = useCallback(
         (step: number) => {
             if (totalSteps === 0) return;
-            setCurrentStep(Math.min(Math.max(step, 0), totalSteps - 1));
+            actions.setReplayCurrentStep(
+                Math.min(Math.max(step, 0), totalSteps - 1),
+            );
         },
-        [totalSteps],
+        [actions, totalSteps],
     );
 
     const handlePrevStep = useCallback(() => {
-        setCurrentStep((prev) => Math.max(prev - 1, 0));
-    }, []);
+        if (totalSteps === 0) return;
+        actions.setReplayCurrentStep(Math.max(clampedStep - 1, 0));
+    }, [actions, clampedStep, totalSteps]);
 
     const handleNextStep = useCallback(() => {
         if (totalSteps === 0) return;
-        setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1));
-    }, [totalSteps]);
+        actions.setReplayCurrentStep(Math.min(clampedStep + 1, totalSteps - 1));
+    }, [actions, clampedStep, totalSteps]);
 
     return (
         <Box className={styles.UIStack}>
