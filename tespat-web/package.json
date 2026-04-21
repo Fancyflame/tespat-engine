@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "sync:tabler-icons": "node ./scripts/syncTablerOutlineIcons.mjs",
+    "dev": "npm run sync:tabler-icons && vite",
+    "build": "npm run sync:tabler-icons && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "npm run sync:tabler-icons && vite preview"
   },
   "dependencies": {
     "@mantine/core": "^8.3.15",

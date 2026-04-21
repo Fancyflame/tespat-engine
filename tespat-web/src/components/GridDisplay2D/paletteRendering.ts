@@ -1,20 +1,8 @@
-import {
-    createElement,
-    useEffect,
-    useState,
-    type ComponentType,
-} from "react";
-import { renderToStaticMarkup } from "react-dom/server.browser";
-import * as TablerIcons from "@tabler/icons-react";
+import { useEffect, useState } from "react";
 import type { PaletteEntry } from "../../ProjectData";
 
 type IconTone = "light" | "dark";
 type ResolvedIconMap = ReadonlyMap<string, HTMLImageElement | null>;
-type TablerIconComponent = ComponentType<{
-    color?: string;
-    size?: string | number;
-    stroke?: string | number;
-}>;
 
 export type PaletteCellBox = {
     x: number;
@@ -36,9 +24,14 @@ const TABLER_STROKE_COLORS: Record<IconTone, string> = {
     light: "#f8fafc",
     dark: "#0f172a",
 };
+const SVG_ICON_RETRY_DELAY_MS = 5000;
+const RAW_SVG_CACHE = new Map<string, string | null>();
+const RAW_SVG_LOADING = new Map<string, Promise<string | null>>();
+const SVG_DATA_URL_CACHE = new Map<string, string | null>();
 const SVG_ICON_CACHE = new Map<string, HTMLImageElement | null>();
 const SVG_ICON_LOADING = new Set<string>();
 const SVG_ICON_LISTENERS = new Map<string, Set<() => void>>();
+const SVG_ICON_RETRY_TIMERS = new Map<string, ReturnType<typeof setTimeout>>();
 
 // 计算十六进制颜色的相对亮度
 function getHexColorLuminance(hexColor: string) {
@@ -85,54 +78,99 @@ function subscribeSvgIconListener(cacheKey: string, listener: () => void) {
     };
 }
 
-// 将 kebab-case 的 icon 名称转换为 Tabler React 导出名
-function toTablerExportName(iconName: string) {
-    const normalized = iconName.trim();
+// 当加载失败时，延迟触发一次重试，避免单次失败把图标永久锁死在空状态
+function scheduleSvgIconRetry(cacheKey: string) {
+    if (SVG_ICON_RETRY_TIMERS.has(cacheKey)) {
+        return;
+    }
+
+    const timer = setTimeout(() => {
+        SVG_ICON_RETRY_TIMERS.delete(cacheKey);
+        notifySvgIconListeners(cacheKey);
+    }, SVG_ICON_RETRY_DELAY_MS);
+
+    SVG_ICON_RETRY_TIMERS.set(cacheKey, timer);
+}
+
+// 统一归一化用户输入的图标名
+function normalizeIconName(iconName: string) {
+    const normalized = iconName.trim().toLowerCase();
+    return normalized || null;
+}
+
+// 生成某个 outline SVG 在 glob 映射中的键名
+function getTablerIconAssetKey(iconName: string) {
+    const normalized = normalizeIconName(iconName);
     if (!normalized) {
         return null;
     }
 
-    const pascalName = normalized
-        .split("-")
-        .filter((segment) => segment.length > 0)
-        .map((segment) => segment[0].toUpperCase() + segment.slice(1))
-        .join("");
-
-    if (!pascalName) {
-        return null;
-    }
-
-    return `Icon${pascalName}`;
+    return `tabler-icons/outline/${normalized}.svg`;
 }
 
-// 根据 kebab-case 名称获取对应的 Tabler React 图标组件
-function getTablerIconComponent(iconName: string) {
-    const exportName = toTablerExportName(iconName);
-    if (!exportName) {
+// 生成某个图标颜色变体对应的缓存键
+function getTablerIconCacheKey(iconName: string, strokeColor: string) {
+    const normalized = normalizeIconName(iconName);
+    if (!normalized) {
         return null;
     }
 
-    const candidate = (TablerIcons as Record<string, unknown>)[exportName];
-    if (!candidate) {
-        return null;
-    }
-
-    return candidate as TablerIconComponent;
+    return `${normalized}::${strokeColor}`;
 }
 
-// 由 Tabler React 图标组件构造 SVG 字符串
-function buildTablerIconSvg(iconName: string, strokeColor: string) {
-    const IconComponent = getTablerIconComponent(iconName);
-    if (!IconComponent) {
+// 获取某个 outline SVG 在当前站点下的可访问 URL
+function getTablerIconAssetUrl(iconName: string) {
+    const assetPath = getTablerIconAssetKey(iconName);
+    if (!assetPath) {
         return null;
     }
 
-    return renderToStaticMarkup(
-        createElement(IconComponent, {
-            color: strokeColor,
-            size: 24,
-            stroke: 2,
-        }),
+    return `${import.meta.env.BASE_URL}${assetPath}`;
+}
+
+// 按需拉取原始 SVG 文本，并缓存同名图标的结果
+function loadRawTablerIconSvg(iconName: string) {
+    const assetPath = getTablerIconAssetKey(iconName);
+    if (!assetPath) {
+        return Promise.resolve(null);
+    }
+
+    if (RAW_SVG_CACHE.has(assetPath)) {
+        return Promise.resolve(RAW_SVG_CACHE.get(assetPath) ?? null);
+    }
+
+    const loading = RAW_SVG_LOADING.get(assetPath);
+    if (loading) {
+        return loading;
+    }
+
+    const assetUrl = getTablerIconAssetUrl(iconName);
+    if (!assetUrl) {
+        return Promise.resolve(null);
+    }
+
+    const nextLoading = fetch(assetUrl)
+        .then((response) => (response.ok ? response.text() : null))
+        .catch(() => null)
+        .then((rawSvg) => {
+            if (rawSvg) {
+                RAW_SVG_CACHE.set(assetPath, rawSvg);
+            }
+            return rawSvg;
+        })
+        .finally(() => {
+            RAW_SVG_LOADING.delete(assetPath);
+        });
+
+    RAW_SVG_LOADING.set(assetPath, nextLoading);
+    return nextLoading;
+}
+
+// 仅替换描边色，保留 Tabler outline SVG 的原始结构
+function colorizeTablerIconSvg(rawSvg: string, strokeColor: string) {
+    return rawSvg.replace(
+        /stroke="currentColor"/g,
+        `stroke="${strokeColor}"`,
     );
 }
 
@@ -141,37 +179,84 @@ function svgToDataUrl(svg: string) {
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
+// 为指定图标色变体生成并缓存 data URL
+function getTablerIconDataUrl(
+    cacheKey: string,
+    rawSvg: string,
+    strokeColor: string,
+) {
+    if (SVG_DATA_URL_CACHE.has(cacheKey)) {
+        return SVG_DATA_URL_CACHE.get(cacheKey) ?? null;
+    }
+
+    const dataUrl = svgToDataUrl(colorizeTablerIconSvg(rawSvg, strokeColor));
+    SVG_DATA_URL_CACHE.set(cacheKey, dataUrl);
+    return dataUrl;
+}
+
+// 结束某个图标色变体的加载过程并通知订阅者
+function finishTablerIconLoading(
+    cacheKey: string,
+    image: HTMLImageElement | null,
+) {
+    SVG_ICON_LOADING.delete(cacheKey);
+    if (image) {
+        const retryTimer = SVG_ICON_RETRY_TIMERS.get(cacheKey);
+        if (retryTimer) {
+            clearTimeout(retryTimer);
+            SVG_ICON_RETRY_TIMERS.delete(cacheKey);
+        }
+        SVG_ICON_CACHE.set(cacheKey, image);
+        notifySvgIconListeners(cacheKey);
+        return;
+    }
+
+    SVG_ICON_CACHE.delete(cacheKey);
+    scheduleSvgIconRetry(cacheKey);
+}
+
 // 为指定 iconName 和描边色确保缓存图像已准备好
 function ensureTablerIconLoaded(iconName: string, strokeColor: string) {
-    const cacheKey = `${iconName}::${strokeColor}`;
+    const cacheKey = getTablerIconCacheKey(iconName, strokeColor);
     if (
-        !iconName ||
+        !cacheKey ||
         SVG_ICON_CACHE.has(cacheKey) ||
         SVG_ICON_LOADING.has(cacheKey)
     ) {
         return cacheKey;
     }
 
-    const svg = buildTablerIconSvg(iconName, strokeColor);
-    if (!svg) {
-        SVG_ICON_CACHE.set(cacheKey, null);
-        return cacheKey;
-    }
-
     SVG_ICON_LOADING.add(cacheKey);
 
-    const image = new Image();
-    image.onload = () => {
-        SVG_ICON_LOADING.delete(cacheKey);
-        SVG_ICON_CACHE.set(cacheKey, image);
-        notifySvgIconListeners(cacheKey);
-    };
-    image.onerror = () => {
-        SVG_ICON_LOADING.delete(cacheKey);
-        SVG_ICON_CACHE.set(cacheKey, null);
-        notifySvgIconListeners(cacheKey);
-    };
-    image.src = svgToDataUrl(svg);
+    void loadRawTablerIconSvg(iconName)
+        .then((rawSvg) => {
+            if (!rawSvg) {
+                finishTablerIconLoading(cacheKey, null);
+                return;
+            }
+
+            const dataUrl = getTablerIconDataUrl(
+                cacheKey,
+                rawSvg,
+                strokeColor,
+            );
+            if (!dataUrl) {
+                finishTablerIconLoading(cacheKey, null);
+                return;
+            }
+
+            const image = new Image();
+            image.onload = () => {
+                finishTablerIconLoading(cacheKey, image);
+            };
+            image.onerror = () => {
+                finishTablerIconLoading(cacheKey, null);
+            };
+            image.src = dataUrl;
+        })
+        .catch(() => {
+            finishTablerIconLoading(cacheKey, null);
+        });
 
     return cacheKey;
 }
@@ -193,6 +278,9 @@ export function useResolvedPaletteIcons(palette: ReadonlyMap<string, PaletteEntr
 
             const strokeColor = getIconStrokeColor(entry.color);
             const cacheKey = ensureTablerIconLoaded(entry.icon, strokeColor);
+            if (!cacheKey) {
+                continue;
+            }
 
             if (!SVG_ICON_CACHE.has(cacheKey)) {
                 unsubscribes.push(
@@ -256,8 +344,8 @@ export function drawPaletteCell({
 
     if (entry?.icon) {
         const strokeColor = getIconStrokeColor(backgroundColor);
-        const cacheKey = `${entry.icon}::${strokeColor}`;
-        const iconImage = resolvedIcons.get(cacheKey) ?? null;
+        const cacheKey = getTablerIconCacheKey(entry.icon, strokeColor);
+        const iconImage = cacheKey ? (resolvedIcons.get(cacheKey) ?? null) : null;
 
         if (iconImage) {
             drawContainedImage(ctx, iconImage, box);
