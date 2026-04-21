@@ -2,8 +2,8 @@ import { memo, useEffect, useMemo, useState } from "react";
 import {
     ActionIcon,
     Box,
-    Button,
     ColorPicker,
+    Divider,
     Group,
     Popover,
     Stack,
@@ -14,9 +14,12 @@ import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import type { PaletteEntry } from "../../ProjectData";
 import { useWorkspace, useWorkspaceActions } from "../../Workspace";
 import { PalettePreview } from "../GridDisplay2D/GridDisplay2D";
-import { CollapsibleSection } from "./CollapsibleSection";
+import { SidebarPanel } from "./SidebarPanel";
+import styles from "./SidebarLayout.module.css";
 
-type PaletteChipProps = {
+const PALETTE_POPOVER_Z_INDEX = 500;
+
+type PaletteListItemProps = {
     id: string;
     entry: PaletteEntry;
     selected: boolean;
@@ -35,13 +38,16 @@ export function PaletteSection() {
     const paletteItems = useMemo(
         () =>
             Array.from(workspace.project.palette.entries()).sort(
-                (left, right) => left[0].localeCompare(right[0]),
+                (left, right) =>
+                    left[0].localeCompare(right[0], undefined, {
+                        sensitivity: "accent",
+                    }),
             ),
         [workspace.project.palette],
     );
 
     return (
-        <CollapsibleSection
+        <SidebarPanel
             title="PALETTE"
             rightAction={
                 <ActionIcon
@@ -56,35 +62,41 @@ export function PaletteSection() {
                 </ActionIcon>
             }
         >
-            <Stack gap="xs" pt="xs">
+            <Stack gap="xs">
                 {paletteItems.length === 0 ? (
                     <Text size="xs" c="dimmed">
                         暂无 palette
                     </Text>
                 ) : (
-                    <Group gap="xs" wrap="wrap">
-                        {paletteItems.map(([id, entry]) => (
-                            <PaletteChip
-                                key={id}
-                                id={id}
-                                entry={entry}
-                                selected={workspace.selectedPaletteId === id}
-                                onSelect={actions.setSelectedPaletteId}
-                                onRename={actions.renamePalette}
-                                onDelete={actions.deletePalette}
-                                onChangeColor={actions.updatePaletteColor}
-                                onChangeIcon={actions.updatePaletteIcon}
-                            />
+                    <Stack gap={0} className={styles.paletteList}>
+                        {paletteItems.map(([id, entry], index) => (
+                            <Box key={id}>
+                                <PaletteListItem
+                                    id={id}
+                                    entry={entry}
+                                    selected={
+                                        workspace.selectedPaletteId === id
+                                    }
+                                    onSelect={actions.setSelectedPaletteId}
+                                    onRename={actions.renamePalette}
+                                    onDelete={actions.deletePalette}
+                                    onChangeColor={actions.updatePaletteColor}
+                                    onChangeIcon={actions.updatePaletteIcon}
+                                />
+                                {index < paletteItems.length - 1 ? (
+                                    <Divider />
+                                ) : null}
+                            </Box>
                         ))}
-                    </Group>
+                    </Stack>
                 )}
             </Stack>
-        </CollapsibleSection>
+        </SidebarPanel>
     );
 }
 
-// PaletteChip 负责展示并编辑单条 palette
-const PaletteChip = memo(function PaletteChip({
+// PaletteListItem 负责展示并编辑单条 palette
+const PaletteListItem = memo(function PaletteListItem({
     id,
     entry,
     selected,
@@ -93,7 +105,7 @@ const PaletteChip = memo(function PaletteChip({
     onDelete,
     onChangeColor,
     onChangeIcon,
-}: PaletteChipProps) {
+}: PaletteListItemProps) {
     const [draftName, setDraftName] = useState(id);
     const [draftColor, setDraftColor] = useState(entry.color);
     const [draftIcon, setDraftIcon] = useState(entry.icon ?? "");
@@ -121,33 +133,59 @@ const PaletteChip = memo(function PaletteChip({
         onChangeIcon(id, draftIcon.trim() || null);
     };
 
+    const handleDelete = () => {
+        const confirmed = window.confirm(`确认删除 palette「${id}」吗？`);
+        if (!confirmed) {
+            return;
+        }
+
+        onDelete(id);
+    };
+
+    const rowClassName = [
+        styles.paletteRow,
+        selected && styles.paletteRowSelected,
+    ]
+        .filter(Boolean)
+        .join(" ");
+
     return (
         <Box
+            role="button"
+            tabIndex={0}
+            aria-pressed={selected}
             onClick={() => onSelect(id)}
-            style={{
-                borderRadius: 999,
-                border: selected
-                    ? "1px solid rgba(15, 23, 42, 0.3)"
-                    : "1px solid var(--mantine-color-gray-3)",
-                backgroundColor: selected
-                    ? "rgba(255, 255, 255, 0.9)"
-                    : "transparent",
-                padding: "6px 10px",
+            onKeyDown={(event) => {
+                if (event.target !== event.currentTarget) {
+                    return;
+                }
+
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelect(id);
+                }
             }}
+            className={rowClassName}
         >
-            <Group gap={8} wrap="nowrap">
+            <Box className={styles.paletteRowPreview}>
                 <PalettePreview entry={entry} size={18} borderRadius={4} />
-                <Text
-                    size="xs"
-                    c={selected ? "dark" : "dimmed"}
-                    fw={600}
-                    style={{ userSelect: "none" }}
+            </Box>
+            <Text size="xs" fw={600} className={styles.paletteRowName}>
+                {id}
+            </Text>
+            <Group gap={4}>
+                <Popover
+                    withinPortal={true}
+                    zIndex={PALETTE_POPOVER_Z_INDEX}
+                    shadow="sm"
+                    trapFocus
                 >
-                    {id}
-                </Text>
-                <Popover withinPortal={false} shadow="sm" trapFocus>
                     <Popover.Target>
-                        <ActionIcon variant="subtle" size="xs">
+                        <ActionIcon
+                            variant="subtle"
+                            size="xs"
+                            onClick={(event) => event.stopPropagation()}
+                        >
                             <IconPencil size={12} />
                         </ActionIcon>
                     </Popover.Target>
@@ -164,6 +202,11 @@ const PaletteChip = memo(function PaletteChip({
                                     setDraftName(event.currentTarget.value)
                                 }
                                 onBlur={commitName}
+                                onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                        commitName();
+                                    }
+                                }}
                             />
                             <Stack gap={6}>
                                 <Text size="xs" fw={600}>
@@ -189,23 +232,26 @@ const PaletteChip = memo(function PaletteChip({
                                     setDraftIcon(event.currentTarget.value)
                                 }
                                 onBlur={commitIcon}
-                            />
-                            <Button
-                                color="red"
-                                variant="light"
-                                size="xs"
-                                leftSection={<IconTrash size={14} />}
-                                onClick={() => {
-                                    if (onDelete(id)) {
-                                        setDraftName(id);
+                                onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                        commitIcon();
                                     }
                                 }}
-                            >
-                                删除 palette
-                            </Button>
+                            />
                         </Stack>
                     </Popover.Dropdown>
                 </Popover>
+                <ActionIcon
+                    variant="subtle"
+                    color="red"
+                    size="xs"
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        handleDelete();
+                    }}
+                >
+                    <IconTrash size={12} />
+                </ActionIcon>
             </Group>
         </Box>
     );

@@ -4,7 +4,7 @@ import { IconPlus } from "@tabler/icons-react";
 import { getOrderedPatternIds, type PatternRule } from "../../ProjectData";
 import { useWorkspace, useWorkspaceActions } from "../../Workspace";
 import { PatternCard } from "./PatternCard";
-import { CollapsibleSection } from "./CollapsibleSection";
+import { SidebarPanel } from "./SidebarPanel";
 
 type DropIndicator = {
     targetId: string;
@@ -37,7 +37,7 @@ export const PatternRulesSection = () => {
     );
 
     return (
-        <CollapsibleSection
+        <SidebarPanel
             title="PATTERNS"
             rightAction={
                 <ActionIcon
@@ -129,6 +129,6 @@ export const PatternRulesSection = () => {
                     />
                 ))}
             </Stack>
-        </CollapsibleSection>
+        </SidebarPanel>
     );
 };
