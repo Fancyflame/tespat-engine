@@ -1,5 +1,4 @@
 use std::{
-    array,
     cell::RefCell,
     ops::{Deref, DerefMut},
 };
@@ -134,20 +133,6 @@ impl<T: GraphColor> Tespat<T> {
         }
     }
 
-    /// 导出到二维数组。如果形状不匹配则返回None
-    pub fn export_to_2d_array<const W: usize, const H: usize>(&self) -> Option<[[T; W]; H]> {
-        let mut export = self.export().iter();
-
-        let len = self.width() * self.height();
-        if len != W * H {
-            return None;
-        }
-
-        Some(array::from_fn(|_| {
-            array::from_fn(|_| export.next().cloned().unwrap())
-        }))
-    }
-
     pub fn push_history_frame(&mut self) {
         if let Some(history) = self.history.as_mut() {
             history.push(history::capture_frame(&self.layer));
@@ -169,15 +154,20 @@ impl<T> Tespat<T> {
             .map(|old| map(old).ok_or_else(|| TespatMigrateError { value: old }))
             .collect::<Result<_, _>>()?;
 
-        Ok(self.export_config().set_graph(self.width(), vec))
+        Ok(self.export_config().set_graph_and_width(self.width(), vec))
     }
 
     pub fn export_config(&self) -> TespatBuilder<()> {
-        TespatBuilder::new().enable_history(self.is_history_enabled())
+        TespatBuilder::new_filled((), self.width(), self.height())
+            .enable_history(self.is_history_enabled())
     }
 
     pub fn is_history_enabled(&self) -> bool {
         self.history.is_some()
+    }
+
+    pub fn into_builder(mut self) -> TespatBuilder<T> {
+        self.export_config().set_graph(self.layer.take_data())
     }
 }
 
@@ -222,20 +212,34 @@ impl<T> TespatBuilder<T> {
         }
     }
 
-    pub fn set_graph<U>(&self, width: usize, graph: Vec<U>) -> TespatBuilder<U>
-    where
-        U: GraphColor,
-    {
+    pub fn set_graph_and_width<U>(&self, width: usize, graph: Vec<U>) -> TespatBuilder<U> {
+        self.set_graph(graph).set_width(width)
+    }
+
+    pub fn set_graph<U>(&self, graph: Vec<U>) -> TespatBuilder<U> {
         TespatBuilder {
             graph,
-            width,
+            width: self.width,
             enable_history: self.enable_history,
         }
+    }
+
+    pub fn set_width(mut self, width: usize) -> Self {
+        self.width = width;
+        self
     }
 
     pub fn enable_history(mut self, enable: bool) -> Self {
         self.enable_history = enable;
         self
+    }
+
+    pub fn copy_config(&self) -> TespatBuilder<()> {
+        TespatBuilder {
+            graph: vec![(); self.graph.len()],
+            width: self.width,
+            enable_history: self.enable_history,
+        }
     }
 
     pub fn build(self) -> Tespat<T>

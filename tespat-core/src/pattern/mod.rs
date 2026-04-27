@@ -163,7 +163,7 @@ impl<T> Pattern<T> {
             }
         }
 
-        Some(TespatBuilder::new().set_graph(self.width, data))
+        Some(TespatBuilder::new().set_graph_and_width(self.width, data))
     }
 }
 

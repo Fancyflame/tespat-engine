@@ -63,7 +63,11 @@ pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Col
             break;
         }
 
-        if !tespat.execute(&pattern::SELECT_VERTEX, MatchFilter::One, SymmetryList::ALL) {
+        if !tespat.execute(
+            &pattern::SELECT_VERTEX,
+            MatchFilter::One,
+            SymmetryList::FULL,
+        ) {
             break;
         }
 
@@ -71,18 +75,18 @@ pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Col
         while tespat.execute(
             &pattern::SELECT_WALL_TO_GROW,
             MatchFilter::One,
-            SymmetryList::ALL,
+            SymmetryList::FULL,
         ) || tespat.execute(
             &pattern::SELECT_WALL_TO_GROW_2,
             MatchFilter::One,
-            SymmetryList::ALL,
+            SymmetryList::FULL,
         ) {}
 
         // 墙壁扩散完成，尝试关联顶点
         if !tespat.execute(
             &pattern::SELECT_WALL_TO_GROW_END,
             MatchFilter::One,
-            SymmetryList::ALL,
+            SymmetryList::FULL,
         ) {
             // 关联顶点失败，代表没有足够的空间供墙壁向外延伸
 
@@ -115,10 +119,10 @@ pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Col
         }
 
         // 将所有顶点向外延伸
-        tespat.execute(&pattern::VERTEX_GROW, MatchFilter::All, SymmetryList::ALL);
+        tespat.execute(&pattern::VERTEX_GROW, MatchFilter::All, SymmetryList::FULL);
 
         // 将所有墙向外延伸
-        tespat.execute(&pattern::WALL_GROW, MatchFilter::All, SymmetryList::ALL);
+        tespat.execute(&pattern::WALL_GROW, MatchFilter::All, SymmetryList::FULL);
     }
 
     // 生成完毕，将所有禁止激活的墙重新写为墙

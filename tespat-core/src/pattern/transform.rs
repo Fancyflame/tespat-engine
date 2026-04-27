@@ -2,61 +2,42 @@ use smallvec::SmallVec;
 
 use crate::{Pattern, index_to_position, pattern::MatchColor};
 
-#[derive(Clone, Copy, Debug)]
-pub struct SymmetryList {
-    pub id: bool,
-    pub ccw_90: bool,
-    pub rot_180: bool,
-    pub cw_90: bool,
-    pub flip_h: bool,
-    pub flip_v: bool,
-    pub flip_d1: bool,
-    pub flip_d2: bool,
+macro_rules! make_symmetry_list {
+    ($($scheme:ident)*) => {
+        #[derive(Clone, Copy, Debug)]
+        pub struct SymmetryList {
+            $(pub $scheme: bool,)*
+        }
+
+        impl SymmetryList {
+            pub const EMPTY: Self = Self {
+                $($scheme: false,)*
+            };
+
+            pub const FULL: Self = Self {
+                $($scheme: true,)*
+            };
+
+            $(pub const fn $scheme(self) -> Self {
+                Self {
+                    $scheme: true,
+                    ..self
+                }
+            })*
+        }
+    };
 }
 
+make_symmetry_list! [
+    id ccw_90 rot_180 cw_90 flip_h flip_v flip_d1 flip_d2
+];
+
 impl SymmetryList {
-    pub const EMPTY: Self = Self {
-        id: false,
-        ccw_90: false,
-        rot_180: false,
-        cw_90: false,
-        flip_h: false,
-        flip_v: false,
-        flip_d1: false,
-        flip_d2: false,
-    };
+    pub const ID: Self = Self::EMPTY.id();
 
-    pub const ID: Self = Self {
-        id: true,
-        ..Self::EMPTY
-    };
+    pub const ROTATE_ONLY: Self = Self::EMPTY.id().ccw_90().rot_180().cw_90();
 
-    pub const ROTATE_ONLY: Self = Self {
-        id: true,
-        ccw_90: true,
-        rot_180: true,
-        cw_90: true,
-        ..Self::EMPTY
-    };
-
-    pub const FLIP_ONLY: Self = Self {
-        id: true,
-        rot_180: true,
-        flip_h: true,
-        flip_v: true,
-        ..Self::EMPTY
-    };
-
-    pub const ALL: Self = Self {
-        id: true,
-        ccw_90: true,
-        rot_180: true,
-        cw_90: true,
-        flip_h: true,
-        flip_v: true,
-        flip_d1: true,
-        flip_d2: true,
-    };
+    pub const FLIP_ONLY: Self = Self::EMPTY.id().flip_h().flip_v().rot_180();
 
     pub fn as_array(&self) -> SmallVec<[Symmetry; 8]> {
         [

@@ -64,12 +64,6 @@ impl<T: GraphColor> Layer<T> {
         }
     }
 
-    pub fn take_data(&mut self) -> Vec<T> {
-        self.color_indexes.clear();
-        self.width = 0;
-        std::mem::take(&mut self.data_vec)
-    }
-
     /// 用数据初始化
     pub fn initialize(&mut self, row_width: usize, data: Vec<T>) {
         self.take_data();
@@ -224,41 +218,18 @@ impl<T: GraphColor> Layer<T> {
             None => 0,
         }
     }
-
-    /* /// 用邻近算法将当前图像细化为新的层
-    pub fn refine(&mut self, n: usize) {
-        let src_width = self.row_width;
-        let src_height = self.height();
-        let src_data = self.data_vec.clone();
-
-        if n == 0 {
-            self.initialize(0, |vec| vec.clear());
-            return;
-        }
-
-        self.initialize(src_width.saturating_mul(n), move |vec| {
-            vec.clear();
-            vec.reserve(src_data.len() * n * n);
-
-            for src_y in 0..src_height {
-                let src_row_start = src_y * src_width;
-                for _ in 0..n {
-                    for src_x in 0..src_width {
-                        let color = &src_data[src_row_start + src_x];
-                        for _ in 0..n {
-                            vec.push(color.clone());
-                        }
-                    }
-                }
-            }
-        });
-    } */
 }
 
 impl<T> Layer<T> {
     /// 导出图
     pub fn export(&self) -> &Vec<T> {
         &self.data_vec
+    }
+
+    pub fn take_data(&mut self) -> Vec<T> {
+        self.color_indexes.clear();
+        self.width = 0;
+        std::mem::take(&mut self.data_vec)
     }
 
     pub const fn width(&self) -> usize {
