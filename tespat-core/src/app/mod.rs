@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     CaptureColor, GraphColor, Pattern, ReplaceColor,
-    app::history::HistoryData,
+    app::{history::HistoryData, matches::PickOrder},
     layer::{Layer, pattern_match::Match},
     pattern::transform::SymmetryList,
 };
@@ -49,12 +49,17 @@ impl<T: GraphColor> Tespat<T> {
         this
     }
 
-    pub fn capture<P>(&self, pattern: &Pattern<P>, transforms: SymmetryList) -> Matches
+    pub fn capture<P>(
+        &self,
+        pattern: &Pattern<P>,
+        transforms: SymmetryList,
+        pick_order: PickOrder,
+    ) -> Matches
     where
         P: CaptureColor<T> + 'static,
     {
-        Matches(
-            transforms
+        Matches {
+            data: transforms
                 .as_array()
                 .into_iter()
                 .flat_map(|sym| {
@@ -64,22 +69,31 @@ impl<T: GraphColor> Tespat<T> {
                         .into_iter()
                 })
                 .collect::<Vec<Match>>(),
-        )
+            pick_order,
+        }
     }
 
     pub fn replace<P>(&mut self, positions: &Matches, replace_to: &Pattern<P>)
     where
         P: ReplaceColor<T> + 'static,
     {
-        if positions.0.is_empty() {
+        if positions.data.is_empty() {
             return;
         }
+
+        debug_assert!(positions.pick_order.is_as_is());
+        let mut _cloned_positions: Option<Matches> = None;
+        let pos = if !positions.pick_order.is_as_is() {
+            &_cloned_positions.insert(positions.clone()).pick_all()
+        } else {
+            positions
+        };
 
         for Match {
             pos_x,
             pos_y,
             symmetry,
-        } in positions.0.iter().copied()
+        } in pos.data.iter().copied()
         {
             self.layer
                 .pattern_replace((pos_x, pos_y), replace_to.transform(symmetry));
@@ -88,6 +102,7 @@ impl<T: GraphColor> Tespat<T> {
         self.push_history_frame();
     }
 
+    #[inline]
     pub fn execute<C, R>(
         &mut self,
         capture_and_replace: impl AsPatternPair<C, R>,
@@ -98,15 +113,34 @@ impl<T: GraphColor> Tespat<T> {
         C: CaptureColor<T> + 'static,
         R: ReplaceColor<T> + 'static,
     {
+        self.execute_with_order(
+            capture_and_replace,
+            filter,
+            transforms,
+            PickOrder::Randomized,
+        )
+    }
+
+    pub fn execute_with_order<C, R>(
+        &mut self,
+        capture_and_replace: impl AsPatternPair<C, R>,
+        filter: MatchFilter,
+        transforms: SymmetryList,
+        order: PickOrder,
+    ) -> bool
+    where
+        C: CaptureColor<T> + 'static,
+        R: ReplaceColor<T> + 'static,
+    {
         let (capture, replace_to) = capture_and_replace.as_pattern_pair();
 
-        let mut matches = self.capture(capture, transforms);
+        let mut matches = self.capture(capture, transforms, order);
         match filter {
             MatchFilter::One => matches.pick(1),
             MatchFilter::AtMost(count) => matches.pick(count),
             MatchFilter::Percent(pct) => matches.ratio_pick(pct),
             MatchFilter::NonOverlap => matches.pick_non_overlapping(self, capture, replace_to),
-            MatchFilter::All => matches.all(),
+            MatchFilter::All => matches.pick_all(),
         };
 
         if matches.is_empty() {

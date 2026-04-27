@@ -1,5 +1,5 @@
 use tespat::{
-    app::{MatchFilter, Tespat, TespatBuilder},
+    app::{MatchFilter, Tespat, TespatBuilder, matches::PickOrder},
     pattern::transform::SymmetryList,
 };
 
@@ -44,7 +44,11 @@ pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Col
 
     // 选一些地方生成最小房间
     {
-        let mut m = tespat.capture(&pattern::GENERATE_SEED.0, SymmetryList::ID);
+        let mut m = tespat.capture(
+            &pattern::GENERATE_SEED.0,
+            SymmetryList::ID,
+            PickOrder::Randomized,
+        );
         m.pick_non_overlapping(
             &tespat,
             &pattern::GENERATE_SEED.0,

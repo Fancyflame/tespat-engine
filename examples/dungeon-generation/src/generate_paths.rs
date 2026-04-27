@@ -1,5 +1,5 @@
 use tespat::{
-    app::{MatchFilter, Tespat},
+    app::{MatchFilter, Tespat, matches::PickOrder},
     pattern::transform::SymmetryList,
 };
 
@@ -100,7 +100,7 @@ pub fn generate(tespat: &mut Tespat<Color>) {
 
     // 恢复房间
     {
-        let m = rooms_info.capture(&unit_pattern::ROOM, SymmetryList::ID);
+        let m = rooms_info.capture(&unit_pattern::ROOM, SymmetryList::ID, PickOrder::Randomized);
         tespat.replace(&m, &unit_pattern::ROOM);
     }
 }

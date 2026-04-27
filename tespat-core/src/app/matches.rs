@@ -4,44 +4,92 @@ use crate::{GraphColor, app::Tespat, layer::pattern_match::Match, pattern::Patte
 
 /// 模式匹配结果
 #[derive(Clone, Debug)]
-pub struct Matches(pub(super) Vec<Match>);
+pub struct Matches {
+    pub(super) data: Vec<Match>,
+    pub pick_order: PickOrder,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PickOrder {
+    /// 保持Vec里的数据直接取出
+    AsIs,
+
+    /// 随机取出
+    Randomized,
+
+    /// 按顺序取出
+    Sorted,
+}
+
+impl PickOrder {
+    pub const fn reset(&mut self) {
+        *self = Self::AsIs;
+    }
+
+    pub const fn is_as_is(&self) -> bool {
+        matches!(self, Self::AsIs)
+    }
+}
 
 impl Matches {
     /// 匹配及筛选后剩余结果的总数
     pub const fn len(&self) -> usize {
-        self.0.len()
+        self.data.len()
     }
 
     pub const fn is_empty(&self) -> bool {
-        self.0.is_empty()
+        self.data.is_empty()
     }
 
-    /// 保留所有坐标，仅将坐标打乱
-    pub fn all(&mut self) -> &Self {
-        self.0.shuffle(&mut rand::rng());
+    /// 将提取顺序塌陷为AsIs
+    pub fn pick_all(&mut self) -> &mut Self {
+        match self.pick_order {
+            PickOrder::AsIs => {}
+            PickOrder::Randomized => self.data.shuffle(&mut rand::rng()),
+            PickOrder::Sorted => self.data.sort_unstable_by_key(sort_match_cmp),
+        }
+        self.pick_order.reset();
         self
     }
 
-    /// 按比率随机挑选一部分坐标。
-    pub fn ratio_pick(&mut self, ratio: f32) -> &Self {
+    /// 按比率随机挑选部分坐标。
+    pub fn ratio_pick(&mut self, ratio: f32) -> &mut Self {
         self.pick((self.len() as f32 * ratio) as usize);
         self
     }
 
-    /// 按个数随机挑选一部分坐标。如果输入值超过最大个数则为保留全部并打乱。
-    pub fn pick(&mut self, reserve_count: usize) -> &Self {
-        let mut rng = rand::rng();
-        for i in 0..reserve_count.min(self.len()) {
-            let picked = rng.random_range(i..self.len());
-            self.0.swap(i, picked);
+    /// 按个数保留部分坐标
+    pub fn pick(&mut self, reserve_count: usize) -> &mut Self {
+        if reserve_count >= self.len() {
+            return self.pick_all();
         }
-        self.0.truncate(reserve_count);
 
+        match self.pick_order {
+            PickOrder::AsIs => {}
+            PickOrder::Randomized => {
+                let mut rng = rand::rng();
+                for i in 0..reserve_count {
+                    let picked = rng.random_range(i + 1..self.len());
+                    self.data.swap(i, picked);
+                }
+            }
+            PickOrder::Sorted => {
+                if reserve_count < self.data.len() / 2 {
+                    self.data
+                        .select_nth_unstable_by_key(reserve_count, sort_match_cmp);
+                    self.data.truncate(reserve_count);
+                }
+                self.data.sort_unstable_by_key(sort_match_cmp);
+            }
+        }
+
+        self.data.truncate(reserve_count);
+        self.pick_order.reset();
         self
     }
 
     pub fn optioned(&self) -> Option<&Self> {
-        (!self.0.is_empty()).then_some(self)
+        (!self.data.is_empty()).then_some(self)
     }
 }
 
@@ -72,8 +120,8 @@ impl Matches {
             .map(|(m_c, r_c)| !(m_c.is_ignore() && !r_c.is_exact()))
             .collect();
 
-        self.all();
-        self.0.retain(|&match_result| {
+        self.pick_all();
+        self.data.retain(|&match_result| {
             let index_iter = iter_region_indexes(
                 tespat.layer.width(),
                 match_result,
@@ -122,4 +170,8 @@ fn iter_region_indexes(
         let (mapped_x, mapped_y) = symmetry.map(x, y, pattern_w, pattern_h);
         Some(pos_x + mapped_x + (pos_y + mapped_y) * graph_width)
     })
+}
+
+const fn sort_match_cmp(m: &Match) -> (usize, usize) {
+    (m.pos_x, m.pos_y)
 }
