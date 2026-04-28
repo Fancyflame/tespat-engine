@@ -201,15 +201,37 @@ export function GridDisplay2D({
             }
 
             const rect = canvas.getBoundingClientRect();
-            const x = clientX - rect.left;
-            const y = clientY - rect.top;
-
-            if (x < 0 || y < 0 || x >= rect.width || y >= rect.height) {
+            if (rect.width <= 0 || rect.height <= 0) {
                 return null;
             }
 
-            const col = Math.floor((x / rect.width) * width);
-            const row = Math.floor((y / rect.height) * gridHeight);
+            const gridAspect = width / gridHeight;
+            const rectAspect = rect.width / rect.height;
+
+            let contentWidth = rect.width;
+            let contentHeight = rect.height;
+            if (rectAspect > gridAspect) {
+                contentWidth = rect.height * gridAspect;
+            } else if (rectAspect < gridAspect) {
+                contentHeight = rect.width / gridAspect;
+            }
+
+            const contentLeft = rect.left + (rect.width - contentWidth) / 2;
+            const contentTop = rect.top + (rect.height - contentHeight) / 2;
+            const localX = clientX - contentLeft;
+            const localY = clientY - contentTop;
+
+            if (
+                localX < 0 ||
+                localY < 0 ||
+                localX >= contentWidth ||
+                localY >= contentHeight
+            ) {
+                return null;
+            }
+
+            const col = Math.floor((localX / contentWidth) * width);
+            const row = Math.floor((localY / contentHeight) * gridHeight);
 
             if (col < 0 || row < 0 || col >= width || row >= gridHeight) {
                 return null;
