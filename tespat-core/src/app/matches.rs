@@ -99,7 +99,7 @@ impl Matches {
         tespat: &Tespat<T>,
         match_pattern: &Pattern<M>,
         replace_pattern: &Pattern<R>,
-    ) -> &Self {
+    ) -> &mut Self {
         let mut bitset = tespat.overlapping_bitset.borrow_mut();
         bitset.fill(false);
         bitset.resize(tespat.layer.len(), false);

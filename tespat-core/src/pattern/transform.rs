@@ -18,11 +18,9 @@ macro_rules! make_symmetry_list {
                 $($scheme: true,)*
             };
 
-            $(pub const fn $scheme(self) -> Self {
-                Self {
-                    $scheme: true,
-                    ..self
-                }
+            $(pub const fn $scheme(mut self) -> Self {
+                self.$scheme = true;
+                self
             })*
         }
     };

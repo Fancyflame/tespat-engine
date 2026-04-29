@@ -1,5 +1,5 @@
 use tespat::{
-    app::{MatchFilter, TespatBuilder},
+    app::{TespatBuilder, match_filter},
     pattern::transform::SymmetryList,
 };
 
@@ -26,7 +26,7 @@ fn main() {
         // 生成所有候选点，未成功生成则意味着全部墙体已生成完毕
         if !tespat.execute(
             &pattern::SEARCH_SPACE,
-            MatchFilter::All,
+            match_filter::all,
             SymmetryList::ROTATE_ONLY,
         ) {
             break;
@@ -35,40 +35,40 @@ fn main() {
         // 随机挑选一个候选点生成种子
         tespat.execute(
             (&unit_pattern::SEED_CANDIDATE, &unit_pattern::SEED),
-            MatchFilter::One,
+            match_filter::one,
             SymmetryList::ID,
         );
 
         // 将所有未使用的候选点替换回active
         tespat.execute(
             (&unit_pattern::SEED_CANDIDATE, &unit_pattern::ACTIVE),
-            MatchFilter::All,
+            match_filter::all,
             SymmetryList::ID,
         );
 
         // 生成方向
         tespat.execute(
             &pattern::DIRECTION_SELECT,
-            MatchFilter::One,
+            match_filter::one,
             SymmetryList::ROTATE_ONLY,
         );
 
         // 延伸墙体
         while tespat.execute(
             &pattern::PROPAGATION,
-            MatchFilter::All,
+            match_filter::all,
             SymmetryList::ROTATE_ONLY,
         ) {}
 
         tespat.execute(
             (&unit_pattern::GROWTH, &unit_pattern::WALL),
-            MatchFilter::All,
+            match_filter::all,
             SymmetryList::ID,
         );
 
         tespat.execute(
             (&unit_pattern::SEED, &unit_pattern::WALL),
-            MatchFilter::All,
+            match_filter::all,
             SymmetryList::ID,
         );
     }

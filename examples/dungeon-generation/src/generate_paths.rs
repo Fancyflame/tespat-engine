@@ -1,5 +1,5 @@
 use tespat::{
-    app::{MatchFilter, Tespat, matches::PickOrder},
+    app::{Tespat, match_filter, matches::PickOrder},
     pattern::transform::SymmetryList,
 };
 
@@ -9,7 +9,7 @@ pub fn generate(tespat: &mut Tespat<Color>) {
     loop {
         if tespat.execute(
             &pattern::CREATE_PATH,
-            MatchFilter::One,
+            match_filter::one,
             SymmetryList::ROTATE_ONLY,
         ) {
             continue;
@@ -17,7 +17,7 @@ pub fn generate(tespat: &mut Tespat<Color>) {
 
         if tespat.execute(
             &pattern::BACKWARD_PATH,
-            MatchFilter::One,
+            match_filter::one,
             SymmetryList::ROTATE_ONLY,
         ) {
             continue;
@@ -25,7 +25,7 @@ pub fn generate(tespat: &mut Tespat<Color>) {
 
         if tespat.execute(
             (&unit_pattern::ANCHOR, &unit_pattern::PATH_HEAD),
-            MatchFilter::One,
+            match_filter::one,
             SymmetryList::ID,
         ) {
             continue;
@@ -37,14 +37,14 @@ pub fn generate(tespat: &mut Tespat<Color>) {
     // 留一个路径头做下一轮凿墙寻路
     tespat.execute(
         (&unit_pattern::PATH_HEAD, &unit_pattern::ANCHOR),
-        MatchFilter::One,
+        match_filter::one,
         SymmetryList::ID,
     );
 
     // 清除剩下的寻路头
     tespat.execute(
         (&unit_pattern::PATH_HEAD, &unit_pattern::PATH),
-        MatchFilter::All,
+        match_filter::all,
         SymmetryList::ID,
     );
 
@@ -54,14 +54,14 @@ pub fn generate(tespat: &mut Tespat<Color>) {
     // 将房间地面替换为路径
     tespat.execute(
         (&unit_pattern::ROOM, &unit_pattern::PATH),
-        MatchFilter::All,
+        match_filter::all,
         SymmetryList::ID,
     );
 
     loop {
         if tespat.execute(
             &pattern::CREATE_CONNECTIVE_PATH,
-            MatchFilter::All,
+            match_filter::all,
             SymmetryList::ROTATE_ONLY,
         ) {
             continue;
@@ -69,7 +69,7 @@ pub fn generate(tespat: &mut Tespat<Color>) {
 
         if tespat.execute(
             &pattern::DRIP_DOOR,
-            MatchFilter::One,
+            match_filter::one,
             SymmetryList::ROTATE_ONLY,
         ) {
             continue;
@@ -80,21 +80,21 @@ pub fn generate(tespat: &mut Tespat<Color>) {
 
     tespat.execute(
         (&unit_pattern::ANCHOR, &unit_pattern::PATH),
-        MatchFilter::All,
+        match_filter::all,
         SymmetryList::ID,
     );
 
     // 清除死胡同
     while tespat.execute(
         &pattern::CLEAR_DEAD_END,
-        MatchFilter::All,
+        match_filter::all,
         SymmetryList::ROTATE_ONLY,
     ) {}
 
     // 随机连通几个区域
     tespat.execute(
         &pattern::DESTROY_WALL,
-        MatchFilter::Percent(0.03),
+        match_filter::percent(0.03),
         SymmetryList::ROTATE_ONLY,
     );
 

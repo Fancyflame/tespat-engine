@@ -5,12 +5,17 @@ use std::{
 
 use crate::{
     CaptureColor, GraphColor, Pattern, ReplaceColor,
-    app::{history::HistoryData, matches::PickOrder},
+    app::{
+        history::HistoryData,
+        match_filter::{MatchFilter, PickNonOverlappingContextInner},
+        matches::PickOrder,
+    },
     layer::{Layer, pattern_match::Match},
     pattern::transform::SymmetryList,
 };
 
 pub mod history;
+pub mod match_filter;
 pub mod matches;
 
 use matches::Matches;
@@ -103,15 +108,16 @@ impl<T: GraphColor> Tespat<T> {
     }
 
     #[inline]
-    pub fn execute<C, R>(
+    pub fn execute<C, R, Mf>(
         &mut self,
         capture_and_replace: impl AsPatternPair<C, R>,
-        filter: MatchFilter,
+        filter: Mf,
         transforms: SymmetryList,
     ) -> bool
     where
         C: CaptureColor<T> + 'static,
         R: ReplaceColor<T> + 'static,
+        Mf: MatchFilter,
     {
         self.execute_with_order(
             capture_and_replace,
@@ -121,27 +127,29 @@ impl<T: GraphColor> Tespat<T> {
         )
     }
 
-    pub fn execute_with_order<C, R>(
+    pub fn execute_with_order<C, R, Mf>(
         &mut self,
         capture_and_replace: impl AsPatternPair<C, R>,
-        filter: MatchFilter,
+        filter: Mf,
         transforms: SymmetryList,
         order: PickOrder,
     ) -> bool
     where
         C: CaptureColor<T> + 'static,
         R: ReplaceColor<T> + 'static,
+        Mf: MatchFilter,
     {
         let (capture, replace_to) = capture_and_replace.as_pattern_pair();
 
         let mut matches = self.capture(capture, transforms, order);
-        match filter {
-            MatchFilter::One => matches.pick(1),
-            MatchFilter::AtMost(count) => matches.pick(count),
-            MatchFilter::Percent(pct) => matches.ratio_pick(pct),
-            MatchFilter::NonOverlap => matches.pick_non_overlapping(self, capture, replace_to),
-            MatchFilter::All => matches.pick_all(),
-        };
+        filter.filter(
+            &mut matches,
+            &PickNonOverlappingContextInner {
+                tespat: self,
+                match_pattern: capture,
+                replace_pattern: replace_to,
+            },
+        );
 
         if matches.is_empty() {
             false
@@ -282,15 +290,6 @@ impl<T> TespatBuilder<T> {
     {
         Tespat::new(self)
     }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum MatchFilter {
-    One,
-    AtMost(usize),
-    Percent(f32),
-    NonOverlap,
-    All,
 }
 
 pub trait AsPatternPair<C, R> {

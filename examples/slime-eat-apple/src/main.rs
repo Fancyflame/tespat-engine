@@ -1,4 +1,4 @@
-use tespat::{app::MatchFilter, pattern::transform::SymmetryList};
+use tespat::{app::match_filter, pattern::transform::SymmetryList};
 
 // 引入 build.rs 生成的规则代码。
 mod example {
@@ -20,7 +20,7 @@ fn main() {
     loop {
         if tespat.execute(
             &pattern::EAT_APPLE,
-            MatchFilter::All,
+            match_filter::all,
             SymmetryList::ROTATE_ONLY,
         ) {
             continue;
@@ -28,7 +28,7 @@ fn main() {
 
         if tespat.execute(
             &pattern::SLIME_MOVE,
-            MatchFilter::One,
+            match_filter::one,
             SymmetryList {
                 ccw_90: true,
                 ..SymmetryList::ID
