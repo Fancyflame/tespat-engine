@@ -86,6 +86,7 @@ interface WorkspaceActions {
     createPalette: () => void;
     renamePalette: (paletteId: string, nextName: string) => boolean;
     updatePaletteColor: (paletteId: string, nextColor: string) => void;
+    updatePalettePublic: (paletteId: string, nextPublic: boolean) => void;
     updatePaletteIcon: (paletteId: string, nextIcon: string | null) => void;
     deletePalette: (paletteId: string) => boolean;
     openWithFilePicker: () => Promise<void>;
@@ -583,6 +584,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                     palette.set(newId, {
                         color: "#ffffff",
                         icon: null,
+                        public: false,
                     });
 
                     return {
@@ -691,6 +693,28 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                     palette.set(paletteId, {
                         ...entry,
                         color: nextColor,
+                    });
+
+                    return {
+                        ...prev,
+                        project: {
+                            ...prev.project,
+                            palette,
+                        },
+                    };
+                });
+            },
+            updatePalettePublic(paletteId, nextPublic) {
+                updateState((prev) => {
+                    const entry = prev.project.palette.get(paletteId);
+                    if (!entry || entry.public === nextPublic) {
+                        return prev;
+                    }
+
+                    const palette = new Map(prev.project.palette);
+                    palette.set(paletteId, {
+                        ...entry,
+                        public: nextPublic,
                     });
 
                     return {

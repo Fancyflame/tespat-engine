@@ -10,7 +10,13 @@ import {
     Text,
     TextInput,
 } from "@mantine/core";
-import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
+import {
+    IconEye,
+    IconEyeOff,
+    IconPencil,
+    IconPlus,
+    IconTrash,
+} from "@tabler/icons-react";
 import type { PaletteEntry } from "../../ProjectData";
 import { useWorkspace, useWorkspaceActions } from "../../Workspace";
 import { PalettePreview } from "../GridDisplay2D/GridDisplay2D";
@@ -27,6 +33,7 @@ type PaletteListItemProps = {
     onRename: (paletteId: string, nextName: string) => boolean;
     onDelete: (paletteId: string) => boolean;
     onChangeColor: (paletteId: string, nextColor: string) => void;
+    onChangePublic: (paletteId: string, nextPublic: boolean) => void;
     onChangeIcon: (paletteId: string, nextIcon: string | null) => void;
 };
 
@@ -81,6 +88,9 @@ export function PaletteSection() {
                                     onRename={actions.renamePalette}
                                     onDelete={actions.deletePalette}
                                     onChangeColor={actions.updatePaletteColor}
+                                    onChangePublic={
+                                        actions.updatePalettePublic
+                                    }
                                     onChangeIcon={actions.updatePaletteIcon}
                                 />
                                 {index < paletteItems.length - 1 ? (
@@ -104,6 +114,7 @@ const PaletteListItem = memo(function PaletteListItem({
     onRename,
     onDelete,
     onChangeColor,
+    onChangePublic,
     onChangeIcon,
 }: PaletteListItemProps) {
     const [draftName, setDraftName] = useState(id);
@@ -241,6 +252,22 @@ const PaletteListItem = memo(function PaletteListItem({
                         </Stack>
                     </Popover.Dropdown>
                 </Popover>
+                <ActionIcon
+                    variant="subtle"
+                    size="xs"
+                    aria-label={entry.public ? "公开" : "私有"}
+                    title={entry.public ? "公开" : "私有"}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onChangePublic(id, !entry.public);
+                    }}
+                >
+                    {entry.public ? (
+                        <IconEye size={12} />
+                    ) : (
+                        <IconEyeOff size={12} />
+                    )}
+                </ActionIcon>
                 <ActionIcon
                     variant="subtle"
                     color="red"

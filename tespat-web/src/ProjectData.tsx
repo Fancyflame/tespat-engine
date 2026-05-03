@@ -9,6 +9,7 @@ export interface PatternRule {
 export interface PaletteEntry {
     color: string;
     icon: string | null;
+    public: boolean;
 }
 
 // 项目结构定义
@@ -41,6 +42,7 @@ export function clonePaletteEntry(entry: PaletteEntry): PaletteEntry {
     return {
         color: entry.color,
         icon: entry.icon,
+        public: entry.public,
     };
 }
 
@@ -63,6 +65,7 @@ export const DEFAULT_PROJECT: ProjectData = {
             {
                 color: "#000000",
                 icon: null,
+                public: false,
             },
         ],
         [
@@ -70,6 +73,7 @@ export const DEFAULT_PROJECT: ProjectData = {
             {
                 color: "#ffffff",
                 icon: null,
+                public: false,
             },
         ],
     ]),

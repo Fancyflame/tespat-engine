@@ -16,6 +16,7 @@ interface PatternRuleJson {
 interface PaletteEntryJson {
     color: string;
     icon: string | null;
+    public?: boolean;
 }
 
 // 项目文件的 JSON 结构
@@ -91,7 +92,7 @@ function parsePatternRuleJson(id: string, value: unknown): PatternRule {
         throw new Error(`patterns.${id}.replace 必须是字符串数组`);
     }
 
-    return normalizeRuleShape(width, capture, replace);
+    return normalizeRuleShape(width as number, capture, replace);
 }
 
 // 校验并转换单条 palette 配置
@@ -100,7 +101,7 @@ function parsePaletteEntryJson(id: string, value: unknown): PaletteEntry {
         throw new Error(`palette.${id} 必须是对象`);
     }
 
-    const { color, icon } = value;
+    const { color, icon, public: isPublic } = value;
     if (typeof color !== "string") {
         throw new Error(`palette.${id}.color 必须是字符串`);
     }
@@ -109,9 +110,15 @@ function parsePaletteEntryJson(id: string, value: unknown): PaletteEntry {
         throw new Error(`palette.${id}.icon 必须是字符串或 null`);
     }
 
+    const normalizedPublic = isPublic === undefined ? false : isPublic;
+    if (typeof normalizedPublic !== "boolean") {
+        throw new Error(`palette.${id}.public 必须是布尔值`);
+    }
+
     return {
         color,
         icon,
+        public: normalizedPublic,
     };
 }
 

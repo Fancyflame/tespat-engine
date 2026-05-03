@@ -1,10 +1,9 @@
-import { ActionIcon, Box, Group, Stack, Text } from "@mantine/core";
+import { ActionIcon, Box, Group, Stack } from "@mantine/core";
 import { IconBinaryTree2, IconEdit, IconVideo } from "@tabler/icons-react";
 import { useState } from "react";
 import { useWorkspaceActions } from "../../Workspace";
-import { PatternRulesSection } from "./PatternRulesSection";
-import { PaletteSection } from "./PaletteSection";
-import { SidebarSplitPane } from "./SidebarSplitPane";
+import { SidebarEditorTab } from "./SidebarEditorTab";
+import { SidebarNamespacesTab } from "./SidebarNamespacesTab";
 import styles from "./SidebarLayout.module.css";
 
 // SidebarTab 约束侧边栏工具区可切换的页签
@@ -76,19 +75,9 @@ export const Sidebar = () => {
             </Group>
             <Box className={styles.sidebarContent}>
                 {activeSidebarTab === "editor" ? (
-                    <SidebarSplitPane
-                        top={<PaletteSection />}
-                        bottom={<PatternRulesSection />}
-                    />
+                    <SidebarEditorTab />
                 ) : (
-                    <Box className={styles.treePlaceholder}>
-                        <Text size="xs" fw={900} c="dimmed" lts="0.1em">
-                            结构树
-                        </Text>
-                        <Text size="sm" c="dimmed">
-                            暂未配置命名空间
-                        </Text>
-                    </Box>
+                    <SidebarNamespacesTab />
                 )}
             </Box>
         </Stack>
