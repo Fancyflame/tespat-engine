@@ -11,10 +11,29 @@ import { PlaybackStage } from "./stages/PlaybackStage";
 import { WelcomeStage } from "./stages/WelcomeStage";
 import { useWorkspace, useWorkspaceActions } from "./Workspace";
 
+// 去除文件名后缀，作为工程展示名
+function getProjectDisplayName(fileName: string | null) {
+    if (!fileName) {
+        return "Untitled";
+    }
+
+    const lastDotIndex = fileName.lastIndexOf(".");
+    if (lastDotIndex <= 0) {
+        return fileName;
+    }
+
+    return fileName.slice(0, lastDotIndex);
+}
+
 // 应用壳层负责切换主舞台与顶部工具栏动作
 export default function App() {
     const workspace = useWorkspace();
     const actions = useWorkspaceActions();
+    const projectDisplayName = getProjectDisplayName(workspace.fileName);
+    const namespaceSuffix =
+        workspace.selectedNamespaceId === ""
+            ? ""
+            : ` - ${workspace.selectedNamespaceId}`;
 
     return (
         <AppShell
@@ -38,6 +57,14 @@ export default function App() {
                             onClick={actions.goToWelcome}
                         >
                             {"TESPAT EDITOR"}
+                        </Text>
+                        <Text
+                            size="sm"
+                            c="gray.4"
+                            ff="monospace"
+                            style={{ userSelect: "none" }}
+                        >
+                            {`${projectDisplayName}${namespaceSuffix}`}
                         </Text>
                     </Group>
                     <Group gap="xs">

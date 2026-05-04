@@ -18,7 +18,11 @@ import {
     IconTrash,
 } from "@tabler/icons-react";
 import type { PaletteEntry } from "../../ProjectData";
-import { useWorkspace, useWorkspaceActions } from "../../Workspace";
+import {
+    useWorkspace,
+    useWorkspaceActions,
+    useWorkspaceNamespace,
+} from "../../Workspace";
 import { PalettePreview } from "../GridDisplay2D/GridDisplay2D";
 import { SidebarPanel } from "./SidebarPanel";
 import styles from "./SidebarLayout.module.css";
@@ -40,17 +44,18 @@ type PaletteListItemProps = {
 // PaletteSection 负责管理 palette 条目
 export function PaletteSection() {
     const workspace = useWorkspace();
+    const namespace = useWorkspaceNamespace();
     const actions = useWorkspaceActions();
 
     const paletteItems = useMemo(
         () =>
-            Array.from(workspace.project.palette.entries()).sort(
+            Array.from(namespace.palette.entries()).sort(
                 (left, right) =>
                     left[0].localeCompare(right[0], undefined, {
                         sensitivity: "accent",
                     }),
             ),
-        [workspace.project.palette],
+        [namespace.palette],
     );
 
     return (

@@ -2,7 +2,11 @@ import { useMemo, useState } from "react";
 import { Stack, ActionIcon } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { getOrderedPatternIds, type PatternRule } from "../../ProjectData";
-import { useWorkspace, useWorkspaceActions } from "../../Workspace";
+import {
+    useWorkspace,
+    useWorkspaceActions,
+    useWorkspaceNamespace,
+} from "../../Workspace";
 import { PatternCard } from "./PatternCard";
 import { SidebarPanel } from "./SidebarPanel";
 
@@ -14,6 +18,7 @@ type DropIndicator = {
 // PatternRulesSection 负责展示、排序与切换 pattern
 export const PatternRulesSection = () => {
     const workspace = useWorkspace();
+    const namespace = useWorkspaceNamespace();
     const actions = useWorkspaceActions();
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(
@@ -23,17 +28,17 @@ export const PatternRulesSection = () => {
     const rules: Array<[string, PatternRule]> = useMemo(
         () =>
             getOrderedPatternIds(
-                workspace.project.patternOrder,
-                workspace.project.patterns,
+                namespace.patternOrder,
+                namespace.patterns,
             )
                 .map((id) => {
-                    const rule = workspace.project.patterns.get(id);
+                    const rule = namespace.patterns.get(id);
                     return rule ? ([id, rule] as const) : null;
                 })
                 .filter(
                     (entry): entry is [string, PatternRule] => entry !== null,
                 ),
-        [workspace.project.patternOrder, workspace.project.patterns],
+        [namespace.patternOrder, namespace.patterns],
     );
 
     return (
@@ -58,7 +63,7 @@ export const PatternRulesSection = () => {
                         key={id}
                         id={id}
                         rule={rule}
-                        palette={workspace.project.palette}
+                        palette={namespace.palette}
                         selected={
                             workspace.viewMode === "editor" &&
                             workspace.selectedPatternId === id

@@ -6,16 +6,21 @@ import { CtrlDragPannable } from "../components/CtrlDragPannable/CtrlDragPannabl
 import { GridEditResizer } from "../components/GridEditResizer/GridEditResizer";
 import { GridDisplay2D } from "../components/GridDisplay2D/GridDisplay2D";
 import styles from "../App.module.css";
-import { useWorkspace, useWorkspaceActions } from "../Workspace";
+import {
+    useWorkspace,
+    useWorkspaceActions,
+    useWorkspaceNamespace,
+} from "../Workspace";
 
 // 主舞台的编辑模式
 export function EditorStage() {
     const workspace = useWorkspace();
+    const namespace = useWorkspaceNamespace();
     const actions = useWorkspaceActions();
     const [isResizing, setIsResizing] = useState(false);
     const noPaletteWarnedRef = useRef(false);
     const selectedRule = workspace.selectedPatternId
-        ? workspace.project.patterns.get(workspace.selectedPatternId) ?? null
+        ? namespace.patterns.get(workspace.selectedPatternId) ?? null
         : null;
 
     if (!selectedRule || !workspace.selectedPatternId) {
@@ -96,7 +101,7 @@ export function EditorStage() {
                                     <GridDisplay2D
                                         width={selectedRule.width}
                                         data={selectedRule.capture}
-                                        palette={workspace.project.palette}
+                                        palette={namespace.palette}
                                         editable={!isResizing}
                                         paintPaletteId={
                                             workspace.selectedPaletteId
@@ -124,7 +129,7 @@ export function EditorStage() {
                                     <GridDisplay2D
                                         width={selectedRule.width}
                                         data={selectedRule.replace}
-                                        palette={workspace.project.palette}
+                                        palette={namespace.palette}
                                         editable={!isResizing}
                                         paintPaletteId={
                                             workspace.selectedPaletteId

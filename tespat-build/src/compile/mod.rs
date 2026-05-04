@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use convert_case::Case;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
@@ -10,7 +10,8 @@ mod pattern_module;
 
 /// 编译 tespat-web 项目文件
 pub fn compile(file_content: String) -> Result<TokenStream> {
-    let project: ProjectFile = serde_json::from_str(&file_content).context("解析 JSON 失败")?;
+    let parsed: ParsedProjectFile = serde_json::from_str(&file_content).context("解析 JSON 失败")?;
+    let project = ProjectFile::from_parsed(parsed)?;
 
     let color_enum = generate_color_enum(&project);
     let pattern_mod = pattern_module::generate_pattern_pair_module(&project)?;
@@ -55,10 +56,62 @@ fn generate_color_enum(ProjectFile { palette, .. }: &ProjectFile) -> TokenStream
 }
 
 #[derive(Deserialize)]
+#[serde(untagged)]
+#[serde(bound(deserialize = "'de: 'a"))]
+enum ParsedProjectFile<'a> {
+    Legacy(LegacyProjectFile<'a>),
+    Namespaced(NamespacedProjectFile<'a>),
+}
+
+// 内部统一项目结构
 struct ProjectFile<'a> {
+    palette: HashMap<&'a str, PaletteConfig<'a>>,
+    patterns: HashMap<&'a str, PatternConfig<'a>>,
+}
+
+// 旧版项目文件结构
+#[derive(Deserialize)]
+struct LegacyProjectFile<'a> {
     #[serde(borrow)]
     palette: HashMap<&'a str, PaletteConfig<'a>>,
     patterns: HashMap<&'a str, PatternConfig<'a>>,
+}
+
+// 命名空间节点结构
+#[derive(Deserialize)]
+struct NamespaceProjectFile<'a> {
+    #[serde(borrow)]
+    palette: HashMap<&'a str, PaletteConfig<'a>>,
+    patterns: HashMap<&'a str, PatternConfig<'a>>,
+}
+
+// 新版项目文件结构
+#[derive(Deserialize)]
+struct NamespacedProjectFile<'a> {
+    #[serde(borrow)]
+    namespaces: HashMap<&'a str, NamespaceProjectFile<'a>>,
+}
+
+impl<'a> ProjectFile<'a> {
+    fn from_parsed(parsed: ParsedProjectFile<'a>) -> Result<Self> {
+        match parsed {
+            ParsedProjectFile::Legacy(legacy) => Ok(Self {
+                palette: legacy.palette,
+                patterns: legacy.patterns,
+            }),
+            ParsedProjectFile::Namespaced(mut namespaced) => {
+                let root = namespaced
+                    .namespaces
+                    .remove("")
+                    .ok_or_else(|| anyhow!("namespaces 缺少根命名空间 \"\""))?;
+
+                Ok(Self {
+                    palette: root.palette,
+                    patterns: root.patterns,
+                })
+            }
+        }
+    }
 }
 
 #[derive(Deserialize)]

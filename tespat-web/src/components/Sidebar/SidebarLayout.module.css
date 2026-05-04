@@ -38,6 +38,44 @@
     padding-top: 4px;
 }
 
+.namespaceRow {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    transition:
+        background-color 120ms ease,
+        color 120ms ease;
+}
+
+.namespaceRow:hover {
+    background: rgba(121, 181, 255, 0.482);
+}
+
+.namespaceRow:focus-visible {
+    outline: 2px solid rgba(96, 165, 250, 0.55);
+    outline-offset: 1px;
+}
+
+.namespaceRowSelected {
+    background: rgba(96, 165, 250, 0.28);
+}
+
+.namespaceRowName {
+    color: rgba(148, 163, 184, 0.9);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.namespaceRowSelected .namespaceRowName {
+    color: #ffffff;
+}
+
 .splitPane {
     display: flex;
     flex: 1;
