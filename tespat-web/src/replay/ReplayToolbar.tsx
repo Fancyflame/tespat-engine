@@ -1,6 +1,6 @@
-import { Button, Group, Text } from "@mantine/core";
 import { IconFileImport, IconRefresh } from "@tabler/icons-react";
 import type { ChangeEvent, RefObject } from "react";
+import { Button } from "@/components/ui/button";
 
 // 回放工具栏的显式输入
 interface ReplayToolbarProps {
@@ -26,25 +26,29 @@ export function ReplayToolbar({
     onUploadReplayFile,
 }: ReplayToolbarProps) {
     return (
-        <Group gap="xs" py="sm">
+        <div className="z-10 flex shrink-0 items-center gap-2 px-6 py-4">
             <Button
-                leftSection={<IconFileImport size={16} />}
+                variant="default"
                 onClick={() => void onOpenReplayFile()}
             >
+                <IconFileImport size={16} />
                 {isFilePickerSupported ? "打开回放 JSON" : "上传回放 JSON"}
             </Button>
             <Button
-                variant="light"
-                leftSection={<IconRefresh size={16} />}
+                variant="subtle"
                 onClick={() => void onRefreshFile()}
                 disabled={!canRefresh}
                 loading={isRefreshingFile}
             >
+                <IconRefresh
+                    size={16}
+                    className={isRefreshingFile ? "animate-spin" : undefined}
+                />
                 刷新
             </Button>
-            <Text size="xs" c="dimmed">
+            <p className="text-xs text-slate-400">
                 {fileStatusText}
-            </Text>
+            </p>
             <input
                 ref={fileInputRef}
                 type="file"
@@ -52,6 +56,6 @@ export function ReplayToolbar({
                 hidden
                 onChange={(event) => void onUploadReplayFile(event)}
             />
-        </Group>
+        </div>
     );
 }

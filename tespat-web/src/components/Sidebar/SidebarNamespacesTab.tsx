@@ -1,5 +1,6 @@
-import { ActionIcon, Box, Group, Stack, Text } from "@mantine/core";
 import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
     ROOT_NAMESPACE_ID,
     getNamespaceDepth,
@@ -9,7 +10,6 @@ import {
 } from "../../ProjectData";
 import { useWorkspace, useWorkspaceActions } from "../../Workspace";
 import { SidebarPanel } from "./SidebarPanel";
-import styles from "./SidebarLayout.module.css";
 
 // SidebarNamespacesTab 承载命名空间结构树页
 export const SidebarNamespacesTab = () => {
@@ -83,10 +83,11 @@ export const SidebarNamespacesTab = () => {
         <SidebarPanel
             title="NAMESPACES"
             rightAction={
-                <Group gap={4}>
-                    <ActionIcon
-                        variant="light"
-                        size="sm"
+                <div className="flex items-center gap-1">
+                    <Button
+                        variant="subtle"
+                        size="icon-sm"
+                        className="rounded-lg"
                         aria-label="新建命名空间"
                         title="新建命名空间"
                         onClick={(event) => {
@@ -95,10 +96,11 @@ export const SidebarNamespacesTab = () => {
                         }}
                     >
                         <IconPlus size={14} />
-                    </ActionIcon>
-                    <ActionIcon
-                        variant="light"
-                        size="sm"
+                    </Button>
+                    <Button
+                        variant="subtle"
+                        size="icon-sm"
+                        className="rounded-lg"
                         aria-label="重命名命名空间"
                         title="重命名命名空间"
                         onClick={(event) => {
@@ -107,11 +109,11 @@ export const SidebarNamespacesTab = () => {
                         }}
                     >
                         <IconPencil size={14} />
-                    </ActionIcon>
-                    <ActionIcon
-                        variant="light"
-                        color="red"
-                        size="sm"
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="rounded-lg text-red-200 hover:bg-red-500/16"
                         aria-label="删除命名空间"
                         title="删除命名空间"
                         onClick={(event) => {
@@ -120,11 +122,11 @@ export const SidebarNamespacesTab = () => {
                         }}
                     >
                         <IconTrash size={14} />
-                    </ActionIcon>
-                </Group>
+                    </Button>
+                </div>
             }
         >
-            <Stack gap={4} w="100%">
+            <div className="w-full min-w-0 space-y-1">
                 {namespaceIds.map((namespaceId) => {
                     const selected = namespaceId === selectedNamespaceId;
                     const depth = getNamespaceDepth(namespaceId);
@@ -132,20 +134,19 @@ export const SidebarNamespacesTab = () => {
                         namespaceId === ROOT_NAMESPACE_ID
                             ? '""'
                             : getNamespaceLastSegment(namespaceId);
-                    const rowClassName = [
-                        styles.namespaceRow,
-                        selected && styles.namespaceRowSelected,
-                    ]
-                        .filter(Boolean)
-                        .join(" ");
 
                     return (
-                        <Box
+                        <div
                             key={namespaceId}
                             role="button"
                             tabIndex={0}
                             aria-pressed={selected}
-                            className={rowClassName}
+                            className={cn(
+                                "flex min-h-7 w-full cursor-pointer items-center rounded-md pr-2 text-xs font-semibold transition-colors outline-none select-none hover:bg-blue-400/24 focus-visible:ring-2 focus-visible:ring-blue-400/55",
+                                selected
+                                    ? "bg-app-accent-soft text-white"
+                                    : "text-slate-300",
+                            )}
                             style={{
                                 paddingLeft: `${8 + depth * 16}px`,
                             }}
@@ -163,13 +164,13 @@ export const SidebarNamespacesTab = () => {
                                 }
                             }}
                         >
-                            <Text size="xs" fw={600} className={styles.namespaceRowName}>
+                            <span className="truncate">
                                 {label}
-                            </Text>
-                        </Box>
+                            </span>
+                        </div>
                     );
                 })}
-            </Stack>
+            </div>
         </SidebarPanel>
     );
 };

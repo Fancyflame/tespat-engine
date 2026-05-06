@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Stack, ActionIcon } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
 import { getOrderedPatternIds, type PatternRule } from "../../ProjectData";
 import {
     useWorkspace,
@@ -45,19 +45,20 @@ export const PatternRulesSection = () => {
         <SidebarPanel
             title="PATTERNS"
             rightAction={
-                <ActionIcon
-                    variant="light"
-                    size="sm"
+                <Button
+                    variant="subtle"
+                    size="icon-sm"
+                    className="rounded-lg"
                     onClick={(event) => {
                         event.stopPropagation();
                         actions.createPattern();
                     }}
                 >
                     <IconPlus size={14} />
-                </ActionIcon>
+                </Button>
             }
         >
-            <Stack gap="xs">
+            <div className="w-full min-w-0 space-y-2">
                 {rules.map(([id, rule]) => (
                     <PatternCard
                         key={id}
@@ -133,7 +134,7 @@ export const PatternRulesSection = () => {
                         }}
                     />
                 ))}
-            </Stack>
+            </div>
         </SidebarPanel>
     );
 };

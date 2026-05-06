@@ -15,6 +15,10 @@
         /* 核心：必须包含 vite 的客户端定义 */
         "types": ["vite/client"],
 
+        "paths": {
+            "@/*": ["./src/*"]
+        },
+
         "jsx": "react-jsx",
         "strict": true,
         "noEmit": true,

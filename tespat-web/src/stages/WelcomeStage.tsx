@@ -1,36 +1,39 @@
-import { Box, Center, Stack, Title, Text } from "@mantine/core";
 import { IconGridPattern } from "@tabler/icons-react";
-import styles from "../App.module.css";
+import {
+    canvasPlaceholderClassName,
+    canvasStageClassName,
+    uiStackClassName,
+} from "@/lib/stageClasses";
 
 /** 主舞台 - 欢迎模式：无可拖拽的欢迎页 */
 export function WelcomeStage() {
     return (
-        <Box className={styles.UIStack}>
-            <Box className={styles.canvasStage}>
-                <Box className={styles.canvasPlaceholder}>
+        <div className={uiStackClassName}>
+            <div className={canvasStageClassName}>
+                <div className={canvasPlaceholderClassName}>
                     <Welcome />
-                </Box>
-            </Box>
-        </Box>
+                </div>
+            </div>
+        </div>
     );
 }
 
 function Welcome() {
     return (
-        <Center h="100%" w="100%">
-            <Stack align="center" gap="md">
+        <div className="flex h-full w-full items-center justify-center">
+            <div className="flex flex-col items-center gap-4 text-center">
                 <IconGridPattern
                     size={64}
                     stroke={1.5}
-                    color="var(--mantine-color-gray-5)"
+                    className="text-slate-500"
                 />
-                <Title order={2} c="gray.4" fw={500}>
+                <h2 className="text-2xl font-medium text-slate-300">
                     欢迎使用 TESPAT 编辑器
-                </Title>
-                <Text size="sm" c="gray.5" ta="center" maw={320}>
+                </h2>
+                <p className="max-w-80 text-sm text-slate-400">
                     从左侧选择一个规则，选择一个颜色，即刻开始编辑捕获与替换
-                </Text>
-            </Stack>
-        </Center>
+                </p>
+            </div>
+        </div>
     );
 }

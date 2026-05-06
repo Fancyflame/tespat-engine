@@ -1,5 +1,5 @@
-import { Box } from "@mantine/core";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 type Offset = { x: number; y: number };
 
@@ -44,7 +44,7 @@ export function CtrlDragPannable({
     }, []);
 
     return (
-        <Box
+        <div
             className={className}
             onWheel={(e) => {
                 e.stopPropagation();
@@ -103,7 +103,6 @@ export function CtrlDragPannable({
                 startPointRef.current = null;
             }}
             style={{
-                // transform: `translate(${offset.x}px, ${offset.y}px)`,
                 overflow: "hidden",
                 cursor: dragging ? "grabbing" : enableDrag ? "grab" : undefined,
                 userSelect: "none",
@@ -111,16 +110,15 @@ export function CtrlDragPannable({
                 position: "relative",
             }}
         >
-            <Box
+            <div
+                className={cn("absolute", enableDrag ? "pointer-events-none" : "pointer-events-auto")}
                 style={{
                     transform: ` translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
                     transformOrigin: "50% 50%",
-                    position: "absolute",
-                    pointerEvents: enableDrag ? "none" : "auto",
                 }}
             >
                 {children}
-            </Box>
-        </Box>
+            </div>
+        </div>
     );
 }

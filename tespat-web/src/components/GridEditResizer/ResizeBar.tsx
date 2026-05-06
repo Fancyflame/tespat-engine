@@ -1,7 +1,6 @@
-import { Box } from "@mantine/core";
 import type React from "react";
 import { useRef } from "react";
-import styles from "./ResizeBar.module.css";
+import { cn } from "@/lib/utils";
 
 // 可拖拽的四个尺寸方向
 export type ResizeDirection = "top" | "bottom" | "left" | "right";
@@ -112,8 +111,11 @@ export function ResizeBar({
     }
 
     return (
-        <Box
-            className={`${styles.resizeBar} ${className ?? ""}`}
+        <div
+            className={cn(
+                "absolute rounded-full bg-slate-400/10 transition-opacity hover:bg-slate-300/20",
+                className,
+            )}
             onPointerDown={handlePointerDown}
             style={directionalStyle}
         />

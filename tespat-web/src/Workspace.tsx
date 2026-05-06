@@ -9,8 +9,8 @@ import {
     type MutableRefObject,
     type ReactNode,
 } from "react";
-import { notifications } from "@mantine/notifications";
 import { IconX } from "@tabler/icons-react";
+import { notifications } from "@/lib/notifications";
 import {
     DEFAULT_PROJECT,
     ROOT_NAMESPACE_ID,
