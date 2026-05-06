@@ -54,7 +54,7 @@ impl Matches {
 
     /// 按比率随机挑选部分坐标。
     pub fn ratio_pick(&mut self, ratio: f32) -> &mut Self {
-        self.pick((self.len() as f32 * ratio) as usize);
+        self.pick((self.len() as f32 * ratio).ceil() as usize);
         self
     }
 
