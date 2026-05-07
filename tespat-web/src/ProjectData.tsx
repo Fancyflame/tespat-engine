@@ -15,7 +15,6 @@ export interface PaletteEntry {
 // 单个命名空间的数据结构
 export interface NamespaceData {
     patterns: Map<string, PatternRule>;
-    patternOrder: string[];
     palette: Map<string, PaletteEntry>;
 }
 
@@ -25,7 +24,7 @@ export interface ProjectData {
 }
 
 // 根命名空间常量
-export const ROOT_NAMESPACE_ID = "";
+export const ROOT_NAMESPACE_ID = ".";
 
 // 命名空间段名匹配规则
 const NAMESPACE_SEGMENT_PATTERN = /^[A-Za-z0-9_]+$/;
@@ -61,7 +60,6 @@ export function clonePaletteEntry(entry: PaletteEntry): PaletteEntry {
 export function createEmptyNamespaceData(): NamespaceData {
     return {
         patterns: new Map(),
-        patternOrder: [],
         palette: new Map(),
     };
 }
@@ -79,7 +77,6 @@ export function createDefaultRootNamespaceData(): NamespaceData {
                 },
             ],
         ]),
-        patternOrder: ["BlackAndWhite"],
         palette: new Map([
             [
                 "Black",
@@ -110,7 +107,6 @@ export function cloneNamespaceData(namespace: NamespaceData): NamespaceData {
                 clonePatternRule(rule),
             ]),
         ),
-        patternOrder: [...namespace.patternOrder],
         palette: new Map(
             Array.from(namespace.palette.entries()).map(([id, entry]) => [
                 id,
@@ -139,29 +135,6 @@ export function cloneProject(project: ProjectData): ProjectData {
             ),
         ),
     };
-}
-
-// 结合排序字段与实际集合，得到稳定且去重的 pattern 顺序
-export function getOrderedPatternIds(
-    patternOrder: string[],
-    patterns: Map<string, PatternRule>,
-) {
-    const orderedIds: string[] = [];
-    const seen = new Set<string>();
-
-    for (const id of patternOrder) {
-        if (!patterns.has(id) || seen.has(id)) continue;
-        seen.add(id);
-        orderedIds.push(id);
-    }
-
-    for (const id of patterns.keys()) {
-        if (seen.has(id)) continue;
-        seen.add(id);
-        orderedIds.push(id);
-    }
-
-    return orderedIds;
 }
 
 // 将某个 palette 名称在单元格数组中整体替换

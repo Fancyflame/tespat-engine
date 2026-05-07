@@ -5,6 +5,7 @@ import {
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "./components/Sidebar/Sidebar";
+import { ROOT_NAMESPACE_ID } from "./ProjectData";
 import { EditorStage } from "./stages/EditorStage";
 import { PlaybackStage } from "./stages/PlaybackStage";
 import { WelcomeStage } from "./stages/WelcomeStage";
@@ -30,7 +31,7 @@ export default function App() {
     const actions = useWorkspaceActions();
     const projectDisplayName = getProjectDisplayName(workspace.fileName);
     const namespaceSuffix =
-        workspace.selectedNamespaceId === ""
+        workspace.selectedNamespaceId === ROOT_NAMESPACE_ID
             ? ""
             : ` - ${workspace.selectedNamespaceId}`;
 

@@ -7,12 +7,12 @@ import type {
 import {
     ROOT_NAMESPACE_ID,
     getNamespaceParentId,
-    getOrderedPatternIds,
     isNamespacePathValid,
 } from "./ProjectData";
 
 // JSON 中的 pattern 结构
 interface PatternRuleJson {
+    name: string;
     width: number;
     capture: string[];
     replace: string[];
@@ -27,17 +27,13 @@ interface PaletteEntryJson {
 
 // JSON 中的 namespace 结构
 interface NamespaceDataJson {
-    patterns?: Record<string, PatternRuleJson>;
-    patternOrder?: string[];
+    patterns?: PatternRuleJson[];
     palette?: Record<string, PaletteEntryJson>;
 }
 
 // 项目文件的 JSON 结构
 interface ProjectDataJson {
     namespaces?: Record<string, NamespaceDataJson>;
-    patterns?: Record<string, PatternRuleJson>;
-    patternOrder?: string[];
-    palette?: Record<string, PaletteEntryJson>;
 }
 
 // 判断值是否为普通对象
@@ -90,7 +86,7 @@ function normalizeRuleShape(
 // 生成 namespace 的路径标签，便于错误定位
 function getNamespacePathLabel(namespaceId: string) {
     return namespaceId === ROOT_NAMESPACE_ID
-        ? 'namespaces[""]'
+        ? 'namespaces["."]'
         : `namespaces.${namespaceId}`;
 }
 
@@ -114,6 +110,23 @@ function parsePatternRuleJson(path: string, value: unknown): PatternRule {
     }
 
     return normalizeRuleShape(width as number, capture, replace);
+}
+
+// 校验并转换单条具名 pattern 配置
+function parseNamedPatternRuleJson(
+    path: string,
+    value: unknown,
+): readonly [string, PatternRule] {
+    if (!isRecord(value)) {
+        throw new Error(`${path} 必须是对象`);
+    }
+
+    const { name } = value;
+    if (typeof name !== "string" || name.trim() === "") {
+        throw new Error(`${path}.name 必须是非空字符串`);
+    }
+
+    return [name, parsePatternRuleJson(path, value)] as const;
 }
 
 // 校验并转换单条 palette 配置
@@ -156,28 +169,35 @@ function parseNamespaceDataJson(
         throw new Error(`${getNamespacePathLabel(namespaceId)}.palette 缺失或格式错误`);
     }
 
-    const patternsRecord = isRecord(value.patterns) ? value.patterns : {};
-    const normalizedPatterns = Object.fromEntries(
-        Object.entries(patternsRecord).map(([patternId, rule]) => [
-            patternId,
-            parsePatternRuleJson(
-                `${getNamespacePathLabel(namespaceId)}.patterns.${patternId}`,
-                rule,
-            ),
-        ]),
-    );
-    const patternMap = new Map(
-        Object.entries(normalizedPatterns).map(([id, rule]) => [id, rule] as const),
-    );
-    const patternOrder = getOrderedPatternIds(
-        Array.isArray(value.patternOrder)
-            ? value.patternOrder.filter(
-                  (patternId): patternId is string =>
-                      typeof patternId === "string",
-              )
-            : [],
-        patternMap,
-    );
+    if ("patternOrder" in value) {
+        throw new Error(
+            `${getNamespacePathLabel(namespaceId)}.patternOrder 已废弃，请使用 patterns 数组顺序`,
+        );
+    }
+
+    if (!Array.isArray(value.patterns)) {
+        if (isRecord(value.patterns)) {
+            throw new Error(
+                `${getNamespacePathLabel(namespaceId)}.patterns 必须是数组，当前对象格式已不支持`,
+            );
+        }
+        throw new Error(`${getNamespacePathLabel(namespaceId)}.patterns 缺失或格式错误`);
+    }
+
+    const patterns = new Map<string, PatternRule>();
+    for (let index = 0; index < value.patterns.length; index += 1) {
+        const [name, rule] = parseNamedPatternRuleJson(
+            `${getNamespacePathLabel(namespaceId)}.patterns[${index}]`,
+            value.patterns[index],
+        );
+        if (patterns.has(name)) {
+            throw new Error(
+                `${getNamespacePathLabel(namespaceId)}.patterns[${index}].name 重复: ${name}`,
+            );
+        }
+        patterns.set(name, rule);
+    }
+
     const palette = new Map(
         Object.entries(value.palette).map(([paletteId, entry]) => [
             paletteId,
@@ -189,8 +209,7 @@ function parseNamespaceDataJson(
     );
 
     return {
-        patterns: new Map(patternOrder.map((id) => [id, normalizedPatterns[id]] as const)),
-        patternOrder,
+        patterns,
         palette,
     };
 }
@@ -210,7 +229,7 @@ function parseProjectWithNamespaces(
     }
 
     if (!namespaces.has(ROOT_NAMESPACE_ID)) {
-        throw new Error('namespaces 必须包含根命名空间 ""');
+        throw new Error('namespaces 必须包含根命名空间 "."');
     }
 
     for (const namespaceId of namespaces.keys()) {
@@ -227,27 +246,10 @@ function parseProjectWithNamespaces(
     return { namespaces };
 }
 
-// 读取旧格式并迁移到根 namespace
-function parseLegacyProject(parsed: Record<string, unknown>): ProjectData {
-    if (!isRecord(parsed.palette)) {
-        throw new Error("项目文件缺少 palette 对象");
-    }
-
-    const rootNamespace = parseNamespaceDataJson(ROOT_NAMESPACE_ID, {
-        patterns: parsed.patterns,
-        patternOrder: parsed.patternOrder,
-        palette: parsed.palette,
-    });
-
-    return {
-        namespaces: new Map([[ROOT_NAMESPACE_ID, rootNamespace]]),
-    };
-}
-
 // 将当前 ProjectData 序列化为可持久化保存的 JSON 字符串
 export function projectToJson(project: ProjectData): string {
     if (!project.namespaces.has(ROOT_NAMESPACE_ID)) {
-        throw new Error('项目数据缺少根命名空间 ""');
+        throw new Error('项目数据缺少根命名空间 "."');
     }
 
     const namespaceEntries = Array.from(project.namespaces.keys())
@@ -264,28 +266,19 @@ export function projectToJson(project: ProjectData): string {
                 return null;
             }
 
-            const orderedPatternIds = getOrderedPatternIds(
-                namespace.patternOrder,
-                namespace.patterns,
-            );
-            const orderedPatterns = Object.fromEntries(
-                orderedPatternIds
-                    .map((id) => {
-                        const rule = namespace.patterns.get(id);
-                        return rule ? ([id, rule] as const) : null;
-                    })
-                    .filter(
-                        (
-                            entry,
-                        ): entry is readonly [string, PatternRule] => entry !== null,
-                    ),
+            const orderedPatterns = Array.from(namespace.patterns.entries()).map(
+                ([name, rule]) => ({
+                    name,
+                    width: rule.width,
+                    capture: rule.capture,
+                    replace: rule.replace,
+                }),
             );
 
             return [
                 namespaceId,
                 {
                     patterns: orderedPatterns,
-                    patternOrder: orderedPatternIds,
                     palette: Object.fromEntries(namespace.palette),
                 } satisfies NamespaceDataJson,
             ] as const;
@@ -316,9 +309,14 @@ export function jsonToProject(json: string): ProjectData {
         throw new Error("项目文件必须是对象结构");
     }
 
-    if (isRecord(parsed.namespaces)) {
-        return parseProjectWithNamespaces(parsed.namespaces);
+    if (!isRecord(parsed.namespaces)) {
+        if ("patternOrder" in parsed || "patterns" in parsed || "palette" in parsed) {
+            throw new Error(
+                '旧项目格式已不支持。请使用包含 namespaces 且根命名空间为 "." 的新格式',
+            );
+        }
+        throw new Error('项目文件缺少 namespaces 对象（且必须包含根命名空间 "."）');
     }
 
-    return parseLegacyProject(parsed);
+    return parseProjectWithNamespaces(parsed.namespaces);
 }

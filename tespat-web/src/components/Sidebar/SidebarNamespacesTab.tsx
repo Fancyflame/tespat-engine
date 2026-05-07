@@ -25,7 +25,7 @@ export const SidebarNamespacesTab = () => {
     const handleCreateNamespace = () => {
         const parentLabel =
             selectedNamespaceId === ROOT_NAMESPACE_ID
-                ? '""'
+                ? "."
                 : selectedNamespaceId;
         const input = window.prompt(
             `在命名空间 ${parentLabel} 下创建子命名空间，请输入名称段（字母/数字/下划线）`,
@@ -40,7 +40,7 @@ export const SidebarNamespacesTab = () => {
 
     const handleRenameNamespace = () => {
         if (selectedNamespaceId === ROOT_NAMESPACE_ID) {
-            window.alert('根命名空间 "" 不可重命名');
+            window.alert('根命名空间 "." 不可重命名');
             return;
         }
 
@@ -58,7 +58,7 @@ export const SidebarNamespacesTab = () => {
 
     const handleDeleteNamespace = () => {
         if (selectedNamespaceId === ROOT_NAMESPACE_ID) {
-            window.alert('根命名空间 "" 不可删除');
+            window.alert('根命名空间 "." 不可删除');
             return;
         }
 
@@ -132,7 +132,7 @@ export const SidebarNamespacesTab = () => {
                     const depth = getNamespaceDepth(namespaceId);
                     const label =
                         namespaceId === ROOT_NAMESPACE_ID
-                            ? '""'
+                            ? "."
                             : getNamespaceLastSegment(namespaceId);
 
                     return (

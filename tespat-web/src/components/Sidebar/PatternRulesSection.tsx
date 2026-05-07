@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { IconPlus } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
-import { getOrderedPatternIds, type PatternRule } from "../../ProjectData";
+import type { PatternRule } from "../../ProjectData";
 import {
     useWorkspace,
     useWorkspaceActions,
@@ -26,19 +26,8 @@ export const PatternRulesSection = () => {
     );
 
     const rules: Array<[string, PatternRule]> = useMemo(
-        () =>
-            getOrderedPatternIds(
-                namespace.patternOrder,
-                namespace.patterns,
-            )
-                .map((id) => {
-                    const rule = namespace.patterns.get(id);
-                    return rule ? ([id, rule] as const) : null;
-                })
-                .filter(
-                    (entry): entry is [string, PatternRule] => entry !== null,
-                ),
-        [namespace.patternOrder, namespace.patterns],
+        () => Array.from(namespace.patterns.entries()),
+        [namespace.patterns],
     );
 
     return (

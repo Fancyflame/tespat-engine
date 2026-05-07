@@ -25,7 +25,6 @@ import {
     createEmptyPatternRule,
     getNamespaceDescendantIds,
     getNamespaceParentId,
-    getOrderedPatternIds,
     isNamespaceDescendant,
     isNamespaceSegmentValid,
     replacePaletteNameInCells,
@@ -685,16 +684,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
                     const newId = createNextPatternId(activeNamespace);
                     const patterns = new Map(activeNamespace.patterns);
-                    const patternOrder = [...activeNamespace.patternOrder];
 
                     patterns.set(newId, createEmptyPatternRule());
-                    patternOrder.push(newId);
 
                     const namespaces = new Map(prev.project.namespaces);
                     namespaces.set(activeNamespaceId, {
                         ...activeNamespace,
                         patterns,
-                        patternOrder,
                     });
 
                     return {
@@ -745,22 +741,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                         return prev;
                     }
 
-                    patterns.delete(patternId);
-                    patterns.set(trimmed, clonePatternRule(rule));
-
-                    const patternOrder = activeNamespace.patternOrder.includes(
-                        patternId,
-                    )
-                        ? activeNamespace.patternOrder.map((id) =>
-                              id === patternId ? trimmed : id,
-                          )
-                        : [...activeNamespace.patternOrder, trimmed];
+                    const renamedPatterns = new Map<string, typeof rule>();
+                    for (const [id, currentRule] of patterns.entries()) {
+                        if (id === patternId) {
+                            renamedPatterns.set(trimmed, clonePatternRule(rule));
+                            continue;
+                        }
+                        renamedPatterns.set(id, currentRule);
+                    }
 
                     const namespaces = new Map(prev.project.namespaces);
                     namespaces.set(activeNamespaceId, {
                         ...activeNamespace,
-                        patterns,
-                        patternOrder,
+                        patterns: renamedPatterns,
                     });
 
                     return {
@@ -794,15 +787,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                     }
 
                     patterns.delete(patternId);
-                    const patternOrder = activeNamespace.patternOrder.filter(
-                        (id) => id !== patternId,
-                    );
                     const wasSelected = prev.selectedPatternId === patternId;
                     const namespaces = new Map(prev.project.namespaces);
                     namespaces.set(activeNamespaceId, {
                         ...activeNamespace,
                         patterns,
-                        patternOrder,
                     });
 
                     return {
@@ -835,10 +824,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                         return prev;
                     }
 
-                    const orderedIds = getOrderedPatternIds(
-                        activeNamespace.patternOrder,
-                        activeNamespace.patterns,
-                    );
+                    const orderedIds = Array.from(activeNamespace.patterns.keys());
                     if (
                         !orderedIds.includes(sourceId) ||
                         !orderedIds.includes(targetId)
@@ -862,21 +848,27 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                     );
 
                     const unchanged =
-                        nextPatternOrder.length ===
-                            activeNamespace.patternOrder.length &&
-                        nextPatternOrder.every(
-                            (id, index) =>
-                                id === activeNamespace.patternOrder[index],
-                        );
+                        nextPatternOrder.length === orderedIds.length &&
+                        nextPatternOrder.every((id, index) => id === orderedIds[index]);
 
                     if (unchanged) {
                         return prev;
                     }
 
+                    const reorderedPatterns = new Map(activeNamespace.patterns);
+                    reorderedPatterns.clear();
+                    for (const id of nextPatternOrder) {
+                        const rule = activeNamespace.patterns.get(id);
+                        if (!rule) {
+                            return prev;
+                        }
+                        reorderedPatterns.set(id, rule);
+                    }
+
                     const namespaces = new Map(prev.project.namespaces);
                     namespaces.set(activeNamespaceId, {
                         ...activeNamespace,
-                        patternOrder: nextPatternOrder,
+                        patterns: reorderedPatterns,
                     });
 
                     return {
