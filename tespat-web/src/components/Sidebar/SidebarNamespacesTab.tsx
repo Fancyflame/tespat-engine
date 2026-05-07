@@ -82,6 +82,7 @@ export const SidebarNamespacesTab = () => {
     return (
         <SidebarPanel
             title="NAMESPACES"
+            withHorizontalScrollbar
             rightAction={
                 <div className="flex items-center gap-1">
                     <Button
@@ -126,7 +127,7 @@ export const SidebarNamespacesTab = () => {
                 </div>
             }
         >
-            <div className="w-full min-w-0 space-y-1">
+            <div className="min-w-full w-max space-y-1">
                 {namespaceIds.map((namespaceId) => {
                     const selected = namespaceId === selectedNamespaceId;
                     const depth = getNamespaceDepth(namespaceId);
@@ -142,7 +143,7 @@ export const SidebarNamespacesTab = () => {
                             tabIndex={0}
                             aria-pressed={selected}
                             className={cn(
-                                "flex min-h-7 w-full cursor-pointer items-center rounded-md pr-2 text-xs font-semibold transition-colors outline-none select-none hover:bg-blue-400/24 focus-visible:ring-2 focus-visible:ring-blue-400/55",
+                                "flex min-h-7 min-w-full w-max cursor-pointer items-center rounded-md pr-2 text-xs font-semibold transition-colors outline-none select-none hover:bg-blue-400/24 focus-visible:ring-2 focus-visible:ring-blue-400/55",
                                 selected
                                     ? "bg-app-accent-soft text-white"
                                     : "text-slate-300",
@@ -164,7 +165,7 @@ export const SidebarNamespacesTab = () => {
                                 }
                             }}
                         >
-                            <span className="truncate">
+                            <span className="whitespace-nowrap">
                                 {label}
                             </span>
                         </div>

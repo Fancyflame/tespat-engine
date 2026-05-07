@@ -5,6 +5,7 @@ type SidebarPanelProps = {
     title: ReactNode;
     rightAction?: ReactNode;
     children: ReactNode;
+    withHorizontalScrollbar?: boolean;
 };
 
 // SidebarPanel 负责固定标题区与独立滚动的内容区
@@ -12,6 +13,7 @@ export function SidebarPanel({
     title,
     rightAction,
     children,
+    withHorizontalScrollbar = false,
 }: SidebarPanelProps) {
     return (
         <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-3">
@@ -23,7 +25,10 @@ export function SidebarPanel({
             </div>
 
             <div className="min-h-0 w-full min-w-0 flex-1">
-                <ScrollArea className="h-full w-full">
+                <ScrollArea
+                    className="h-full w-full"
+                    withHorizontalScrollbar={withHorizontalScrollbar}
+                >
                     <div className="min-h-full w-full min-w-0 pt-1">{children}</div>
                 </ScrollArea>
             </div>

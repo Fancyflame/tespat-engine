@@ -1,15 +1,17 @@
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import {
     forwardRef,
+    type ComponentRef,
     type ComponentPropsWithoutRef,
-    type ElementRef,
 } from "react";
 import { cn } from "@/lib/utils";
 
 export const ScrollArea = forwardRef<
-    ElementRef<typeof ScrollAreaPrimitive.Root>,
-    ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
->(({ className, children, ...props }, ref) => {
+    ComponentRef<typeof ScrollAreaPrimitive.Root>,
+    ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
+        withHorizontalScrollbar?: boolean;
+    }
+>(({ className, children, withHorizontalScrollbar = false, ...props }, ref) => {
     return (
         <ScrollAreaPrimitive.Root
             ref={ref}
@@ -20,6 +22,7 @@ export const ScrollArea = forwardRef<
                 {children}
             </ScrollAreaPrimitive.Viewport>
             <ScrollBar />
+            {withHorizontalScrollbar ? <ScrollBar orientation="horizontal" /> : null}
             <ScrollAreaPrimitive.Corner className="bg-transparent" />
         </ScrollAreaPrimitive.Root>
     );
@@ -29,7 +32,7 @@ ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName;
 
 // ScrollBar 统一滚动条视觉，替代 Mantine ScrollArea
 const ScrollBar = forwardRef<
-    ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
+    ComponentRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
     ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>
 >(({ className, orientation = "vertical", ...props }, ref) => {
     return (
