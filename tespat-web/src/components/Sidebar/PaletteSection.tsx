@@ -83,7 +83,7 @@ export function PaletteSection() {
                 </Button>
             }
         >
-            <div className="w-full min-w-0 space-y-2">
+            <div className="w-full min-w-0 space-y-1.5">
                 {paletteItems.length === 0 ? (
                     <p className="text-xs text-slate-400">暂无 palette</p>
                 ) : (
@@ -188,153 +188,162 @@ const PaletteListItem = memo(function PaletteListItem({
                 }
             }}
             className={cn(
-                "flex w-full items-center gap-2 px-3 py-2 transition-colors outline-none select-none hover:bg-blue-400/24 focus-visible:ring-2 focus-visible:ring-blue-400/55",
+                "group flex w-full items-center gap-1.5 px-2.5 py-1.5 transition-colors outline-none select-none hover:bg-blue-400/24 focus-visible:ring-2 focus-visible:ring-blue-400/55",
                 selected ? "bg-app-accent-soft" : "",
             )}
         >
             <div className="flex shrink-0 items-center justify-center">
-                <PalettePreview entry={entry} size={18} borderRadius={4} />
+                <PalettePreview entry={entry} size={16} borderRadius={4} />
             </div>
             <span
                 className={cn(
-                    "min-w-0 flex-1 truncate text-xs font-semibold",
+                    "min-w-0 flex-1 truncate text-[11px] font-semibold leading-4",
                     selected ? "text-white" : "text-slate-300",
                 )}
             >
                 {id}
             </span>
-            <div className="flex items-center gap-1">
-                <Popover
-                    onOpenChange={(open) => {
-                        if (!open) {
-                            commitName();
-                            commitColor();
-                            commitIcon();
-                        }
-                    }}
-                >
-                    <PopoverTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="rounded-md"
+            <div className="relative shrink-0">
+                {entry.public ? (
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center opacity-100 transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
+                        <span className="flex size-6 items-center justify-center rounded-md text-slate-300/85">
+                            <IconEye size={11} />
+                        </span>
+                    </div>
+                ) : null}
+                <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto">
+                    <Popover
+                        onOpenChange={(open) => {
+                            if (!open) {
+                                commitName();
+                                commitColor();
+                                commitIcon();
+                            }
+                        }}
+                    >
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="size-6 rounded-md"
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                <IconPencil size={11} />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                            align="end"
+                            className="w-[280px]"
                             onClick={(event) => event.stopPropagation()}
                         >
-                            <IconPencil size={12} />
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                        align="end"
-                        className="w-[280px]"
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <div className="space-y-4">
-                            <div className="space-y-1.5">
-                                <p className="text-xs font-semibold text-slate-300">
-                                    名称
-                                </p>
-                                <Input
-                                    value={draftName}
-                                    onChange={(event) =>
-                                        setDraftName(event.currentTarget.value)
-                                    }
-                                    onBlur={commitName}
-                                    onKeyDown={(event) => {
-                                        if (event.key === "Enter") {
-                                            commitName();
-                                        }
-                                    }}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold text-slate-300">
-                                    颜色
-                                </p>
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="color"
-                                        className="h-10 w-14 cursor-pointer rounded-md border border-app-border bg-transparent p-1"
-                                        value={
-                                            normalizeHexColor(draftColor) ??
-                                            entry.color
-                                        }
-                                        onChange={(event) => {
-                                            const nextColor =
-                                                event.currentTarget.value;
-                                            setDraftColor(nextColor);
-                                            onChangeColor(id, nextColor);
-                                        }}
-                                    />
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <p className="text-xs font-semibold text-slate-300">
+                                        名称
+                                    </p>
                                     <Input
-                                        value={draftColor}
+                                        value={draftName}
                                         onChange={(event) =>
-                                            setDraftColor(
-                                                event.currentTarget.value,
-                                            )
+                                            setDraftName(event.currentTarget.value)
                                         }
-                                        onBlur={commitColor}
+                                        onBlur={commitName}
                                         onKeyDown={(event) => {
                                             if (event.key === "Enter") {
-                                                commitColor();
+                                                commitName();
                                             }
                                         }}
-                                        placeholder="#ffffff"
-                                        className="font-mono text-xs"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-xs font-semibold text-slate-300">
+                                        颜色
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="color"
+                                            className="h-10 w-14 cursor-pointer rounded-md border border-app-border bg-transparent p-1"
+                                            value={
+                                                normalizeHexColor(draftColor) ??
+                                                entry.color
+                                            }
+                                            onChange={(event) => {
+                                                const nextColor =
+                                                    event.currentTarget.value;
+                                                setDraftColor(nextColor);
+                                                onChangeColor(id, nextColor);
+                                            }}
+                                        />
+                                        <Input
+                                            value={draftColor}
+                                            onChange={(event) =>
+                                                setDraftColor(
+                                                    event.currentTarget.value,
+                                                )
+                                            }
+                                            onBlur={commitColor}
+                                            onKeyDown={(event) => {
+                                                if (event.key === "Enter") {
+                                                    commitColor();
+                                                }
+                                            }}
+                                            placeholder="#ffffff"
+                                            className="font-mono text-xs"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-xs font-semibold text-slate-300">
+                                        Icon
+                                    </p>
+                                    <p className="text-[11px] text-slate-500">
+                                        使用 Tabler icon 的 kebab-case 名称
+                                    </p>
+                                    <Input
+                                        placeholder="e.g. door, tree, arrow-right"
+                                        value={draftIcon}
+                                        onChange={(event) =>
+                                            setDraftIcon(event.currentTarget.value)
+                                        }
+                                        onBlur={commitIcon}
+                                        onKeyDown={(event) => {
+                                            if (event.key === "Enter") {
+                                                commitIcon();
+                                            }
+                                        }}
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-1.5">
-                                <p className="text-xs font-semibold text-slate-300">
-                                    Icon
-                                </p>
-                                <p className="text-[11px] text-slate-500">
-                                    使用 Tabler icon 的 kebab-case 名称
-                                </p>
-                                <Input
-                                    placeholder="e.g. door, tree, arrow-right"
-                                    value={draftIcon}
-                                    onChange={(event) =>
-                                        setDraftIcon(event.currentTarget.value)
-                                    }
-                                    onBlur={commitIcon}
-                                    onKeyDown={(event) => {
-                                        if (event.key === "Enter") {
-                                            commitIcon();
-                                        }
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </PopoverContent>
-                </Popover>
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="rounded-md"
-                    aria-label={entry.public ? "公开" : "私有"}
-                    title={entry.public ? "公开" : "私有"}
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        onChangePublic(id, !entry.public);
-                    }}
-                >
-                    {entry.public ? (
-                        <IconEye size={12} />
-                    ) : (
-                        <IconEyeOff size={12} />
-                    )}
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="rounded-md text-red-200 hover:bg-red-500/16"
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        handleDelete();
-                    }}
-                >
-                    <IconTrash size={12} />
-                </Button>
+                        </PopoverContent>
+                    </Popover>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="size-6 rounded-md"
+                        aria-label={entry.public ? "公开" : "私有"}
+                        title={entry.public ? "公开" : "私有"}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onChangePublic(id, !entry.public);
+                        }}
+                    >
+                        {entry.public ? (
+                            <IconEye size={11} />
+                        ) : (
+                            <IconEyeOff size={11} />
+                        )}
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="size-6 rounded-md text-red-200 hover:bg-red-500/16"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            handleDelete();
+                        }}
+                    >
+                        <IconTrash size={11} />
+                    </Button>
+                </div>
             </div>
         </div>
     );
