@@ -262,15 +262,28 @@ export function getSortedNamespaceIds(namespaces: Map<string, NamespaceData>) {
         if (left === ROOT_NAMESPACE_ID) return -1;
         if (right === ROOT_NAMESPACE_ID) return 1;
 
-        const leftDepth = getNamespaceDepth(left);
-        const rightDepth = getNamespaceDepth(right);
-        if (leftDepth !== rightDepth) {
-            return leftDepth - rightDepth;
+        const leftSegments = left.split(".");
+        const rightSegments = right.split(".");
+        const sharedLength = Math.min(leftSegments.length, rightSegments.length);
+
+        for (let index = 0; index < sharedLength; index += 1) {
+            const segmentCompare = leftSegments[index].localeCompare(
+                rightSegments[index],
+                undefined,
+                {
+                    sensitivity: "accent",
+                },
+            );
+            if (segmentCompare !== 0) {
+                return segmentCompare;
+            }
         }
 
-        return left.localeCompare(right, undefined, {
-            sensitivity: "accent",
-        });
+        if (leftSegments.length !== rightSegments.length) {
+            return leftSegments.length - rightSegments.length;
+        }
+
+        return 0;
     });
 }
 
