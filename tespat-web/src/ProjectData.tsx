@@ -16,6 +16,7 @@ export interface PaletteEntry {
 export interface NamespaceData {
     patterns: Map<string, PatternRule>;
     palette: Map<string, PaletteEntry>;
+    children: string[];
 }
 
 // 项目结构定义（按命名空间划分）
@@ -61,6 +62,7 @@ export function createEmptyNamespaceData(): NamespaceData {
     return {
         patterns: new Map(),
         palette: new Map(),
+        children: [],
     };
 }
 
@@ -95,6 +97,7 @@ export function createDefaultRootNamespaceData(): NamespaceData {
                 },
             ],
         ]),
+        children: [],
     };
 }
 
@@ -113,6 +116,7 @@ export function cloneNamespaceData(namespace: NamespaceData): NamespaceData {
                 clonePaletteEntry(entry),
             ]),
         ),
+        children: [...namespace.children],
     };
 }
 
@@ -258,33 +262,50 @@ export function getNamespaceDepth(namespaceId: string) {
 
 // 获取按树级排序后的命名空间 ID 列表
 export function getSortedNamespaceIds(namespaces: Map<string, NamespaceData>) {
-    return Array.from(namespaces.keys()).sort((left, right) => {
-        if (left === ROOT_NAMESPACE_ID) return -1;
-        if (right === ROOT_NAMESPACE_ID) return 1;
+    const orderedIds: string[] = [];
+    const visited = new Set<string>();
 
-        const leftSegments = left.split(".");
-        const rightSegments = right.split(".");
-        const sharedLength = Math.min(leftSegments.length, rightSegments.length);
+    const visit = (namespaceId: string) => {
+        if (visited.has(namespaceId)) {
+            return;
+        }
 
-        for (let index = 0; index < sharedLength; index += 1) {
-            const segmentCompare = leftSegments[index].localeCompare(
-                rightSegments[index],
-                undefined,
-                {
-                    sensitivity: "accent",
-                },
-            );
-            if (segmentCompare !== 0) {
-                return segmentCompare;
+        visited.add(namespaceId);
+        orderedIds.push(namespaceId);
+
+        const namespace = namespaces.get(namespaceId);
+        if (!namespace) {
+            return;
+        }
+
+        for (const childId of namespace.children) {
+            if (!namespaces.has(childId)) {
+                continue;
             }
-        }
 
-        if (leftSegments.length !== rightSegments.length) {
-            return leftSegments.length - rightSegments.length;
+            visit(childId);
         }
+    };
 
-        return 0;
-    });
+    if (namespaces.has(ROOT_NAMESPACE_ID)) {
+        visit(ROOT_NAMESPACE_ID);
+    }
+
+    const danglingIds = Array.from(namespaces.keys())
+        .filter((namespaceId) => !visited.has(namespaceId))
+        .sort((left, right) => {
+            if (left === ROOT_NAMESPACE_ID) return -1;
+            if (right === ROOT_NAMESPACE_ID) return 1;
+            return left.localeCompare(right, undefined, {
+                sensitivity: "accent",
+            });
+        });
+
+    for (const namespaceId of danglingIds) {
+        visit(namespaceId);
+    }
+
+    return orderedIds;
 }
 
 // 获取命名空间最后一段

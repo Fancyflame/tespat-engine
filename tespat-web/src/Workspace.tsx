@@ -15,6 +15,7 @@ import {
     DEFAULT_PROJECT,
     ROOT_NAMESPACE_ID,
     type NamespaceData,
+    getNamespaceLastSegment,
     type PaletteEntry,
     clonePaletteEntry,
     clonePatternRule,
@@ -25,6 +26,7 @@ import {
     createEmptyPatternRule,
     getNamespaceDescendantIds,
     getNamespaceParentId,
+    getSortedNamespaceIds,
     isNamespaceDescendant,
     isNamespaceSegmentValid,
     replacePaletteNameInCells,
@@ -39,6 +41,7 @@ const SYNC_DEBOUNCE_MS = 1000;
 
 // 当前主工作区可处于的页面模式
 export type ViewMode = "welcome" | "editor" | "playback";
+export type NamespaceDropPlacement = "after-sibling" | "first-child";
 
 // 工作区的核心状态定义
 export interface WorkspaceState {
@@ -80,6 +83,11 @@ interface WorkspaceActions {
     ) => boolean;
     renameNamespace: (namespaceId: string, segment: string) => boolean;
     deleteNamespace: (namespaceId: string) => boolean;
+    moveNamespace: (
+        sourceId: string,
+        targetId: string,
+        placement: NamespaceDropPlacement,
+    ) => boolean;
     selectPattern: (patternId: string) => void;
     setSelectedPaletteId: (paletteId: string | null) => void;
     createPattern: () => void;
@@ -239,6 +247,135 @@ function getErrorMessage(error: unknown) {
     return "操作失败，请重试";
 }
 
+// 返回 children 更新后的命名空间副本
+function withNamespaceChildren(
+    namespace: NamespaceData,
+    updater: (children: string[]) => string[],
+): NamespaceData {
+    return {
+        ...namespace,
+        children: updater(namespace.children),
+    };
+}
+
+// 构造命名空间子树的重命名映射
+function buildNamespaceIdRemap(
+    namespaces: Map<string, NamespaceData>,
+    sourceId: string,
+    nextSourceId: string,
+) {
+    const orderedIds = getSortedNamespaceIds(namespaces).filter(
+        (id) => id === sourceId || isNamespaceDescendant(id, sourceId),
+    );
+
+    return new Map(
+        orderedIds.map((id) => [
+            id,
+            id === sourceId
+                ? nextSourceId
+                : `${nextSourceId}${id.slice(sourceId.length)}`,
+        ]),
+    );
+}
+
+// 按映射重写整棵命名空间子树
+function remapNamespaceProject(
+    project: ProjectData,
+    idRemap: Map<string, string>,
+): ProjectData | null {
+    const nextNamespaces = new Map<string, NamespaceData>();
+
+    for (const [id, namespace] of project.namespaces.entries()) {
+        const mappedId = idRemap.get(id) ?? id;
+        if (nextNamespaces.has(mappedId)) {
+            return null;
+        }
+
+        nextNamespaces.set(mappedId, {
+            ...namespace,
+            children: namespace.children.map((childId) => idRemap.get(childId) ?? childId),
+        });
+    }
+
+    return {
+        ...project,
+        namespaces: nextNamespaces,
+    };
+}
+
+// 根据移动语义计算目标父级与顺序锚点
+function resolveNamespaceMoveTarget(
+    project: ProjectData,
+    sourceId: string,
+    targetId: string,
+    placement: NamespaceDropPlacement,
+) {
+    if (sourceId === ROOT_NAMESPACE_ID || sourceId === targetId) {
+        return null;
+    }
+
+    if (
+        !project.namespaces.has(sourceId) ||
+        !project.namespaces.has(targetId) ||
+        isNamespaceDescendant(targetId, sourceId)
+    ) {
+        return null;
+    }
+
+    if (placement === "first-child") {
+        return {
+            parentId: targetId,
+            insertAfterId: null as string | null,
+        };
+    }
+
+    const parentId = getNamespaceParentId(targetId);
+    if (parentId === null) {
+        return null;
+    }
+
+    if (targetId === ROOT_NAMESPACE_ID) {
+        return null;
+    }
+
+    return {
+        parentId,
+        insertAfterId: targetId,
+    };
+}
+
+// 重新排列父级 children 列表
+function insertNamespaceChild(
+    children: string[],
+    childId: string,
+    insertAfterId: string | null,
+) {
+    const nextChildren = children.filter((id) => id !== childId);
+
+    if (insertAfterId === null) {
+        nextChildren.unshift(childId);
+        return nextChildren;
+    }
+
+    const insertIndex = nextChildren.indexOf(insertAfterId);
+    if (insertIndex < 0) {
+        return null;
+    }
+
+    nextChildren.splice(insertIndex + 1, 0, childId);
+    return nextChildren;
+}
+
+// 显示命名空间操作失败通知
+function showNamespaceError(title: string, message: string) {
+    notifications.show({
+        title,
+        message,
+        icon: <IconX size={16} />,
+        color: "red",
+    });
+}
+
 // 执行一次文件同步，并保留“首次打开跳过回写”的语义
 async function syncProjectToFile(
     fileHandle: FileSystemFileHandle,
@@ -352,12 +489,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             createNamespace(parentNamespaceId, segment) {
                 const trimmedSegment = segment.trim();
                 if (!isNamespaceSegmentValid(trimmedSegment)) {
-                    notifications.show({
-                        title: "命名空间名称无效",
-                        message: "名称段仅允许字母、数字和下划线",
-                        icon: <IconX size={16} />,
-                        color: "red",
-                    });
+                    showNamespaceError(
+                        "命名空间名称无效",
+                        "名称段仅允许字母、数字和下划线",
+                    );
                     return false;
                 }
 
@@ -371,24 +506,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                     trimmedSegment,
                 );
                 if (currentState.project.namespaces.has(newNamespaceId)) {
-                    notifications.show({
-                        title: "创建失败",
-                        message: "同名命名空间已存在",
-                        icon: <IconX size={16} />,
-                        color: "red",
-                    });
+                    showNamespaceError("创建失败", "同名命名空间已存在");
                     return false;
                 }
 
                 updateState((prev) => {
-                    if (
-                        !prev.project.namespaces.has(parentNamespaceId) ||
-                        prev.project.namespaces.has(newNamespaceId)
-                    ) {
+                    const parentNamespace =
+                        prev.project.namespaces.get(parentNamespaceId);
+                    if (!parentNamespace || prev.project.namespaces.has(newNamespaceId)) {
                         return prev;
                     }
 
                     const namespaces = new Map(prev.project.namespaces);
+                    namespaces.set(
+                        parentNamespaceId,
+                        withNamespaceChildren(parentNamespace, (children) => [
+                            ...children,
+                            newNamespaceId,
+                        ]),
+                    );
                     namespaces.set(newNamespaceId, createEmptyNamespaceData());
 
                     return {
@@ -409,22 +545,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             renameNamespace(namespaceId, segment) {
                 const trimmedSegment = segment.trim();
                 if (namespaceId === ROOT_NAMESPACE_ID) {
-                    notifications.show({
-                        title: "无法重命名",
-                        message: "根命名空间不可重命名",
-                        icon: <IconX size={16} />,
-                        color: "red",
-                    });
+                    showNamespaceError("无法重命名", "根命名空间不可重命名");
                     return false;
                 }
 
                 if (!isNamespaceSegmentValid(trimmedSegment)) {
-                    notifications.show({
-                        title: "命名空间名称无效",
-                        message: "名称段仅允许字母、数字和下划线",
-                        icon: <IconX size={16} />,
-                        color: "red",
-                    });
+                    showNamespaceError(
+                        "命名空间名称无效",
+                        "名称段仅允许字母、数字和下划线",
+                    );
                     return false;
                 }
 
@@ -446,123 +575,54 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                     return true;
                 }
 
-                if (currentState.project.namespaces.has(nextNamespaceId)) {
-                    notifications.show({
-                        title: "无法重命名",
-                        message: "目标命名空间已存在",
-                        icon: <IconX size={16} />,
-                        color: "red",
-                    });
-                    return false;
-                }
-
-                const namespacesToMove = getNamespaceDescendantIds(
+                const idRemap = buildNamespaceIdRemap(
                     currentState.project.namespaces,
                     namespaceId,
-                    true,
+                    nextNamespaceId,
                 );
-                const movingSet = new Set(namespacesToMove);
-                const nextIds = namespacesToMove.map((id) => {
-                    if (id === namespaceId) {
-                        return nextNamespaceId;
-                    }
-
-                    return `${nextNamespaceId}${id.slice(namespaceId.length)}`;
-                });
-                const duplicateCheck = new Set<string>();
-                for (const id of nextIds) {
-                    if (duplicateCheck.has(id)) {
-                        return false;
-                    }
-                    duplicateCheck.add(id);
-                }
-
-                for (const id of nextIds) {
+                const movingSet = new Set(idRemap.keys());
+                for (const mappedId of idRemap.values()) {
                     if (
-                        currentState.project.namespaces.has(id) &&
-                        !movingSet.has(id)
+                        currentState.project.namespaces.has(mappedId) &&
+                        !movingSet.has(mappedId)
                     ) {
-                        notifications.show({
-                            title: "无法重命名",
-                            message: "重命名结果与现有命名空间冲突",
-                            icon: <IconX size={16} />,
-                            color: "red",
-                        });
+                        showNamespaceError("无法重命名", "目标命名空间已存在");
                         return false;
                     }
                 }
 
                 updateState((prev) => {
-                    if (!prev.project.namespaces.has(namespaceId)) {
+                    const parentNamespace = prev.project.namespaces.get(parentId);
+                    if (!parentNamespace || !prev.project.namespaces.has(namespaceId)) {
                         return prev;
                     }
 
-                    const descendantIds = getNamespaceDescendantIds(
-                        prev.project.namespaces,
-                        namespaceId,
-                        true,
+                    const nextProject = remapNamespaceProject(prev.project, idRemap);
+                    if (!nextProject) {
+                        return prev;
+                    }
+
+                    const nextParentNamespace =
+                        nextProject.namespaces.get(parentId);
+                    if (!nextParentNamespace) {
+                        return prev;
+                    }
+
+                    nextProject.namespaces.set(
+                        parentId,
+                        withNamespaceChildren(nextParentNamespace, (children) =>
+                            children.map((childId) =>
+                                childId === namespaceId ? nextNamespaceId : childId,
+                            ),
+                        ),
                     );
-                    const descendantSet = new Set(descendantIds);
-                    const remappedIds = descendantIds.map((id) => {
-                        if (id === namespaceId) {
-                            return nextNamespaceId;
-                        }
-                        return `${nextNamespaceId}${id.slice(namespaceId.length)}`;
-                    });
-                    const remappedSet = new Set(remappedIds);
-                    if (remappedSet.size !== remappedIds.length) {
-                        return prev;
-                    }
-
-                    for (const id of remappedIds) {
-                        if (prev.project.namespaces.has(id) && !descendantSet.has(id)) {
-                            return prev;
-                        }
-                    }
-
-                    const nextNamespaces = new Map<string, NamespaceData>();
-                    for (const [id, namespace] of prev.project.namespaces.entries()) {
-                        if (descendantSet.has(id)) {
-                            continue;
-                        }
-
-                        nextNamespaces.set(id, namespace);
-                    }
-
-                    for (const id of descendantIds) {
-                        const namespace = prev.project.namespaces.get(id);
-                        if (!namespace) {
-                            return prev;
-                        }
-
-                        const mappedId =
-                            id === namespaceId
-                                ? nextNamespaceId
-                                : `${nextNamespaceId}${id.slice(namespaceId.length)}`;
-                        nextNamespaces.set(mappedId, namespace);
-                    }
-
-                    const remapSelectedNamespace = (id: string) => {
-                        if (id === namespaceId) {
-                            return nextNamespaceId;
-                        }
-
-                        if (isNamespaceDescendant(id, namespaceId)) {
-                            return `${nextNamespaceId}${id.slice(namespaceId.length)}`;
-                        }
-
-                        return id;
-                    };
 
                     return {
                         ...prev,
-                        project: {
-                            ...prev.project,
-                            namespaces: nextNamespaces,
-                        },
-                        selectedNamespaceId: remapSelectedNamespace(
+                        project: nextProject,
+                        selectedNamespaceId:
+                            idRemap.get(prev.selectedNamespaceId) ??
                             prev.selectedNamespaceId,
-                        ),
                     };
                 });
 
@@ -570,12 +630,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             },
             deleteNamespace(namespaceId) {
                 if (namespaceId === ROOT_NAMESPACE_ID) {
-                    notifications.show({
-                        title: "无法删除",
-                        message: "根命名空间不可删除",
-                        icon: <IconX size={16} />,
-                        color: "red",
-                    });
+                    showNamespaceError("无法删除", "根命名空间不可删除");
                     return false;
                 }
 
@@ -584,8 +639,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                     return false;
                 }
 
+                const parentId = getNamespaceParentId(namespaceId);
+                if (parentId === null) {
+                    return false;
+                }
+
                 updateState((prev) => {
-                    if (!prev.project.namespaces.has(namespaceId)) {
+                    const parentNamespace = prev.project.namespaces.get(parentId);
+                    if (!prev.project.namespaces.has(namespaceId) || !parentNamespace) {
                         return prev;
                     }
 
@@ -597,8 +658,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                     const deleteSet = new Set(toDelete);
                     const namespaces = new Map<string, NamespaceData>();
 
+                    namespaces.set(
+                        parentId,
+                        withNamespaceChildren(parentNamespace, (children) =>
+                            children.filter((childId) => childId !== namespaceId),
+                        ),
+                    );
+
                     for (const [id, namespace] of prev.project.namespaces.entries()) {
-                        if (deleteSet.has(id)) {
+                        if (id === parentId || deleteSet.has(id)) {
                             continue;
                         }
 
@@ -628,6 +696,148 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                             prev.viewMode === "editor"
                                 ? "welcome"
                                 : prev.viewMode,
+                    };
+                });
+
+                return true;
+            },
+            moveNamespace(sourceId, targetId, placement) {
+                const currentState = stateRef.current;
+                const moveTarget = resolveNamespaceMoveTarget(
+                    currentState.project,
+                    sourceId,
+                    targetId,
+                    placement,
+                );
+                if (!moveTarget) {
+                    return false;
+                }
+
+                const sourceParentId = getNamespaceParentId(sourceId);
+                if (sourceParentId === null) {
+                    return false;
+                }
+
+                const sourceSegment = getNamespaceLastSegment(sourceId);
+                const nextSourceId = createNamespaceId(
+                    moveTarget.parentId,
+                    sourceSegment,
+                );
+                const idRemap = buildNamespaceIdRemap(
+                    currentState.project.namespaces,
+                    sourceId,
+                    nextSourceId,
+                );
+                const movingSet = new Set(idRemap.keys());
+                for (const mappedId of idRemap.values()) {
+                    if (
+                        currentState.project.namespaces.has(mappedId) &&
+                        !movingSet.has(mappedId)
+                    ) {
+                        showNamespaceError(
+                            "无法移动",
+                            "目标位置已有同名命名空间",
+                        );
+                        return false;
+                    }
+                }
+
+                updateState((prev) => {
+                    const currentMoveTarget = resolveNamespaceMoveTarget(
+                        prev.project,
+                        sourceId,
+                        targetId,
+                        placement,
+                    );
+                    if (!currentMoveTarget) {
+                        return prev;
+                    }
+
+                    const currentSourceParentId = getNamespaceParentId(sourceId);
+                    if (currentSourceParentId === null) {
+                        return prev;
+                    }
+
+                    const currentNextSourceId = createNamespaceId(
+                        currentMoveTarget.parentId,
+                        getNamespaceLastSegment(sourceId),
+                    );
+                    const currentIdRemap = buildNamespaceIdRemap(
+                        prev.project.namespaces,
+                        sourceId,
+                        currentNextSourceId,
+                    );
+                    const nextProject = remapNamespaceProject(
+                        prev.project,
+                        currentIdRemap,
+                    );
+                    if (!nextProject) {
+                        return prev;
+                    }
+
+                    const previousSourceParent =
+                        prev.project.namespaces.get(currentSourceParentId);
+                    const previousTargetParent = prev.project.namespaces.get(
+                        currentMoveTarget.parentId,
+                    );
+                    const nextSourceParent =
+                        nextProject.namespaces.get(currentSourceParentId);
+                    const nextTargetParent = nextProject.namespaces.get(
+                        currentMoveTarget.parentId,
+                    );
+                    if (
+                        !previousSourceParent ||
+                        !previousTargetParent ||
+                        !nextSourceParent ||
+                        !nextTargetParent
+                    ) {
+                        return prev;
+                    }
+
+                    const nextSourceChildren = previousSourceParent.children.filter(
+                        (childId) => childId !== sourceId,
+                    );
+                    if (currentSourceParentId === currentMoveTarget.parentId) {
+                        const reorderedChildren = insertNamespaceChild(
+                            nextSourceChildren,
+                            currentNextSourceId,
+                            currentMoveTarget.insertAfterId,
+                        );
+                        if (!reorderedChildren) {
+                            return prev;
+                        }
+
+                        nextProject.namespaces.set(currentSourceParentId, {
+                            ...nextSourceParent,
+                            children: reorderedChildren,
+                        });
+                    } else {
+                        nextProject.namespaces.set(currentSourceParentId, {
+                            ...nextSourceParent,
+                            children: nextSourceChildren,
+                        });
+
+                        const reorderedChildren = insertNamespaceChild(
+                            previousTargetParent.children,
+                            currentNextSourceId,
+                            currentMoveTarget.insertAfterId,
+                        );
+                        if (!reorderedChildren) {
+                            return prev;
+                        }
+
+                        nextProject.namespaces.set(currentMoveTarget.parentId, {
+                            ...nextTargetParent,
+                            children: reorderedChildren,
+                        });
+                    }
+
+                    return {
+                        ...prev,
+                        project: nextProject,
+                        selectedNamespaceId:
+                            currentIdRemap.get(prev.selectedNamespaceId) ??
+                            prev.selectedNamespaceId,
                     };
                 });
 
