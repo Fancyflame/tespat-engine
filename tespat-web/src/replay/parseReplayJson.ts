@@ -52,6 +52,7 @@ function parseReplayPalette(index: number, value: unknown): PaletteEntry {
     return {
         color,
         icon,
+        public: false,
     };
 }
 

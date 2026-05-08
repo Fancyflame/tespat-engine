@@ -9,14 +9,26 @@ export interface PatternRule {
 export interface PaletteEntry {
     color: string;
     icon: string | null;
+    public: boolean;
 }
 
-// 项目结构定义
-export interface ProjectData {
+// 单个命名空间的数据结构
+export interface NamespaceData {
     patterns: Map<string, PatternRule>;
-    patternOrder: string[];
     palette: Map<string, PaletteEntry>;
+    children: string[];
 }
+
+// 项目结构定义（按命名空间划分）
+export interface ProjectData {
+    namespaces: Map<string, NamespaceData>;
+}
+
+// 根命名空间常量
+export const ROOT_NAMESPACE_ID = ".";
+
+// 命名空间段名匹配规则
+const NAMESPACE_SEGMENT_PATTERN = /^[A-Za-z0-9_]+$/;
 
 // 新建 pattern 时的空规则
 export function createEmptyPatternRule(): PatternRule {
@@ -41,80 +53,92 @@ export function clonePaletteEntry(entry: PaletteEntry): PaletteEntry {
     return {
         color: entry.color,
         icon: entry.icon,
+        public: entry.public,
+    };
+}
+
+// 创建空命名空间数据
+export function createEmptyNamespaceData(): NamespaceData {
+    return {
+        patterns: new Map(),
+        palette: new Map(),
+        children: [],
+    };
+}
+
+// 创建默认根命名空间数据
+export function createDefaultRootNamespaceData(): NamespaceData {
+    return {
+        patterns: new Map([
+            [
+                "BlackAndWhite",
+                {
+                    width: 2,
+                    capture: ["Black", "White", "White", "Black"],
+                    replace: ["White", "Black", "Black", "White"],
+                },
+            ],
+        ]),
+        palette: new Map([
+            [
+                "Black",
+                {
+                    color: "#000000",
+                    icon: null,
+                    public: false,
+                },
+            ],
+            [
+                "White",
+                {
+                    color: "#ffffff",
+                    icon: null,
+                    public: false,
+                },
+            ],
+        ]),
+        children: [],
+    };
+}
+
+// 复制命名空间对象
+export function cloneNamespaceData(namespace: NamespaceData): NamespaceData {
+    return {
+        patterns: new Map(
+            Array.from(namespace.patterns.entries()).map(([id, rule]) => [
+                id,
+                clonePatternRule(rule),
+            ]),
+        ),
+        palette: new Map(
+            Array.from(namespace.palette.entries()).map(([id, entry]) => [
+                id,
+                clonePaletteEntry(entry),
+            ]),
+        ),
+        children: [...namespace.children],
     };
 }
 
 // 新建项目时的默认数据
 export const DEFAULT_PROJECT: ProjectData = {
-    patterns: new Map([
-        [
-            "BlackAndWhite",
-            {
-                width: 2,
-                capture: ["Black", "White", "White", "Black"],
-                replace: ["White", "Black", "Black", "White"],
-            },
-        ],
-    ]),
-    patternOrder: ["BlackAndWhite"],
-    palette: new Map([
-        [
-            "Black",
-            {
-                color: "#000000",
-                icon: null,
-            },
-        ],
-        [
-            "White",
-            {
-                color: "#ffffff",
-                icon: null,
-            },
-        ],
+    namespaces: new Map([
+        [ROOT_NAMESPACE_ID, createDefaultRootNamespaceData()],
     ]),
 };
 
 // 深复制整个项目对象
 export function cloneProject(project: ProjectData): ProjectData {
     return {
-        patterns: new Map(
-            Array.from(project.patterns.entries()).map(([id, rule]) => [
-                id,
-                clonePatternRule(rule),
-            ]),
-        ),
-        patternOrder: [...project.patternOrder],
-        palette: new Map(
-            Array.from(project.palette.entries()).map(([id, entry]) => [
-                id,
-                clonePaletteEntry(entry),
-            ]),
+        namespaces: new Map(
+            Array.from(project.namespaces.entries()).map(
+                ([namespaceId, namespace]) => [
+                    namespaceId,
+                    cloneNamespaceData(namespace),
+                ],
+            ),
         ),
     };
-}
-
-// 结合排序字段与实际集合，得到稳定且去重的 pattern 顺序
-export function getOrderedPatternIds(
-    patternOrder: string[],
-    patterns: Map<string, PatternRule>,
-) {
-    const orderedIds: string[] = [];
-    const seen = new Set<string>();
-
-    for (const id of patternOrder) {
-        if (!patterns.has(id) || seen.has(id)) continue;
-        seen.add(id);
-        orderedIds.push(id);
-    }
-
-    for (const id of patterns.keys()) {
-        if (seen.has(id)) continue;
-        seen.add(id);
-        orderedIds.push(id);
-    }
-
-    return orderedIds;
 }
 
 // 将某个 palette 名称在单元格数组中整体替换
@@ -133,14 +157,14 @@ export function replacePaletteNameInCells(
     return changed ? nextCells : cells;
 }
 
-// 统计某个 palette 在所有 pattern 中被引用的次数
+// 统计某个 palette 在命名空间中的引用次数
 export function countPaletteReferences(
-    project: ProjectData,
+    namespace: NamespaceData,
     paletteId: string,
 ) {
     let count = 0;
 
-    for (const rule of project.patterns.values()) {
+    for (const rule of namespace.patterns.values()) {
         for (const cell of rule.capture) {
             if (cell === paletteId) {
                 count += 1;
@@ -155,4 +179,145 @@ export function countPaletteReferences(
     }
 
     return count;
+}
+
+// 校验命名空间路径是否合法
+export function isNamespacePathValid(namespaceId: string) {
+    if (namespaceId === ROOT_NAMESPACE_ID) {
+        return true;
+    }
+
+    const segments = namespaceId.split(".");
+    return (
+        segments.length > 0 &&
+        segments.every((segment) => NAMESPACE_SEGMENT_PATTERN.test(segment))
+    );
+}
+
+// 校验命名空间段名是否合法
+export function isNamespaceSegmentValid(segment: string) {
+    return NAMESPACE_SEGMENT_PATTERN.test(segment);
+}
+
+// 获取命名空间路径的父级路径
+export function getNamespaceParentId(namespaceId: string): string | null {
+    if (namespaceId === ROOT_NAMESPACE_ID) {
+        return null;
+    }
+
+    const lastDotIndex = namespaceId.lastIndexOf(".");
+    if (lastDotIndex < 0) {
+        return ROOT_NAMESPACE_ID;
+    }
+
+    return namespaceId.slice(0, lastDotIndex);
+}
+
+// 拼接子命名空间完整路径
+export function createNamespaceId(parentId: string, segment: string) {
+    return parentId === ROOT_NAMESPACE_ID ? segment : `${parentId}.${segment}`;
+}
+
+// 判断 candidate 是否为 parent 的后代（不含自身）
+export function isNamespaceDescendant(candidate: string, parent: string) {
+    if (parent === ROOT_NAMESPACE_ID) {
+        return candidate !== ROOT_NAMESPACE_ID;
+    }
+
+    return candidate.startsWith(`${parent}.`);
+}
+
+// 获取命名空间后代列表（可选含自身）
+export function getNamespaceDescendantIds(
+    namespaces: Map<string, NamespaceData>,
+    parentId: string,
+    includeSelf = false,
+) {
+    const descendants: string[] = [];
+
+    for (const namespaceId of namespaces.keys()) {
+        if (namespaceId === parentId) {
+            if (includeSelf) {
+                descendants.push(namespaceId);
+            }
+            continue;
+        }
+
+        if (isNamespaceDescendant(namespaceId, parentId)) {
+            descendants.push(namespaceId);
+        }
+    }
+
+    return descendants;
+}
+
+// 获取命名空间层级深度
+export function getNamespaceDepth(namespaceId: string) {
+    if (namespaceId === ROOT_NAMESPACE_ID) {
+        return 0;
+    }
+
+    return namespaceId.split(".").length;
+}
+
+// 获取按树级排序后的命名空间 ID 列表
+export function getSortedNamespaceIds(namespaces: Map<string, NamespaceData>) {
+    const orderedIds: string[] = [];
+    const visited = new Set<string>();
+
+    const visit = (namespaceId: string) => {
+        if (visited.has(namespaceId)) {
+            return;
+        }
+
+        visited.add(namespaceId);
+        orderedIds.push(namespaceId);
+
+        const namespace = namespaces.get(namespaceId);
+        if (!namespace) {
+            return;
+        }
+
+        for (const childId of namespace.children) {
+            if (!namespaces.has(childId)) {
+                continue;
+            }
+
+            visit(childId);
+        }
+    };
+
+    if (namespaces.has(ROOT_NAMESPACE_ID)) {
+        visit(ROOT_NAMESPACE_ID);
+    }
+
+    const danglingIds = Array.from(namespaces.keys())
+        .filter((namespaceId) => !visited.has(namespaceId))
+        .sort((left, right) => {
+            if (left === ROOT_NAMESPACE_ID) return -1;
+            if (right === ROOT_NAMESPACE_ID) return 1;
+            return left.localeCompare(right, undefined, {
+                sensitivity: "accent",
+            });
+        });
+
+    for (const namespaceId of danglingIds) {
+        visit(namespaceId);
+    }
+
+    return orderedIds;
+}
+
+// 获取命名空间最后一段
+export function getNamespaceLastSegment(namespaceId: string) {
+    if (namespaceId === ROOT_NAMESPACE_ID) {
+        return ROOT_NAMESPACE_ID;
+    }
+
+    const parentId = getNamespaceParentId(namespaceId);
+    if (parentId === null || parentId === ROOT_NAMESPACE_ID) {
+        return namespaceId;
+    }
+
+    return namespaceId.slice(parentId.length + 1);
 }

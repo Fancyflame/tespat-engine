@@ -1,7 +1,6 @@
-import { Box } from "@mantine/core";
 import { useCallback } from "react";
+import { uiStackClassName } from "@/lib/stageClasses";
 import GridDisplaySlider from "../components/GridDisplaySlider/GridDisplaySlider";
-import styles from "../App.module.css";
 import { ReplayToolbar } from "../replay/ReplayToolbar";
 import { ReplayViewport } from "../replay/ReplayViewport";
 import { useReplayFileImport } from "../replay/useReplayFileImport";
@@ -51,7 +50,7 @@ export function PlaybackStage() {
     }, [actions, clampedStep, totalSteps]);
 
     return (
-        <Box className={styles.UIStack}>
+        <div className={uiStackClassName}>
             <ReplayToolbar
                 canRefresh={canRefresh}
                 fileInputRef={fileInputRef}
@@ -77,6 +76,6 @@ export function PlaybackStage() {
                 onNext={handleNextStep}
                 disabled={totalSteps === 0}
             />
-        </Box>
+        </div>
     );
 }

@@ -1,4 +1,3 @@
-import { Box, Text } from "@mantine/core";
 import {
     useCallback,
     useEffect,
@@ -315,42 +314,13 @@ export function GridDisplay2D({
 
     if (showEmptyPlaceholder) {
         return (
-            <Box
-                style={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}
-            >
-                <Box
-                    style={{
-                        width: "100%",
-                        height: "100%",
-                        maxWidth: "32px",
-                        maxHeight: "32px",
-                        aspectRatio: "1 / 1",
-                        borderRadius: 5,
-                        background: "#111827",
-                        border: "1px solid rgba(15,23,42,0.6)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        overflow: "hidden",
-                    }}
-                >
-                    <Text
-                        c="gray.2"
-                        ff="monospace"
-                        size="8px"
-                        fw={700}
-                        lts="0.06em"
-                    >
+            <div className="flex h-full w-full items-center justify-center">
+                <div className="flex aspect-square h-full w-full max-h-8 max-w-8 items-center justify-center overflow-hidden rounded-[5px] border border-slate-900/60 bg-slate-900">
+                    <span className="font-mono text-[8px] font-bold tracking-[0.06em] text-slate-200">
                         EMPTY
-                    </Text>
-                </Box>
-            </Box>
+                    </span>
+                </div>
+            </div>
         );
     }
 

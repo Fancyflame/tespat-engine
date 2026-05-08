@@ -1,4 +1,3 @@
-import { notifications } from "@mantine/notifications";
 import {
     useCallback,
     useMemo,
@@ -7,6 +6,7 @@ import {
     type ChangeEvent,
     type RefObject,
 } from "react";
+import { notifications } from "@/lib/notifications";
 import { parseReplayJson, type ReplayData } from "./parseReplayJson";
 import { useWorkspace, useWorkspaceActions } from "../Workspace";
 

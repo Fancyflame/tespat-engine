@@ -1,4 +1,3 @@
-import { Box } from "@mantine/core";
 import type { ReactNode } from "react";
 import { useRef } from "react";
 import { ResizeBar, type ResizeDirection, type ResizeDelta } from "./ResizeBar";
@@ -54,7 +53,7 @@ export function GridEditResizer({
         };
 
     return (
-        <Box
+        <div
             style={{
                 position: "relative",
                 width: "100%",
@@ -64,14 +63,14 @@ export function GridEditResizer({
                 justifyContent: "center",
             }}
         >
-            <Box
+            <div
                 style={{
                     width: "100%",
                     height: "100%",
                 }}
             >
                 {children}
-            </Box>
+            </div>
 
             <ResizeBar
                 direction="top"
@@ -97,6 +96,6 @@ export function GridEditResizer({
                 onDeltaChange={handleDeltaChange("right")}
                 onDragEnd={handleDragEnd}
             />
-        </Box>
+        </div>
     );
 }

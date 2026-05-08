@@ -18,7 +18,7 @@ mod example {
 fn main() {
     use example::*;
 
-    let mut tespat = TespatBuilder::new_filled(Color::Active, 20, 30)
+    let mut tespat = TespatBuilder::new_filled(color::Active, 20, 30)
         .enable_history(true)
         .build();
 

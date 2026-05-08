@@ -1,18 +1,12 @@
 import {
-    Card,
-    Group,
-    Text,
-    ActionIcon,
-    Center,
-    Stack,
-} from "@mantine/core";
-import {
     IconTrash,
     IconPencil,
     IconGripVertical,
     IconArrowRight,
 } from "@tabler/icons-react";
 import type { DragEventHandler } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { PaletteEntry, PatternRule } from "../../ProjectData";
 import { GridDisplay2D } from "../GridDisplay2D/GridDisplay2D";
 
@@ -62,40 +56,33 @@ export const PatternCard = ({
     };
 
     return (
-        <Card
-            withBorder
-            padding="sm"
-            radius="md"
-            bg={selected ? "blue.9" : "gray.9"}
+        <div
             onClick={onSelect}
             onDragOver={onDragOver}
             onDrop={onDrop}
+            className={cn(
+                "rounded-xl border p-3 transition-[opacity,border-color,background-color] cursor-pointer",
+                selected
+                    ? "border-blue-400/70 bg-slate-800/90"
+                    : "border-white/8 bg-slate-900/85 hover:border-blue-300/30 hover:bg-slate-900",
+                dragging && "opacity-55",
+            )}
             style={{
-                cursor: "pointer",
-                opacity: dragging ? 0.55 : 1,
-                borderColor: selected
-                    ? "var(--mantine-color-blue-4)"
-                    : undefined,
                 borderTopColor:
-                    dropIndicator === "before"
-                        ? "var(--mantine-color-blue-4)"
-                        : undefined,
+                    dropIndicator === "before" ? "#60a5fa" : undefined,
                 borderBottomColor:
-                    dropIndicator === "after"
-                        ? "var(--mantine-color-blue-4)"
-                        : undefined,
+                    dropIndicator === "after" ? "#60a5fa" : undefined,
                 borderTopWidth: dropIndicator === "before" ? 2 : undefined,
                 borderBottomWidth: dropIndicator === "after" ? 2 : undefined,
-                transition: "opacity 120ms ease, border-color 120ms ease",
             }}
         >
-            <Stack gap="xs">
-                <Group justify="space-between" align="center" wrap="nowrap">
-                    <Group gap="xs" align="center" wrap="nowrap">
-                        <ActionIcon
-                            variant="subtle"
-                            size="xs"
-                            color="gray"
+            <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="rounded-md text-slate-400"
                             draggable={true}
                             title="拖拽调整顺序"
                             onMouseDown={(event) => event.stopPropagation()}
@@ -104,61 +91,66 @@ export const PatternCard = ({
                             onDragEnd={onDragEnd}
                         >
                             <IconGripVertical size={14} />
-                        </ActionIcon>
-                        <Text
-                            size="sm"
-                            ff="monospace"
-                            fw={700}
-                            c={selected ? "blue.1" : "blue.4"}
-                            style={{ wordBreak: "break-all" }}
+                        </Button>
+                        <p
+                            className={cn(
+                                "min-w-0 break-all font-mono text-sm font-bold",
+                                selected ? "text-blue-100" : "text-blue-300",
+                            )}
                         >
                             {id}
-                        </Text>
-                    </Group>
-                    <Group gap={4} wrap="nowrap">
-                        <ActionIcon
-                            variant="subtle"
-                            size="xs"
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="rounded-md"
                             onClick={(event) => {
                                 event.stopPropagation();
                                 handleRenameClick();
                             }}
                         >
                             <IconPencil size={12} />
-                        </ActionIcon>
-                        <ActionIcon
-                            variant="subtle"
-                            color="red"
-                            size="xs"
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="rounded-md text-red-200 hover:bg-red-500/16"
                             onClick={(event) => {
                                 event.stopPropagation();
                                 handleDeleteClick();
                             }}
                         >
                             <IconTrash size={12} />
-                        </ActionIcon>
-                    </Group>
-                </Group>
-                <Group justify="center" align="center" wrap="nowrap" gap="xs">
-                    <Center w={56} h={56} flex="0 0 auto">
+                        </Button>
+                    </div>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                    <div className="flex size-14 shrink-0 items-center justify-center">
                         <GridDisplay2D
                             width={rule.width}
                             data={rule.capture}
                             palette={palette}
                         />
-                    </Center>
-                    <Center flex="0 0 auto" c={selected ? "blue.1" : "gray.4"}>
+                    </div>
+                    <div
+                        className={cn(
+                            "flex shrink-0 items-center justify-center",
+                            selected ? "text-blue-100" : "text-slate-400",
+                        )}
+                    >
                         <IconArrowRight size={16} />
-                    </Center>
-                    <Center w={56} h={56} flex="0 0 auto">
+                    </div>
+                    <div className="flex size-14 shrink-0 items-center justify-center">
                         <GridDisplay2D
                             width={rule.width}
                             data={rule.replace}
                             palette={palette}
                         />
-                    </Center>
-                </Group>
-            </Stack>
-        </Card>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };

@@ -10,6 +10,7 @@ mod example {
 
 fn main() {
     use example::pattern;
+
     let mut tespat = pattern::GRAPH
         .0
         .create_tespat()

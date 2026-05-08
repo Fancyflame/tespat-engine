@@ -1,6 +1,7 @@
 {
-  "patterns": {
-    "SearchSpace": {
+  "patterns": [
+    {
+      "name": "SearchSpace",
       "width": 7,
       "capture": [
         "Active",
@@ -105,7 +106,8 @@
         "Any"
       ]
     },
-    "DirectionSelect": {
+    {
+      "name": "DirectionSelect",
       "width": 3,
       "capture": [
         "Active",
@@ -118,7 +120,8 @@
         "Growth"
       ]
     },
-    "Propagation": {
+    {
+      "name": "Propagation",
       "width": 3,
       "capture": [
         "Seed",
@@ -131,7 +134,8 @@
         "Growth"
       ]
     },
-    "ClearGrowth": {
+    {
+      "name": "ClearGrowth",
       "width": 2,
       "capture": [
         "Seed",
@@ -142,12 +146,6 @@
         "Wall"
       ]
     }
-  },
-  "patternOrder": [
-    "SearchSpace",
-    "DirectionSelect",
-    "Propagation",
-    "ClearGrowth"
   ],
   "palette": {
     "Active": {
@@ -178,5 +176,6 @@
       "color": "#ff00b7",
       "icon": null
     }
-  }
+  },
+  "children": []
 }

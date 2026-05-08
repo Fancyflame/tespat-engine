@@ -1,12 +1,14 @@
-import { Box, Stack, Text } from "@mantine/core";
 import { IconUpload } from "@tabler/icons-react";
+import {
+    canvasPlaceholderClassName,
+    canvasStageClassName,
+} from "@/lib/stageClasses";
 import {
     useCallback,
     useRef,
     useState,
     type DragEvent,
 } from "react";
-import styles from "../App.module.css";
 import { CtrlDragPannable } from "../components/CtrlDragPannable/CtrlDragPannable";
 import { GridDisplay2D } from "../components/GridDisplay2D/GridDisplay2D";
 import type { ReplayData } from "./parseReplayJson";
@@ -74,14 +76,14 @@ export function ReplayViewport({
     );
 
     return (
-        <Box
-            className={styles.canvasStage}
+        <div
+            className={canvasStageClassName}
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={(event) => void handleDrop(event)}
         >
-            <CtrlDragPannable className={styles.canvasPlaceholder}>
+            <CtrlDragPannable className={canvasPlaceholderClassName}>
                 {replayData ? (
                     <GridDisplay2D
                         width={replayData.width}
@@ -89,40 +91,25 @@ export function ReplayViewport({
                         palette={replayData.palette}
                     />
                 ) : (
-                    <Stack align="center" gap="xs">
-                        <IconUpload
-                            size={40}
-                            color="var(--mantine-color-gray-4)"
-                        />
-                        <Text fw={700} c="gray.3">
+                    <div className="flex flex-col items-center gap-2">
+                        <IconUpload size={40} className="text-slate-400" />
+                        <p className="text-sm font-bold text-slate-200">
                             上传回放 JSON 后查看结果
-                        </Text>
-                        <Text size="xs" c="dimmed">
+                        </p>
+                        <p className="text-xs text-slate-400">
                             上传后默认定位到最后一帧
-                        </Text>
-                    </Stack>
+                        </p>
+                    </div>
                 )}
             </CtrlDragPannable>
 
             {isDragOver && (
-                <Box
-                    style={{
-                        position: "absolute",
-                        inset: 16,
-                        borderRadius: 10,
-                        border: "2px dashed var(--mantine-color-blue-4)",
-                        background: "rgba(59, 130, 246, 0.08)",
-                        pointerEvents: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                    }}
-                >
-                    <Text fw={700} c="blue.3">
+                <div className="pointer-events-none absolute inset-4 flex items-center justify-center rounded-[10px] border-2 border-dashed border-blue-400 bg-blue-500/8">
+                    <p className="text-sm font-bold text-blue-200">
                         松手即可导入回放文件
-                    </Text>
-                </Box>
+                    </p>
+                </div>
             )}
-        </Box>
+        </div>
     );
 }

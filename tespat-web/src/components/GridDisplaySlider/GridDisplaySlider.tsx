@@ -1,17 +1,10 @@
 import {
-    ActionIcon,
-    Group,
-    Paper,
-    Slider,
-    Stack,
-    Text,
-} from "@mantine/core";
-import {
     IconPlayerPlay,
     IconPlayerSkipBack,
     IconPlayerSkipForward,
 } from "@tabler/icons-react";
-import styles from "./GridDisplaySlider.module.css";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 
 interface GridDisplaySliderProps {
     currentStep: number;
@@ -39,64 +32,59 @@ export default function GridDisplaySlider({
     const disableStepControls = disabled || sliderMax === 0;
 
     return (
-        <Paper
-            radius="lg"
-            p="lg"
-            mx="xl"
-            my="sm"
-            shadow="sm"
-            className={styles.gridDisplaySlider}
-        >
-            <Group gap="xl" align="center" pos="relative">
-                <Group gap="xs">
-                    <ActionIcon
-                        size="lg"
-                        radius="xl"
-                        color="green"
-                        variant="filled"
-                        disabled
-                    >
-                        <IconPlayerPlay size={18} fill="currentColor" />
-                    </ActionIcon>
-                    <ActionIcon
-                        size="md"
-                        radius="xl"
-                        variant="default"
-                        onClick={onPrev}
-                        disabled={disableStepControls}
-                    >
-                        <IconPlayerSkipBack size={18} />
-                    </ActionIcon>
-                    <ActionIcon
-                        size="md"
-                        radius="xl"
-                        variant="default"
-                        onClick={onNext}
-                        disabled={disableStepControls}
-                    >
-                        <IconPlayerSkipForward size={18} />
-                    </ActionIcon>
-                </Group>
-                <Stack align="stretch" justify="center" gap={0} flex={1}>
-                    <Group justify="space-between" mb={4}>
-                        <Text size="10px" fw={700} c="dimmed">
+        <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 w-[min(600px,calc(100%-3rem))] -translate-x-1/2">
+            <div className="pointer-events-auto rounded-[20px] border border-slate-700 bg-slate-900/85 px-6 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+                <div className="relative flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                        <Button
+                            size="icon-lg"
+                            variant="subtle"
+                            className="rounded-full text-emerald-100"
+                            disabled
+                        >
+                            <IconPlayerPlay size={18} fill="currentColor" />
+                        </Button>
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            className="rounded-full"
+                            onClick={onPrev}
+                            disabled={disableStepControls}
+                        >
+                            <IconPlayerSkipBack size={18} />
+                        </Button>
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            className="rounded-full"
+                            onClick={onNext}
+                            disabled={disableStepControls}
+                        >
+                            <IconPlayerSkipForward size={18} />
+                        </Button>
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col justify-center">
+                        <div className="mb-1 flex items-center justify-between gap-3">
+                            <p className="text-[10px] font-bold tracking-[0.16em] text-slate-400">
                             EVOLUTION TIMELINE
-                        </Text>
-                        <Text size="10px" ff="monospace">
+                            </p>
+                            <p className="font-mono text-[10px] text-slate-200">
                             STEP: {displayCurrentStep} / {totalSteps}
-                        </Text>
-                    </Group>
-                    <Slider
-                        size="sm"
-                        radius="xl"
-                        min={0}
-                        max={sliderMax}
-                        value={safeStep}
-                        onChange={onStepChange}
-                        disabled={disableStepControls}
-                    />
-                </Stack>
-            </Group>
-        </Paper>
+                            </p>
+                        </div>
+                        <Slider
+                            min={0}
+                            max={sliderMax}
+                            step={1}
+                            value={[safeStep]}
+                            onValueChange={(values) =>
+                                onStepChange(values[0] ?? 0)
+                            }
+                            disabled={disableStepControls}
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

@@ -1,5 +1,5 @@
 use tespat::{
-    app::{Tespat, match_filter, matches::PickOrder},
+    app::{Tespat, match_filter},
     pattern::transform::SymmetryList,
 };
 
@@ -49,7 +49,11 @@ pub fn generate(tespat: &mut Tespat<Color>) {
     );
 
     // 保存房间信息
-    let rooms_info = tespat.clone();
+    let room_floor_positions = tespat.capture(
+        &unit_pattern::ROOM,
+        SymmetryList::ID,
+        tespat::app::matches::PickOrder::AsIs,
+    );
 
     // 将房间地面替换为路径
     tespat.execute(
@@ -99,8 +103,5 @@ pub fn generate(tespat: &mut Tespat<Color>) {
     );
 
     // 恢复房间
-    {
-        let m = rooms_info.capture(&unit_pattern::ROOM, SymmetryList::ID, PickOrder::Randomized);
-        tespat.replace(&m, &unit_pattern::ROOM);
-    }
+    tespat.replace(&room_floor_positions, &unit_pattern::ROOM);
 }

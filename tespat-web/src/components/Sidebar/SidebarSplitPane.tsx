@@ -1,4 +1,3 @@
-import { Box } from "@mantine/core";
 import {
     useEffect,
     useRef,
@@ -6,7 +5,7 @@ import {
     type PointerEvent as ReactPointerEvent,
     type ReactNode,
 } from "react";
-import styles from "./SidebarLayout.module.css";
+import { cn } from "@/lib/utils";
 
 const DEFAULT_TOP_RATIO = 0.35;
 const SPLITTER_HEIGHT = 8;
@@ -99,29 +98,43 @@ export function SidebarSplitPane({
     };
 
     return (
-        <Box ref={containerRef} className={styles.splitPane}>
-            <Box
-                className={styles.pane}
+        <div
+            ref={containerRef}
+            className="flex h-full min-h-0 w-full min-w-0 flex-col"
+        >
+            <div
+                className="min-h-0 w-full min-w-0"
                 style={{
                     flex: `0 0 calc((100% - ${SPLITTER_HEIGHT}px) * ${topRatio})`,
                 }}
             >
                 {top}
-            </Box>
+            </div>
 
-            <Box
+            <div
                 role="separator"
                 aria-label="调整 Palette 和 Patterns 面板高度"
                 aria-orientation="horizontal"
-                className={`${styles.splitter} ${isDragging ? styles.splitterDragging : ""}`}
+                className="group relative flex h-2 shrink-0 cursor-row-resize items-center justify-center select-none touch-none"
                 onPointerDown={handlePointerDown}
             >
-                <Box className={styles.splitterGrip} />
-            </Box>
+                <span
+                    className={cn(
+                        "pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-500/26 transition-colors group-hover:bg-blue-400/70",
+                        isDragging && "bg-blue-400/70",
+                    )}
+                />
+                <span
+                    className={cn(
+                        "pointer-events-none absolute h-1 w-14 rounded-full bg-slate-400/55 transition-all group-hover:scale-x-105 group-hover:bg-blue-100",
+                        isDragging && "scale-x-105 bg-blue-100",
+                    )}
+                />
+            </div>
 
-            <Box className={styles.pane} style={{ flex: 1 }}>
+            <div className="min-h-0 w-full min-w-0 flex-1">
                 {bottom}
-            </Box>
-        </Box>
+            </div>
+        </div>
     );
 }

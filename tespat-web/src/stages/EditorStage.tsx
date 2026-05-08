@@ -1,41 +1,49 @@
-import { Box, Group, Stack, Text } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconArrowRight, IconInfoSmall } from "@tabler/icons-react";
+import {
+    canvasPlaceholderClassName,
+    canvasStageClassName,
+    uiStackClassName,
+} from "@/lib/stageClasses";
+import { notifications } from "@/lib/notifications";
 import { useRef, useState, type ReactNode } from "react";
 import { CtrlDragPannable } from "../components/CtrlDragPannable/CtrlDragPannable";
 import { GridEditResizer } from "../components/GridEditResizer/GridEditResizer";
 import { GridDisplay2D } from "../components/GridDisplay2D/GridDisplay2D";
-import styles from "../App.module.css";
-import { useWorkspace, useWorkspaceActions } from "../Workspace";
+import {
+    useWorkspace,
+    useWorkspaceActions,
+    useWorkspaceNamespace,
+} from "../Workspace";
 
 // 主舞台的编辑模式
 export function EditorStage() {
     const workspace = useWorkspace();
+    const namespace = useWorkspaceNamespace();
     const actions = useWorkspaceActions();
     const [isResizing, setIsResizing] = useState(false);
     const noPaletteWarnedRef = useRef(false);
     const selectedRule = workspace.selectedPatternId
-        ? workspace.project.patterns.get(workspace.selectedPatternId) ?? null
+        ? namespace.patterns.get(workspace.selectedPatternId) ?? null
         : null;
 
     if (!selectedRule || !workspace.selectedPatternId) {
         return (
-            <Box className={styles.UIStack}>
-                <Box className={styles.canvasStage}>
-                    <Box className={styles.canvasPlaceholder}>
-                        <Text c="dimmed" fw={700}>
+            <div className={uiStackClassName}>
+                <div className={canvasStageClassName}>
+                    <div className={canvasPlaceholderClassName}>
+                        <p className="text-sm font-bold text-slate-400">
                             请选择一个 pattern 开始编辑
-                        </Text>
-                    </Box>
-                </Box>
-            </Box>
+                        </p>
+                    </div>
+                </div>
+            </div>
         );
     }
 
     return (
-        <Box className={styles.UIStack}>
-            <Box className={styles.canvasStage}>
-                <CtrlDragPannable className={styles.canvasPlaceholder}>
+        <div className={uiStackClassName}>
+            <div className={canvasStageClassName}>
+                <CtrlDragPannable className={canvasPlaceholderClassName}>
                     <GridEditResizer
                         onResizeStart={() => {
                             setIsResizing(true);
@@ -65,84 +73,69 @@ export function EditorStage() {
                             }
 
                             actions.resizePattern(
-                                workspace.selectedPatternId!,
+                                workspace.selectedPatternId,
                                 direction,
                                 deltaUnits,
                                 workspace.selectedPaletteId,
                             );
                         }}
                     >
-                        <Box
+                        <div
+                            className="flex h-full w-full items-center justify-center px-8 py-6"
                             style={{
                                 width: "100%",
-                                height: "100%",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                padding: "24px 32px",
                             }}
                         >
-                            <Group
-                                wrap="nowrap"
-                                align="stretch"
-                                gap="xl"
+                            <div
+                                className="flex h-full min-h-0 w-full min-w-0 items-stretch gap-8"
                                 style={{
                                     width: "min(1100px, 100%)",
                                     height: "min(720px, 100%)",
-                                    minHeight: 0,
                                 }}
                             >
                                 <PatternPanel title="CAPTURE">
                                     <GridDisplay2D
                                         width={selectedRule.width}
                                         data={selectedRule.capture}
-                                        palette={workspace.project.palette}
+                                        palette={namespace.palette}
                                         editable={!isResizing}
                                         paintPaletteId={
                                             workspace.selectedPaletteId
                                         }
                                         onChangeData={(nextData) =>
                                             actions.updatePatternCapture(
-                                                workspace.selectedPatternId!,
+                                                workspace.selectedPatternId,
                                                 nextData,
                                             )
                                         }
                                     />
                                 </PatternPanel>
-                                <Box
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "var(--mantine-color-gray-4)",
-                                        flex: "0 0 auto",
-                                    }}
-                                >
+                                <div className="flex shrink-0 items-center justify-center text-slate-400">
                                     <IconArrowRight size={28} />
-                                </Box>
+                                </div>
                                 <PatternPanel title="REPLACE">
                                     <GridDisplay2D
                                         width={selectedRule.width}
                                         data={selectedRule.replace}
-                                        palette={workspace.project.palette}
+                                        palette={namespace.palette}
                                         editable={!isResizing}
                                         paintPaletteId={
                                             workspace.selectedPaletteId
                                         }
                                         onChangeData={(nextData) =>
                                             actions.updatePatternReplace(
-                                                workspace.selectedPatternId!,
+                                                workspace.selectedPatternId,
                                                 nextData,
                                             )
                                         }
                                     />
                                 </PatternPanel>
-                            </Group>
-                        </Box>
+                            </div>
+                        </div>
                     </GridEditResizer>
                 </CtrlDragPannable>
-            </Box>
-        </Box>
+            </div>
+        </div>
     );
 }
 
@@ -155,32 +148,13 @@ function PatternPanel({
     children: ReactNode;
 }) {
     return (
-        <Stack
-            gap="xs"
-            style={{
-                flex: 1,
-                minWidth: 0,
-                minHeight: 0,
-            }}
-        >
-            <Text
-                size="xs"
-                fw={800}
-                ff="monospace"
-                c="gray.4"
-                ta="center"
-                lts="0.1em"
-            >
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+            <p className="text-center font-mono text-xs font-extrabold tracking-[0.16em] text-slate-400">
                 {title}
-            </Text>
-            <Box
-                style={{
-                    flex: 1,
-                    minHeight: 0,
-                }}
-            >
+            </p>
+            <div className="min-h-0 flex-1">
                 {children}
-            </Box>
-        </Stack>
+            </div>
+        </div>
     );
 }
