@@ -8,6 +8,7 @@ use crate::compile::codegen::ident::{
     color_const_ident, module_ident, namespace_index, namespaced_color_variant_ident,
     pattern_static_ident,
 };
+use crate::compile::codegen::generate_color_map_tokens;
 use crate::compile::ir::{NamespaceNode, PatternConfig, ProjectFile};
 
 /// 生成命名空间模块树。
@@ -35,10 +36,11 @@ fn generate_namespace_module(
         })
     } else {
         let module_name = module_ident(last_segment(&namespace.full_path));
+        let color_map = generate_color_map_module(project, namespace)?;
         Ok(quote! {
-            /// 子命名空间模块
             pub mod #module_name {
                 pub use super::super::Color;
+                #color_map
                 #color_module
                 #unit_pattern_module
                 #pattern_module
@@ -60,11 +62,24 @@ fn generate_children_module(
         .collect::<Result<Vec<_>>>()?;
 
     Ok(quote! {
-        /// 子命名空间集合
         pub mod children {
             #(#children)*
         }
     })
+}
+
+/// 生成当前命名空间的颜色映射定义。
+fn generate_color_map_module(
+    project: &ProjectFile<'_>,
+    namespace: &NamespaceNode<'_>,
+) -> Result<TokenStream> {
+    let colors: Vec<_> = project
+        .colors
+        .iter()
+        .filter(|color| color.namespace_path == namespace.full_path)
+        .collect();
+
+    Ok(generate_color_map_tokens(&colors))
 }
 
 /// 生成当前命名空间颜色别名模块。
@@ -86,7 +101,6 @@ fn generate_color_module(
     });
 
     Ok(quote! {
-        /// 当前命名空间颜色别名。
         #[allow(non_upper_case_globals)]
         pub mod color {
             #(#color_items)*
@@ -111,10 +125,10 @@ fn generate_unit_pattern_module(
             pub static #static_ident: ::tespat::Pattern<super::Color> = {
                 const WIDTH: usize = 1usize;
                 const GRID: &[::tespat::MatchColor<super::Color>] = const {
-                    &[super::Color::#variant.to_match_color()]
+                    &[super::COLOR_MAP.map(super::Color::#variant)]
                 };
                 const COLORS: &[(::tespat::MatchColor<super::Color>, usize)] = const {
-                    &[(super::Color::#variant.to_match_color(), 0usize)]
+                    &[(super::COLOR_MAP.map(super::Color::#variant), 0usize)]
                 };
                 ::tespat::Pattern::from_static(WIDTH, GRID, COLORS)
             };
@@ -196,7 +210,7 @@ fn generate_pattern_expr(
         }
 
         let color_ident = namespaced_color_variant_ident(color_name, namespace_index);
-        grid_items.push(quote! { super::Color::#color_ident.to_match_color() });
+        grid_items.push(quote! { super::COLOR_MAP.map(super::Color::#color_ident) });
         first_seen_entries.entry(color_name).or_insert(idx);
     }
 
@@ -204,7 +218,7 @@ fn generate_pattern_expr(
         .into_iter()
         .map(|(color_name, idx)| {
             let color_ident = namespaced_color_variant_ident(color_name, namespace_index);
-            quote! { (super::Color::#color_ident.to_match_color(), #idx) }
+            quote! { (super::COLOR_MAP.map(super::Color::#color_ident), #idx) }
         })
         .collect();
 

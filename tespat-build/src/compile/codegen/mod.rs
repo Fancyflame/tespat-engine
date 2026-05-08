@@ -5,7 +5,7 @@ use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::compile::ir::ProjectFile;
+use crate::compile::ir::{ColorVariant, ProjectFile};
 use ident::color_map_field_ident;
 
 /// 生成整个项目对应的 Rust TokenStream。
@@ -47,63 +47,12 @@ fn generate_color_enum(project: &ProjectFile<'_>) -> TokenStream {
         }
     });
 
-    let map_fields = project
+    let root_colors: Vec<_> = project
         .colors
         .iter()
         .filter(|color| color.namespace_path.is_empty())
-        .map(|color| {
-            let field_ident = color_map_field_ident(color.raw_name);
-            quote! { pub #field_ident: ::tespat::MatchColor<Color>, }
-        });
-
-    let map_default_fields = project
-        .colors
-        .iter()
-        .filter(|color| color.namespace_path.is_empty())
-        .map(|color| {
-            let field_ident = color_map_field_ident(color.raw_name);
-            let variant = &color.variant_ident;
-            quote! { #field_ident: ::tespat::MatchColor::Exact(Color::#variant), }
-        });
-
-    let map_match_arms = project
-        .colors
-        .iter()
-        .filter(|color| color.namespace_path.is_empty())
-        .map(|color| {
-            let field_ident = color_map_field_ident(color.raw_name);
-            let variant = &color.variant_ident;
-            quote! { Color::#variant => self.#field_ident.const_copy(), }
-        });
-
-    let root_variants = project
-        .colors
-        .iter()
-        .filter(|color| color.namespace_path.is_empty());
-    let non_root_variants = project
-        .colors
-        .iter()
-        .filter(|color| !color.namespace_path.is_empty());
-
-    let root_non_root_match = if root_variants.clone().next().is_some() {
-        let root_arms = root_variants.map(|color| {
-            let variant = &color.variant_ident;
-            quote! { Color::#variant => true, }
-        });
-        let non_root_arms = non_root_variants.map(|color| {
-            let variant = &color.variant_ident;
-            quote! { Color::#variant => false, }
-        });
-
-        quote! {
-            match color {
-                #(#root_arms)*
-                #(#non_root_arms)*
-            }
-        }
-    } else {
-        quote! { false }
-    };
+        .collect();
+    let root_color_map = generate_color_map_tokens(&root_colors);
 
     quote! {
         #[allow(non_camel_case_types)]
@@ -139,13 +88,30 @@ fn generate_color_enum(project: &ProjectFile<'_>) -> TokenStream {
             }
         }
 
-        impl Color {
-            pub const fn to_match_color(self) -> ::tespat::MatchColor<Self> {
-                COLOR_MAP.map(self)
-            }
-        }
+        #root_color_map
+    }
+}
 
-        /// 按根命名空间颜色名索引的匹配颜色表。
+/// 生成指定命名空间的颜色映射定义。
+pub(crate) fn generate_color_map_tokens(colors: &[&ColorVariant<'_>]) -> TokenStream {
+    let map_fields = colors.iter().map(|color| {
+        let field_ident = color_map_field_ident(color.raw_name);
+        quote! { pub #field_ident: ::tespat::MatchColor<Color>, }
+    });
+
+    let map_default_fields = colors.iter().map(|color| {
+        let field_ident = color_map_field_ident(color.raw_name);
+        let variant = &color.variant_ident;
+        quote! { #field_ident: ::tespat::MatchColor::Exact(Color::#variant), }
+    });
+
+    let map_match_arms = colors.iter().map(|color| {
+        let field_ident = color_map_field_ident(color.raw_name);
+        let variant = &color.variant_ident;
+        quote! { Color::#variant => self.#field_ident.const_copy(), }
+    });
+
+    quote! {
         pub struct ColorMapStruct {
             #(#map_fields)*
         }
@@ -156,13 +122,9 @@ fn generate_color_enum(project: &ProjectFile<'_>) -> TokenStream {
             };
 
             pub const fn map(&self, color: Color) -> ::tespat::MatchColor<Color> {
-                if #root_non_root_match {
-                    match color {
-                        #(#map_match_arms)*
-                        _ => ::tespat::MatchColor::Exact(color),
-                    }
-                } else {
-                    ::tespat::MatchColor::Exact(color)
+                match color {
+                    #(#map_match_arms)*
+                    _ => ::tespat::MatchColor::Exact(color),
                 }
             }
         }
