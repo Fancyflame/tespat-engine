@@ -6,6 +6,7 @@ import {
     useWorkspace,
     useWorkspaceActions,
     useWorkspaceNamespace,
+    useWorkspaceResolvedPalette,
 } from "../../Workspace";
 import { PatternCard } from "./PatternCard";
 import { SidebarPanel } from "./SidebarPanel";
@@ -19,6 +20,7 @@ type DropIndicator = {
 export const PatternRulesSection = () => {
     const workspace = useWorkspace();
     const namespace = useWorkspaceNamespace();
+    const resolvedPalette = useWorkspaceResolvedPalette();
     const actions = useWorkspaceActions();
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(
@@ -53,7 +55,7 @@ export const PatternRulesSection = () => {
                         key={id}
                         id={id}
                         rule={rule}
-                        palette={namespace.palette}
+                        palette={resolvedPalette}
                         selected={
                             workspace.viewMode === "editor" &&
                             workspace.selectedPatternId === id

@@ -42,6 +42,20 @@ const SYNC_DEBOUNCE_MS = 1000;
 // 当前主工作区可处于的页面模式
 export type ViewMode = "welcome" | "editor" | "playback";
 export type NamespaceDropPlacement = "after-sibling" | "first-child";
+export type PaletteSourceKind = "local" | "imported";
+
+// 表示解析后 palette 条目的来源信息
+export interface ResolvedPaletteEntrySource {
+    kind: PaletteSourceKind;
+    namespaceId: string;
+}
+
+// 表示供侧边栏展示的 palette 行数据
+export interface WorkspacePaletteItem {
+    id: string;
+    entry: PaletteEntry;
+    source: ResolvedPaletteEntrySource;
+}
 
 // 工作区的核心状态定义
 export interface WorkspaceState {
@@ -111,6 +125,7 @@ interface WorkspaceActions {
     updatePaletteColor: (paletteId: string, nextColor: string) => void;
     updatePalettePublic: (paletteId: string, nextPublic: boolean) => void;
     updatePaletteIcon: (paletteId: string, nextIcon: string | null) => void;
+    copyImportedPaletteToLocal: (paletteId: string) => boolean;
     deletePalette: (paletteId: string) => boolean;
     openWithFilePicker: () => Promise<void>;
     createNewFile: () => Promise<void>;
@@ -185,6 +200,149 @@ function getActiveNamespace(state: WorkspaceState): NamespaceData {
     return createEmptyNamespaceData();
 }
 
+// 解析当前命名空间可用的 palette（本地 + 递归父级 public）
+function resolveNamespacePalette(project: ProjectData, namespaceId: string) {
+    const palette = new Map<string, PaletteEntry>();
+    const sources = new Map<string, ResolvedPaletteEntrySource>();
+    const namespace = project.namespaces.get(namespaceId);
+
+    if (!namespace) {
+        return { palette, sources };
+    }
+
+    for (const [paletteId, entry] of namespace.palette.entries()) {
+        palette.set(paletteId, clonePaletteEntry(entry));
+        sources.set(paletteId, {
+            kind: "local",
+            namespaceId,
+        });
+    }
+
+    let parentId = getNamespaceParentId(namespaceId);
+    while (parentId !== null) {
+        const parentNamespace = project.namespaces.get(parentId);
+        if (parentNamespace) {
+            for (const [paletteId, entry] of parentNamespace.palette.entries()) {
+                if (!entry.public || palette.has(paletteId)) {
+                    continue;
+                }
+
+                palette.set(paletteId, clonePaletteEntry(entry));
+                sources.set(paletteId, {
+                    kind: "imported",
+                    namespaceId: parentId,
+                });
+            }
+        }
+        parentId = getNamespaceParentId(parentId);
+    }
+
+    return { palette, sources };
+}
+
+// 构建侧边栏 palette 列表（导入项在上，本地项在下）
+function buildWorkspacePaletteItems(
+    project: ProjectData,
+    namespaceId: string,
+): WorkspacePaletteItem[] {
+    const { palette, sources } = resolveNamespacePalette(project, namespaceId);
+    const importedItems: WorkspacePaletteItem[] = [];
+    const localItems: WorkspacePaletteItem[] = [];
+
+    for (const [paletteId, entry] of palette.entries()) {
+        const source = sources.get(paletteId);
+        if (!source) {
+            continue;
+        }
+
+        const item: WorkspacePaletteItem = {
+            id: paletteId,
+            entry,
+            source,
+        };
+
+        if (source.kind === "imported") {
+            importedItems.push(item);
+            continue;
+        }
+
+        localItems.push(item);
+    }
+
+    const compareById = (left: WorkspacePaletteItem, right: WorkspacePaletteItem) =>
+        left.id.localeCompare(right.id, undefined, {
+            sensitivity: "accent",
+        });
+
+    importedItems.sort(compareById);
+    localItems.sort(compareById);
+    return [...importedItems, ...localItems];
+}
+
+// 对单个命名空间执行缺失 palette 自动补全
+function ensureNamespacePaletteCompleteness(
+    project: ProjectData,
+    namespaceId: string,
+): ProjectData {
+    const namespace = project.namespaces.get(namespaceId);
+    if (!namespace) {
+        return project;
+    }
+
+    const { palette: resolvedPalette } = resolveNamespacePalette(
+        project,
+        namespaceId,
+    );
+    let nextPalette: Map<string, PaletteEntry> | null = null;
+
+    for (const rule of namespace.patterns.values()) {
+        const cells = [...rule.capture, ...rule.replace];
+        for (const paletteId of cells) {
+            if (resolvedPalette.has(paletteId)) {
+                continue;
+            }
+
+            if (!nextPalette) {
+                nextPalette = new Map(namespace.palette);
+            }
+
+            const missingEntry: PaletteEntry = {
+                color: "#ff0000",
+                icon: "x",
+                public: true,
+            };
+            nextPalette.set(paletteId, missingEntry);
+            resolvedPalette.set(paletteId, clonePaletteEntry(missingEntry));
+        }
+    }
+
+    if (!nextPalette) {
+        return project;
+    }
+
+    const namespaces = new Map(project.namespaces);
+    namespaces.set(namespaceId, {
+        ...namespace,
+        palette: nextPalette,
+    });
+
+    return {
+        ...project,
+        namespaces,
+    };
+}
+
+// 在加载项目后补齐 pattern 中缺失的 palette 引用
+function ensureProjectPaletteCompleteness(project: ProjectData): ProjectData {
+    let nextProject = project;
+
+    for (const namespaceId of getSortedNamespaceIds(project.namespaces)) {
+        nextProject = ensureNamespacePaletteCompleteness(nextProject, namespaceId);
+    }
+
+    return nextProject;
+}
+
 // 生成新的 pattern 默认名称
 function createNextPatternId(namespace: NamespaceData) {
     let index = 0;
@@ -217,6 +375,65 @@ function areCellsEqual(left: string[], right: string[]) {
         left.length === right.length &&
         left.every((cell, index) => cell === right[index])
     );
+}
+
+// 在命名空间内批量替换 pattern 中引用的 palette 名称
+function renamePaletteInNamespacePatterns(
+    namespace: NamespaceData,
+    fromPaletteId: string,
+    toPaletteId: string,
+) {
+    let changed = false;
+    const patterns = new Map(
+        Array.from(namespace.patterns.entries()).map(([id, rule]) => {
+            const nextCapture = replacePaletteNameInCells(
+                rule.capture,
+                fromPaletteId,
+                toPaletteId,
+            );
+            const nextReplace = replacePaletteNameInCells(
+                rule.replace,
+                fromPaletteId,
+                toPaletteId,
+            );
+
+            if (nextCapture === rule.capture && nextReplace === rule.replace) {
+                return [id, rule] as const;
+            }
+
+            changed = true;
+            return [
+                id,
+                {
+                    ...rule,
+                    capture: nextCapture,
+                    replace: nextReplace,
+                },
+            ] as const;
+        }),
+    );
+
+    return { patterns, changed };
+}
+
+// 判断命名空间祖先链上是否存在可继承的同名 palette
+function hasInheritedPaletteFallback(
+    project: ProjectData,
+    namespaceId: string,
+    paletteId: string,
+) {
+    let parentId = getNamespaceParentId(namespaceId);
+    while (parentId !== null) {
+        const parentNamespace = project.namespaces.get(parentId);
+        const parentEntry = parentNamespace?.palette.get(paletteId);
+        if (parentEntry?.public) {
+            return true;
+        }
+
+        parentId = getNamespaceParentId(parentId);
+    }
+
+    return false;
 }
 
 // 将文本内容下载为本地文件
@@ -473,12 +690,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                         return prev;
                     }
 
-                    if (prev.selectedNamespaceId === namespaceId) {
+                    const nextProject = ensureNamespacePaletteCompleteness(
+                        prev.project,
+                        namespaceId,
+                    );
+                    if (
+                        prev.selectedNamespaceId === namespaceId &&
+                        nextProject === prev.project
+                    ) {
                         return prev;
                     }
 
                     return {
                         ...prev,
+                        project: nextProject,
                         selectedNamespaceId: namespaceId,
                         selectedPatternId: null,
                         selectedPaletteId: null,
@@ -863,16 +1088,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             setSelectedPaletteId(paletteId) {
                 updateState((prev) => {
                     const activeNamespaceId = getActiveNamespaceId(prev);
-                    const activeNamespace =
-                        prev.project.namespaces.get(activeNamespaceId);
-                    if (!activeNamespace) {
-                        return prev;
-                    }
+                    const { palette } = resolveNamespacePalette(
+                        prev.project,
+                        activeNamespaceId,
+                    );
 
-                    if (
-                        paletteId !== null &&
-                        !activeNamespace.palette.has(paletteId)
-                    ) {
+                    if (paletteId !== null && !palette.has(paletteId)) {
                         return prev;
                     }
 
@@ -1175,7 +1396,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                     }
 
                     const rule = activeNamespace.patterns.get(patternId);
-                    if (!rule || !activeNamespace.palette.has(fillPaletteId)) {
+                    const { palette } = resolveNamespacePalette(
+                        prev.project,
+                        activeNamespaceId,
+                    );
+                    if (!rule || !palette.has(fillPaletteId)) {
                         return prev;
                     }
 
@@ -1224,6 +1449,70 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                         selectedNamespaceId: activeNamespaceId,
                     };
                 });
+            },
+            copyImportedPaletteToLocal(paletteId) {
+                const currentState = stateRef.current;
+                const activeNamespaceId = getActiveNamespaceId(currentState);
+                const activeNamespace =
+                    currentState.project.namespaces.get(activeNamespaceId);
+                if (!activeNamespace || activeNamespace.palette.has(paletteId)) {
+                    return false;
+                }
+
+                const { palette: resolvedPalette, sources } = resolveNamespacePalette(
+                    currentState.project,
+                    activeNamespaceId,
+                );
+                const source = sources.get(paletteId);
+                const importedEntry = resolvedPalette.get(paletteId);
+                if (!importedEntry || source?.kind !== "imported") {
+                    return false;
+                }
+
+                updateState((prev) => {
+                    const nextActiveNamespaceId = getActiveNamespaceId(prev);
+                    const nextActiveNamespace =
+                        prev.project.namespaces.get(nextActiveNamespaceId);
+                    if (
+                        !nextActiveNamespace ||
+                        nextActiveNamespace.palette.has(paletteId)
+                    ) {
+                        return prev;
+                    }
+
+                    const { palette: nextResolvedPalette, sources: nextSources } =
+                        resolveNamespacePalette(prev.project, nextActiveNamespaceId);
+                    const nextSource = nextSources.get(paletteId);
+                    const nextImportedEntry = nextResolvedPalette.get(paletteId);
+                    if (!nextImportedEntry || nextSource?.kind !== "imported") {
+                        return prev;
+                    }
+
+                    const palette = new Map(nextActiveNamespace.palette);
+                    palette.set(paletteId, {
+                        color: nextImportedEntry.color,
+                        icon: nextImportedEntry.icon,
+                        public: false,
+                    });
+
+                    const namespaces = new Map(prev.project.namespaces);
+                    namespaces.set(nextActiveNamespaceId, {
+                        ...nextActiveNamespace,
+                        palette,
+                    });
+
+                    return {
+                        ...prev,
+                        project: {
+                            ...prev.project,
+                            namespaces,
+                        },
+                        selectedNamespaceId: nextActiveNamespaceId,
+                        selectedPaletteId: paletteId,
+                    };
+                });
+
+                return true;
             },
             createPalette() {
                 updateState((prev) => {
@@ -1289,6 +1578,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                     if (!activeNamespace?.palette.has(paletteId)) {
                         return prev;
                     }
+                    const targetEntry = activeNamespace.palette.get(paletteId);
+                    if (!targetEntry) {
+                        return prev;
+                    }
 
                     const palette = new Map<string, PaletteEntry>();
                     for (const [id, entry] of activeNamespace.palette.entries()) {
@@ -1300,37 +1593,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                         palette.set(id, clonePaletteEntry(entry));
                     }
 
-                    const patterns = new Map(
-                        Array.from(activeNamespace.patterns.entries()).map(
-                            ([id, rule]) => {
-                                const nextCapture = replacePaletteNameInCells(
-                                    rule.capture,
-                                    paletteId,
-                                    trimmed,
-                                );
-                                const nextReplace = replacePaletteNameInCells(
-                                    rule.replace,
-                                    paletteId,
-                                    trimmed,
-                                );
-
-                                if (
-                                    nextCapture === rule.capture &&
-                                    nextReplace === rule.replace
-                                ) {
-                                    return [id, rule] as const;
-                                }
-
-                                return [
-                                    id,
-                                    {
-                                        ...rule,
-                                        capture: nextCapture,
-                                        replace: nextReplace,
-                                    },
-                                ] as const;
-                            },
-                        ),
+                    const { patterns } = renamePaletteInNamespacePatterns(
+                        activeNamespace,
+                        paletteId,
+                        trimmed,
                     );
                     const namespaces = new Map(prev.project.namespaces);
                     namespaces.set(activeNamespaceId, {
@@ -1338,6 +1604,50 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                         palette,
                         patterns,
                     });
+
+                    if (targetEntry.public) {
+                        const descendantIds = getNamespaceDescendantIds(
+                            prev.project.namespaces,
+                            activeNamespaceId,
+                        );
+
+                        for (const descendantId of descendantIds) {
+                            const descendantNamespace =
+                                prev.project.namespaces.get(descendantId);
+                            if (!descendantNamespace) {
+                                continue;
+                            }
+
+                            const { sources } = resolveNamespacePalette(
+                                prev.project,
+                                descendantId,
+                            );
+                            const source = sources.get(paletteId);
+                            if (
+                                source?.kind !== "imported" ||
+                                source.namespaceId !== activeNamespaceId
+                            ) {
+                                continue;
+                            }
+
+                            const {
+                                patterns: descendantPatterns,
+                                changed: descendantChanged,
+                            } = renamePaletteInNamespacePatterns(
+                                descendantNamespace,
+                                paletteId,
+                                trimmed,
+                            );
+                            if (!descendantChanged) {
+                                continue;
+                            }
+
+                            namespaces.set(descendantId, {
+                                ...descendantNamespace,
+                                patterns: descendantPatterns,
+                            });
+                        }
+                    }
 
                     return {
                         ...prev,
@@ -1464,12 +1774,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             },
             deletePalette(paletteId) {
                 const currentState = stateRef.current;
+                const currentNamespaceId = getActiveNamespaceId(currentState);
                 const currentNamespace = getActiveNamespace(currentState);
                 if (!currentNamespace.palette.has(paletteId)) {
                     return false;
                 }
 
-                if (countPaletteReferences(currentNamespace, paletteId) > 0) {
+                const isReferenced =
+                    countPaletteReferences(currentNamespace, paletteId) > 0;
+                const canFallbackToParent = hasInheritedPaletteFallback(
+                    currentState.project,
+                    currentNamespaceId,
+                    paletteId,
+                );
+                if (isReferenced && !canFallbackToParent) {
                     notifications.show({
                         title: "无法删除",
                         message:
@@ -1530,7 +1848,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                     });
                     const file = await handle.getFile();
                     const text = await file.text();
-                    const project = jsonToProject(text);
+                    const project = ensureProjectPaletteCompleteness(
+                        jsonToProject(text),
+                    );
                     const normalizedContent = projectToJson(project);
                     const permission = await handle.requestPermission({
                         mode: "readwrite",
@@ -1668,6 +1988,29 @@ export function useWorkspace() {
 export function useWorkspaceNamespace() {
     const workspace = useWorkspace();
     return getActiveNamespace(workspace);
+}
+
+// 读取当前命名空间解析后的可用 palette
+export function useWorkspaceResolvedPalette() {
+    const workspace = useWorkspace();
+    const activeNamespaceId = getActiveNamespaceId(workspace);
+
+    return useMemo(
+        () => resolveNamespacePalette(workspace.project, activeNamespaceId).palette,
+        [workspace.project, activeNamespaceId],
+    );
+}
+
+// 读取当前命名空间的 palette 展示列表
+export function useWorkspacePaletteView() {
+    const workspace = useWorkspace();
+    const activeNamespaceId = getActiveNamespaceId(workspace);
+
+    return useMemo(
+        () =>
+            buildWorkspacePaletteItems(workspace.project, activeNamespaceId),
+        [workspace.project, activeNamespaceId],
+    );
 }
 
 // 读取工作区动作

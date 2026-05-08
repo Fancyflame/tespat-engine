@@ -13,12 +13,14 @@ import {
     useWorkspace,
     useWorkspaceActions,
     useWorkspaceNamespace,
+    useWorkspaceResolvedPalette,
 } from "../Workspace";
 
 // 主舞台的编辑模式
 export function EditorStage() {
     const workspace = useWorkspace();
     const namespace = useWorkspaceNamespace();
+    const resolvedPalette = useWorkspaceResolvedPalette();
     const actions = useWorkspaceActions();
     const [isResizing, setIsResizing] = useState(false);
     const noPaletteWarnedRef = useRef(false);
@@ -97,7 +99,7 @@ export function EditorStage() {
                                     <GridDisplay2D
                                         width={selectedRule.width}
                                         data={selectedRule.capture}
-                                        palette={namespace.palette}
+                                        palette={resolvedPalette}
                                         editable={!isResizing}
                                         paintPaletteId={
                                             workspace.selectedPaletteId
@@ -117,7 +119,7 @@ export function EditorStage() {
                                     <GridDisplay2D
                                         width={selectedRule.width}
                                         data={selectedRule.replace}
-                                        palette={namespace.palette}
+                                        palette={resolvedPalette}
                                         editable={!isResizing}
                                         paintPaletteId={
                                             workspace.selectedPaletteId

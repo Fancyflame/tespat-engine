@@ -1,7 +1,9 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import {
+    IconCopy,
     IconEye,
     IconEyeOff,
+    IconPackageImport,
     IconPencil,
     IconPlus,
     IconTrash,
@@ -18,7 +20,8 @@ import type { PaletteEntry } from "../../ProjectData";
 import {
     useWorkspace,
     useWorkspaceActions,
-    useWorkspaceNamespace,
+    useWorkspacePaletteView,
+    type PaletteSourceKind,
 } from "../../Workspace";
 import { PalettePreview } from "../GridDisplay2D/GridDisplay2D";
 import { SidebarPanel } from "./SidebarPanel";
@@ -26,6 +29,7 @@ import { SidebarPanel } from "./SidebarPanel";
 type PaletteListItemProps = {
     id: string;
     entry: PaletteEntry;
+    sourceKind: PaletteSourceKind;
     selected: boolean;
     onSelect: (paletteId: string) => void;
     onRename: (paletteId: string, nextName: string) => boolean;
@@ -33,6 +37,7 @@ type PaletteListItemProps = {
     onChangeColor: (paletteId: string, nextColor: string) => void;
     onChangePublic: (paletteId: string, nextPublic: boolean) => void;
     onChangeIcon: (paletteId: string, nextIcon: string | null) => void;
+    onCopyImported: (paletteId: string) => boolean;
 };
 
 // 标准化 HEX 颜色，允许用户输入时省略井号
@@ -53,18 +58,8 @@ function normalizeHexColor(value: string) {
 // PaletteSection 负责管理 palette 条目
 export function PaletteSection() {
     const workspace = useWorkspace();
-    const namespace = useWorkspaceNamespace();
+    const paletteItems = useWorkspacePaletteView();
     const actions = useWorkspaceActions();
-
-    const paletteItems = useMemo(
-        () =>
-            Array.from(namespace.palette.entries()).sort((left, right) =>
-                left[0].localeCompare(right[0], undefined, {
-                    sensitivity: "accent",
-                }),
-            ),
-        [namespace.palette],
-    );
 
     return (
         <SidebarPanel
@@ -88,11 +83,12 @@ export function PaletteSection() {
                     <p className="text-xs text-slate-400">暂无 palette</p>
                 ) : (
                     <div className="w-full min-w-0 divide-y divide-white/6 rounded-xl border border-white/6 bg-slate-900/40 overflow-hidden">
-                        {paletteItems.map(([id, entry]) => (
+                        {paletteItems.map(({ id, entry, source }) => (
                             <div key={id}>
                                 <PaletteListItem
                                     id={id}
                                     entry={entry}
+                                    sourceKind={source.kind}
                                     selected={
                                         workspace.selectedPaletteId === id
                                     }
@@ -102,6 +98,9 @@ export function PaletteSection() {
                                     onChangeColor={actions.updatePaletteColor}
                                     onChangePublic={actions.updatePalettePublic}
                                     onChangeIcon={actions.updatePaletteIcon}
+                                    onCopyImported={
+                                        actions.copyImportedPaletteToLocal
+                                    }
                                 />
                             </div>
                         ))}
@@ -116,6 +115,7 @@ export function PaletteSection() {
 const PaletteListItem = memo(function PaletteListItem({
     id,
     entry,
+    sourceKind,
     selected,
     onSelect,
     onRename,
@@ -123,10 +123,12 @@ const PaletteListItem = memo(function PaletteListItem({
     onChangeColor,
     onChangePublic,
     onChangeIcon,
+    onCopyImported,
 }: PaletteListItemProps) {
     const [draftName, setDraftName] = useState(id);
     const [draftColor, setDraftColor] = useState(entry.color);
     const [draftIcon, setDraftIcon] = useState(entry.icon ?? "");
+    const isImported = sourceKind === "imported";
 
     useEffect(() => {
         setDraftName(id);
@@ -171,6 +173,10 @@ const PaletteListItem = memo(function PaletteListItem({
         onDelete(id);
     };
 
+    const handleCopyImported = () => {
+        onCopyImported(id);
+    };
+
     return (
         <div
             role="button"
@@ -204,145 +210,179 @@ const PaletteListItem = memo(function PaletteListItem({
                 {id}
             </span>
             <div className="relative shrink-0">
-                {entry.public ? (
+                {isImported || entry.public ? (
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center opacity-100 transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
                         <span className="flex size-6 items-center justify-center rounded-md text-slate-300/85">
-                            <IconEye size={11} />
+                            {isImported ? (
+                                <IconPackageImport size={11} />
+                            ) : (
+                                <IconEye size={11} />
+                            )}
                         </span>
                     </div>
                 ) : null}
                 <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto">
-                    <Popover
-                        onOpenChange={(open) => {
-                            if (!open) {
-                                commitName();
-                                commitColor();
-                                commitIcon();
-                            }
-                        }}
-                    >
-                        <PopoverTrigger asChild>
+                    {isImported ? (
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="size-6 rounded-md"
+                            aria-label="复制到本地"
+                            title="复制到本地"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                handleCopyImported();
+                            }}
+                        >
+                            <IconCopy size={11} />
+                        </Button>
+                    ) : (
+                        <>
+                            <Popover
+                                onOpenChange={(open) => {
+                                    if (!open) {
+                                        commitName();
+                                        commitColor();
+                                        commitIcon();
+                                    }
+                                }}
+                            >
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        className="size-6 rounded-md"
+                                        onClick={(event) =>
+                                            event.stopPropagation()
+                                        }
+                                    >
+                                        <IconPencil size={11} />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    align="end"
+                                    className="w-[280px]"
+                                    onClick={(event) => event.stopPropagation()}
+                                >
+                                    <div className="space-y-4">
+                                        <div className="space-y-1.5">
+                                            <p className="text-xs font-semibold text-slate-300">
+                                                名称
+                                            </p>
+                                            <Input
+                                                value={draftName}
+                                                onChange={(event) =>
+                                                    setDraftName(
+                                                        event.currentTarget.value,
+                                                    )
+                                                }
+                                                onBlur={commitName}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === "Enter") {
+                                                        commitName();
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-semibold text-slate-300">
+                                                颜色
+                                            </p>
+                                            <div className="flex items-center gap-3">
+                                                <input
+                                                    type="color"
+                                                    className="h-10 w-14 cursor-pointer rounded-md border border-app-border bg-transparent p-1"
+                                                    value={
+                                                        normalizeHexColor(
+                                                            draftColor,
+                                                        ) ?? entry.color
+                                                    }
+                                                    onChange={(event) => {
+                                                        const nextColor =
+                                                            event.currentTarget.value;
+                                                        setDraftColor(nextColor);
+                                                        onChangeColor(
+                                                            id,
+                                                            nextColor,
+                                                        );
+                                                    }}
+                                                />
+                                                <Input
+                                                    value={draftColor}
+                                                    onChange={(event) =>
+                                                        setDraftColor(
+                                                            event.currentTarget.value,
+                                                        )
+                                                    }
+                                                    onBlur={commitColor}
+                                                    onKeyDown={(event) => {
+                                                        if (
+                                                            event.key === "Enter"
+                                                        ) {
+                                                            commitColor();
+                                                        }
+                                                    }}
+                                                    placeholder="#ffffff"
+                                                    className="font-mono text-xs"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <p className="text-xs font-semibold text-slate-300">
+                                                Icon
+                                            </p>
+                                            <p className="text-[11px] text-slate-500">
+                                                使用 Tabler icon 的 kebab-case 名称
+                                            </p>
+                                            <Input
+                                                placeholder="e.g. door, tree, arrow-right"
+                                                value={draftIcon}
+                                                onChange={(event) =>
+                                                    setDraftIcon(
+                                                        event.currentTarget.value,
+                                                    )
+                                                }
+                                                onBlur={commitIcon}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === "Enter") {
+                                                        commitIcon();
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
                             <Button
                                 variant="ghost"
                                 size="icon-sm"
                                 className="size-6 rounded-md"
-                                onClick={(event) => event.stopPropagation()}
+                                aria-label={entry.public ? "公开" : "私有"}
+                                title={entry.public ? "公开" : "私有"}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    onChangePublic(id, !entry.public);
+                                }}
                             >
-                                <IconPencil size={11} />
+                                {entry.public ? (
+                                    <IconEye size={11} />
+                                ) : (
+                                    <IconEyeOff size={11} />
+                                )}
                             </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                            align="end"
-                            className="w-[280px]"
-                            onClick={(event) => event.stopPropagation()}
-                        >
-                            <div className="space-y-4">
-                                <div className="space-y-1.5">
-                                    <p className="text-xs font-semibold text-slate-300">
-                                        名称
-                                    </p>
-                                    <Input
-                                        value={draftName}
-                                        onChange={(event) =>
-                                            setDraftName(event.currentTarget.value)
-                                        }
-                                        onBlur={commitName}
-                                        onKeyDown={(event) => {
-                                            if (event.key === "Enter") {
-                                                commitName();
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-slate-300">
-                                        颜色
-                                    </p>
-                                    <div className="flex items-center gap-3">
-                                        <input
-                                            type="color"
-                                            className="h-10 w-14 cursor-pointer rounded-md border border-app-border bg-transparent p-1"
-                                            value={
-                                                normalizeHexColor(draftColor) ??
-                                                entry.color
-                                            }
-                                            onChange={(event) => {
-                                                const nextColor =
-                                                    event.currentTarget.value;
-                                                setDraftColor(nextColor);
-                                                onChangeColor(id, nextColor);
-                                            }}
-                                        />
-                                        <Input
-                                            value={draftColor}
-                                            onChange={(event) =>
-                                                setDraftColor(
-                                                    event.currentTarget.value,
-                                                )
-                                            }
-                                            onBlur={commitColor}
-                                            onKeyDown={(event) => {
-                                                if (event.key === "Enter") {
-                                                    commitColor();
-                                                }
-                                            }}
-                                            placeholder="#ffffff"
-                                            className="font-mono text-xs"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <p className="text-xs font-semibold text-slate-300">
-                                        Icon
-                                    </p>
-                                    <p className="text-[11px] text-slate-500">
-                                        使用 Tabler icon 的 kebab-case 名称
-                                    </p>
-                                    <Input
-                                        placeholder="e.g. door, tree, arrow-right"
-                                        value={draftIcon}
-                                        onChange={(event) =>
-                                            setDraftIcon(event.currentTarget.value)
-                                        }
-                                        onBlur={commitIcon}
-                                        onKeyDown={(event) => {
-                                            if (event.key === "Enter") {
-                                                commitIcon();
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        </PopoverContent>
-                    </Popover>
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="size-6 rounded-md"
-                        aria-label={entry.public ? "公开" : "私有"}
-                        title={entry.public ? "公开" : "私有"}
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            onChangePublic(id, !entry.public);
-                        }}
-                    >
-                        {entry.public ? (
-                            <IconEye size={11} />
-                        ) : (
-                            <IconEyeOff size={11} />
-                        )}
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="size-6 rounded-md text-red-200 hover:bg-red-500/16"
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            handleDelete();
-                        }}
-                    >
-                        <IconTrash size={11} />
-                    </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="size-6 rounded-md text-red-200 hover:bg-red-500/16"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleDelete();
+                                }}
+                            >
+                                <IconTrash size={11} />
+                            </Button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
