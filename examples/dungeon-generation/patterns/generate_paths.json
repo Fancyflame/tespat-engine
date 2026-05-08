@@ -1,146 +1,145 @@
 {
-    "patterns":  {
-                     "CreatePath":  {
-                                        "width":  3,
-                                        "capture":  [
-                                                        "PathHead",
-                                                        "Empty",
-                                                        "Anchor"
-                                                    ],
-                                        "replace":  [
-                                                        "PathBacktrace",
-                                                        "PathBacktrace",
-                                                        "PathHead"
-                                                    ]
-                                    },
-                     "BackwardPath":  {
-                                          "width":  3,
-                                          "capture":  [
-                                                          "PathBacktrace",
-                                                          "PathBacktrace",
-                                                          "PathHead"
-                                                      ],
-                                          "replace":  [
-                                                          "PathHead",
-                                                          "Path",
-                                                          "Path"
-                                                      ]
-                                      },
-                     "CreateConnectivePath":  {
-                                                  "width":  3,
-                                                  "capture":  [
-                                                                  "Anchor",
-                                                                  "Path",
-                                                                  "Path"
-                                                              ],
-                                                  "replace":  [
-                                                                  "Anchor",
-                                                                  "Path",
-                                                                  "Anchor"
-                                                              ]
-                                              },
-                     "DripDoor":  {
-                                      "width":  3,
-                                      "capture":  [
-                                                      "Anchor",
-                                                      "Empty",
-                                                      "Path"
-                                                  ],
-                                      "replace":  [
-                                                      "Anchor",
-                                                      "Path",
-                                                      "Anchor"
-                                                  ]
-                                  },
-                     "DestroyWall":  {
-                                         "width":  3,
-                                         "capture":  [
-                                                         "Any",
-                                                         "Empty",
-                                                         "Any",
-                                                         "Path",
-                                                         "Empty",
-                                                         "Path",
-                                                         "Any",
-                                                         "Empty",
-                                                         "Any"
-                                                     ],
-                                         "replace":  [
-                                                         "Any",
-                                                         "Empty",
-                                                         "Any",
-                                                         "Path",
-                                                         "Path",
-                                                         "Path",
-                                                         "Any",
-                                                         "Empty",
-                                                         "Any"
-                                                     ]
-                                     },
-                     "ClearDeadEnd":  {
-                                          "width":  3,
-                                          "capture":  [
-                                                          "Empty",
-                                                          "Empty",
-                                                          "Empty",
-                                                          "Empty",
-                                                          "Path",
-                                                          "Empty"
-                                                      ],
-                                          "replace":  [
-                                                          "Empty",
-                                                          "Empty",
-                                                          "Empty",
-                                                          "Empty",
-                                                          "Empty",
-                                                          "Empty"
-                                                      ]
-                                      }
-                 },
-    "patternOrder":  [
-                         "CreatePath",
-                         "BackwardPath",
-                         "CreateConnectivePath",
-                         "DripDoor",
-                         "DestroyWall",
-                         "ClearDeadEnd"
-                     ],
-    "palette":  {
-                    "Wall":  {
-                                 "color":  "#f07000",
-                                 "icon":  null
-                             },
-                    "Room":  {
-                                 "color":  "#0a6cff",
-                                 "icon":  null
-                             },
-                    "Empty":  {
-                                  "color":  "#423333",
-                                  "icon":  null
-                              },
-                    "RoomVertex":  {
-                                       "color":  "#ffc300",
-                                       "icon":  null
-                                   },
-                    "PathHead":  {
-                                     "color":  "#ff0303",
-                                     "icon":  null
-                                 },
-                    "Any":  {
-                              "color":  "#000000",
-                              "icon":  null
-                          },
-                    "Anchor":  {
-                                   "color":  "#94009c",
-                                   "icon":  null
-                               },
-                    "PathBacktrace":  {
-                                          "color":  "#5cff57",
-                                          "icon":  null
-                                      },
-                    "Path":  {
-                                 "color":  "#ffffff",
-                                 "icon":  null
-                             }
-                }
+  "patterns": [
+    {
+      "name": "CreatePath",
+      "width": 3,
+      "capture": [
+        "PathHead",
+        "Empty",
+        "Anchor"
+      ],
+      "replace": [
+        "PathBacktrace",
+        "PathBacktrace",
+        "PathHead"
+      ]
+    },
+    {
+      "name": "BackwardPath",
+      "width": 3,
+      "capture": [
+        "PathBacktrace",
+        "PathBacktrace",
+        "PathHead"
+      ],
+      "replace": [
+        "PathHead",
+        "Path",
+        "Path"
+      ]
+    },
+    {
+      "name": "CreateConnectivePath",
+      "width": 3,
+      "capture": [
+        "Anchor",
+        "Path",
+        "Path"
+      ],
+      "replace": [
+        "Anchor",
+        "Path",
+        "Anchor"
+      ]
+    },
+    {
+      "name": "DripDoor",
+      "width": 3,
+      "capture": [
+        "Anchor",
+        "Empty",
+        "Path"
+      ],
+      "replace": [
+        "Anchor",
+        "Path",
+        "Anchor"
+      ]
+    },
+    {
+      "name": "DestroyWall",
+      "width": 3,
+      "capture": [
+        "Any",
+        "Empty",
+        "Any",
+        "Path",
+        "Empty",
+        "Path",
+        "Any",
+        "Empty",
+        "Any"
+      ],
+      "replace": [
+        "Any",
+        "Empty",
+        "Any",
+        "Path",
+        "Path",
+        "Path",
+        "Any",
+        "Empty",
+        "Any"
+      ]
+    },
+    {
+      "name": "ClearDeadEnd",
+      "width": 3,
+      "capture": [
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Path",
+        "Empty"
+      ],
+      "replace": [
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty",
+        "Empty"
+      ]
+    }
+  ],
+  "palette": {
+    "Wall": {
+      "color": "#f07000",
+      "icon": null
+    },
+    "Room": {
+      "color": "#0a6cff",
+      "icon": null
+    },
+    "Empty": {
+      "color": "#423333",
+      "icon": null
+    },
+    "RoomVertex": {
+      "color": "#ffc300",
+      "icon": null
+    },
+    "PathHead": {
+      "color": "#ff0303",
+      "icon": null
+    },
+    "Any": {
+      "color": "#000000",
+      "icon": null
+    },
+    "Anchor": {
+      "color": "#94009c",
+      "icon": null
+    },
+    "PathBacktrace": {
+      "color": "#5cff57",
+      "icon": null
+    },
+    "Path": {
+      "color": "#ffffff",
+      "icon": null
+    }
+  },
+  "children": []
 }

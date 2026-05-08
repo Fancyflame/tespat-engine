@@ -1,27 +1,24 @@
 use tespat::{
-    app::{match_filter, Tespat, TespatBuilder, matches::PickOrder},
+    app::{Tespat, TespatBuilder, match_filter, matches::PickOrder},
     pattern::transform::SymmetryList,
 };
 
-use crate::imports::generate_paths::Color as OutputColor;
+use crate::imports::generate_paths::{self, Color as OutputColor};
 
 use crate::imports::generate_rooms::*;
 
 pub fn cast_color_for_output(c: &Color) -> Option<OutputColor> {
-    let v = match c {
-        Color::Empty => OutputColor::Empty,
-        Color::Border => OutputColor::Empty,
-        Color::Wall => OutputColor::Wall,
-        Color::RoomFloor => OutputColor::Room,
-        // Color::RoomVertex => Self::RoomVertex,
-        Color::Anchor => OutputColor::Anchor,
+    Some(match *c {
+        color::Empty | color::Border => generate_paths::color::Empty,
+        color::Wall => generate_paths::color::Wall,
+        color::RoomFloor => generate_paths::color::Room,
+        color::Anchor => generate_paths::color::Anchor,
         _ => return None,
-    };
-    Some(v)
+    })
 }
 
 pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Color> {
-    let mut tespat = TespatBuilder::new_filled(Color::Border, width, height)
+    let mut tespat = TespatBuilder::new_filled(color::Border, width, height)
         .enable_history(enable_history)
         .build();
 
@@ -61,7 +58,7 @@ pub fn generate(enable_history: bool, width: usize, height: usize) -> Tespat<Col
     // 如果还有空间可能可以生成
     loop {
         let empty_ratio =
-            tespat.color_count(&Color::Empty) as f64 / (tespat.width() * tespat.height()) as f64;
+            tespat.color_count(&color::Empty) as f64 / (tespat.width() * tespat.height()) as f64;
 
         if empty_ratio < 0.3 {
             break;
