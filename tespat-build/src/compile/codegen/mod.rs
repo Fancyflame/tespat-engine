@@ -5,7 +5,7 @@ use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::compile::ir::{ColorVariant, ProjectFile};
+use crate::compile::ir::{ColorVariant, ProjectFile, VisibleColor};
 use ident::color_map_field_ident;
 
 /// 生成整个项目对应的 Rust TokenStream。
@@ -94,6 +94,22 @@ fn generate_color_enum(project: &ProjectFile<'_>) -> TokenStream {
 
 /// 生成指定命名空间的颜色映射定义。
 pub(crate) fn generate_color_map_tokens(colors: &[&ColorVariant<'_>]) -> TokenStream {
+    generate_color_map_tokens_from_visible(&colors_to_visible(colors))
+}
+
+/// 将 ColorVariant 视图转换为可见颜色视图。
+fn colors_to_visible<'a>(colors: &[&'a ColorVariant<'a>]) -> Vec<VisibleColor<'a>> {
+    colors
+        .iter()
+        .map(|color| VisibleColor {
+            raw_name: color.raw_name,
+            variant_ident: color.variant_ident.clone(),
+        })
+        .collect()
+}
+
+/// 生成指定命名空间的颜色映射定义（基于可见颜色集合）。
+pub(crate) fn generate_color_map_tokens_from_visible(colors: &[VisibleColor<'_>]) -> TokenStream {
     let map_fields = colors.iter().map(|color| {
         let field_ident = color_map_field_ident(color.raw_name);
         quote! { pub #field_ident: ::tespat::MatchColor<Color>, }
@@ -101,14 +117,14 @@ pub(crate) fn generate_color_map_tokens(colors: &[&ColorVariant<'_>]) -> TokenSt
 
     let map_default_fields = colors.iter().map(|color| {
         let field_ident = color_map_field_ident(color.raw_name);
-        let variant = &color.variant_ident;
-        quote! { #field_ident: ::tespat::MatchColor::Exact(Color::#variant), }
+        let color_ident = crate::compile::codegen::ident::color_const_ident(color.raw_name);
+        quote! { #field_ident: ::tespat::MatchColor::Exact(color::#color_ident), }
     });
 
     let map_match_arms = colors.iter().map(|color| {
         let field_ident = color_map_field_ident(color.raw_name);
-        let variant = &color.variant_ident;
-        quote! { Color::#variant => self.#field_ident.const_copy(), }
+        let color_ident = crate::compile::codegen::ident::color_const_ident(color.raw_name);
+        quote! { color::#color_ident => self.#field_ident.const_copy(), }
     });
 
     quote! {

@@ -13,7 +13,7 @@ use crate::compile::json::{
 pub(crate) struct ProjectFile<'a> {
     pub root: NamespaceNode<'a>,
     pub colors: Vec<ColorVariant<'a>>,
-    pub namespace_indices: HashMap<String, usize>,
+    pub visible_colors_by_namespace: HashMap<String, Vec<VisibleColor<'a>>>,
 }
 
 /// 递归命名空间节点
@@ -35,12 +35,20 @@ pub(crate) struct ColorVariant<'a> {
     pub namespace_path: String,
 }
 
+/// 命名空间解析后的可见颜色条目
+pub(crate) struct VisibleColor<'a> {
+    pub raw_name: &'a str,
+    pub variant_ident: Ident,
+}
+
 #[derive(Deserialize)]
 pub(crate) struct PaletteConfig<'a> {
     #[serde(borrow)]
     pub color: &'a str,
     #[serde(borrow)]
     pub icon: Option<&'a str>,
+    #[serde(default)]
+    pub public: bool,
 }
 
 #[derive(Deserialize, Clone)]
@@ -60,11 +68,13 @@ impl<'a> ProjectFile<'a> {
         let mut namespace_indices = HashMap::new();
         let mut colors = Vec::new();
         collect_color_variants(&root, &mut namespace_indices, &mut colors);
+        let visible_colors_by_namespace =
+            collect_visible_colors_by_namespace(&root, &colors);
 
         Ok(Self {
             root,
             colors,
-            namespace_indices,
+            visible_colors_by_namespace,
         })
     }
 }
@@ -166,4 +176,111 @@ fn collect_color_variants<'a>(
     for child in &node.children {
         collect_color_variants(child, namespace_indices, colors);
     }
+}
+
+/// 收集每个命名空间可见颜色（本地 + 父链 public 继承）。
+fn collect_visible_colors_by_namespace<'a>(
+    root: &NamespaceNode<'a>,
+    colors: &[ColorVariant<'a>],
+) -> HashMap<String, Vec<VisibleColor<'a>>> {
+    let mut local_variant_map: HashMap<(String, &'a str), Ident> = HashMap::new();
+    for color in colors {
+        local_variant_map.insert(
+            (color.namespace_path.clone(), color.raw_name),
+            color.variant_ident.clone(),
+        );
+    }
+
+    let mut local_palette_by_namespace: HashMap<String, Vec<LocalPaletteEntry<'a>>> =
+        HashMap::new();
+    collect_local_palette_entries(root, &mut local_palette_by_namespace);
+
+    let mut namespace_paths: Vec<_> = local_palette_by_namespace.keys().cloned().collect();
+    namespace_paths.sort();
+
+    let mut result = HashMap::new();
+    for namespace_path in namespace_paths {
+        let mut visible_sources: HashMap<&'a str, String> = HashMap::new();
+
+        if let Some(local_entries) = local_palette_by_namespace.get(&namespace_path) {
+            for entry in local_entries {
+                visible_sources.insert(entry.raw_name, namespace_path.clone());
+            }
+        }
+
+        let mut parent_path = parent_namespace_path(&namespace_path);
+        while let Some(path) = parent_path {
+            if let Some(parent_entries) = local_palette_by_namespace.get(&path) {
+                for entry in parent_entries {
+                    if !entry.public || visible_sources.contains_key(entry.raw_name) {
+                        continue;
+                    }
+                    visible_sources.insert(entry.raw_name, path.clone());
+                }
+            }
+            parent_path = parent_namespace_path(&path);
+        }
+
+        let mut names: Vec<_> = visible_sources.keys().copied().collect();
+        names.sort();
+
+        let visible = names
+            .into_iter()
+            .map(|name| {
+                let source_path = visible_sources
+                    .get(name)
+                    .expect("visible source should exist for color");
+                let variant_ident = local_variant_map
+                    .get(&(source_path.clone(), name))
+                    .expect("visible color should map to a local variant")
+                    .clone();
+                VisibleColor {
+                    raw_name: name,
+                    variant_ident,
+                }
+            })
+            .collect();
+
+        result.insert(namespace_path, visible);
+    }
+
+    result
+}
+
+/// 命名空间本地颜色条目快照。
+struct LocalPaletteEntry<'a> {
+    raw_name: &'a str,
+    public: bool,
+}
+
+/// 递归收集每个命名空间的本地颜色条目。
+fn collect_local_palette_entries<'a>(
+    node: &NamespaceNode<'a>,
+    result: &mut HashMap<String, Vec<LocalPaletteEntry<'a>>>,
+) {
+    let mut entries = node
+        .palette
+        .iter()
+        .map(|(&name, palette)| LocalPaletteEntry {
+            raw_name: name,
+            public: palette.public,
+        })
+        .collect::<Vec<_>>();
+    entries.sort_by_key(|entry| entry.raw_name);
+    result.insert(node.full_path.clone(), entries);
+
+    for child in &node.children {
+        collect_local_palette_entries(child, result);
+    }
+}
+
+/// 计算命名空间父路径。
+fn parent_namespace_path(path: &str) -> Option<String> {
+    if path.is_empty() {
+        return None;
+    }
+    path.rfind('.').map_or_else(
+        || Some(String::new()),
+        |idx| Some(path[..idx].to_string()),
+    )
 }

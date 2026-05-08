@@ -1,14 +1,12 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use proc_macro2::TokenStream;
 use quote::quote;
 
 use crate::compile::codegen::ident::{
-    color_const_ident, module_ident, namespace_index, namespaced_color_variant_ident,
-    pattern_static_ident,
+    color_const_ident, module_ident, pattern_static_ident, visible_colors,
 };
-use crate::compile::codegen::generate_color_map_tokens;
 use crate::compile::ir::{NamespaceNode, PatternConfig, ProjectFile};
 
 /// 生成命名空间模块树。
@@ -73,13 +71,16 @@ fn generate_color_map_module(
     project: &ProjectFile<'_>,
     namespace: &NamespaceNode<'_>,
 ) -> Result<TokenStream> {
-    let colors: Vec<_> = project
-        .colors
+    let colors = visible_colors(project, &namespace.full_path)
         .iter()
-        .filter(|color| color.namespace_path == namespace.full_path)
-        .collect();
-
-    Ok(generate_color_map_tokens(&colors))
+        .map(|color| crate::compile::ir::VisibleColor {
+            raw_name: color.raw_name,
+            variant_ident: color.variant_ident.clone(),
+        })
+        .collect::<Vec<_>>();
+    Ok(crate::compile::codegen::generate_color_map_tokens_from_visible(
+        &colors,
+    ))
 }
 
 /// 生成当前命名空间颜色别名模块。
@@ -87,13 +88,11 @@ fn generate_color_module(
     project: &ProjectFile<'_>,
     namespace: &NamespaceNode<'_>,
 ) -> Result<TokenStream> {
-    let namespace_index = namespace_index(project, &namespace.full_path);
-    let mut color_names: Vec<_> = namespace.palette.keys().copied().collect();
-    color_names.sort();
-
-    let color_items = color_names.into_iter().map(|color_name| {
+    let colors = visible_colors(project, &namespace.full_path);
+    let color_items = colors.iter().map(|color| {
+        let color_name = color.raw_name;
         let const_ident = color_const_ident(color_name);
-        let variant = namespaced_color_variant_ident(color_name, namespace_index);
+        let variant = &color.variant_ident;
 
         quote! {
             pub const #const_ident: super::Color = super::Color::#variant;
@@ -113,22 +112,20 @@ fn generate_unit_pattern_module(
     project: &ProjectFile<'_>,
     namespace: &NamespaceNode<'_>,
 ) -> Result<TokenStream> {
-    let namespace_index = namespace_index(project, &namespace.full_path);
-    let mut color_names: Vec<_> = namespace.palette.keys().copied().collect();
-    color_names.sort();
-
-    let items = color_names.into_iter().map(|color_name| {
+    let colors = visible_colors(project, &namespace.full_path);
+    let items = colors.iter().map(|color| {
+        let color_name = color.raw_name;
         let static_ident = pattern_static_ident(color_name);
-        let variant = namespaced_color_variant_ident(color_name, namespace_index);
+        let color_ident = color_const_ident(color_name);
 
         quote! {
             pub static #static_ident: ::tespat::Pattern<super::Color> = {
                 const WIDTH: usize = 1usize;
                 const GRID: &[::tespat::MatchColor<super::Color>] = const {
-                    &[super::COLOR_MAP.map(super::Color::#variant)]
+                    &[super::COLOR_MAP.map(super::color::#color_ident)]
                 };
                 const COLORS: &[(::tespat::MatchColor<super::Color>, usize)] = const {
-                    &[(super::COLOR_MAP.map(super::Color::#variant), 0usize)]
+                    &[(super::COLOR_MAP.map(super::color::#color_ident), 0usize)]
                 };
                 ::tespat::Pattern::from_static(WIDTH, GRID, COLORS)
             };
@@ -196,12 +193,16 @@ fn generate_pattern_expr(
     width: usize,
     pattern: &[&str],
 ) -> Result<TokenStream> {
-    let namespace_index = namespace_index(project, &namespace.full_path);
+    let visible = visible_colors(project, &namespace.full_path);
+    let mut visible_set = HashMap::new();
+    for color in visible {
+        visible_set.insert(color.raw_name, ());
+    }
     let mut grid_items = Vec::with_capacity(pattern.len());
     let mut first_seen_entries: HashMap<&str, usize> = HashMap::new();
 
     for (idx, &color_name) in pattern.iter().enumerate() {
-        if !namespace.palette.contains_key(color_name) {
+        if !visible_set.contains_key(color_name) {
             return Err(anyhow!(
                 "命名空间 `{}` 中 pattern 引用了不存在的颜色 `{}`",
                 namespace.path_display,
@@ -209,16 +210,16 @@ fn generate_pattern_expr(
             ));
         }
 
-        let color_ident = namespaced_color_variant_ident(color_name, namespace_index);
-        grid_items.push(quote! { super::COLOR_MAP.map(super::Color::#color_ident) });
+        let color_ident = color_const_ident(color_name);
+        grid_items.push(quote! { super::COLOR_MAP.map(super::color::#color_ident) });
         first_seen_entries.entry(color_name).or_insert(idx);
     }
 
     let color_items: Vec<TokenStream> = first_seen_entries
         .into_iter()
         .map(|(color_name, idx)| {
-            let color_ident = namespaced_color_variant_ident(color_name, namespace_index);
-            quote! { (super::COLOR_MAP.map(super::Color::#color_ident), #idx) }
+            let color_ident = color_const_ident(color_name);
+            quote! { (super::COLOR_MAP.map(super::color::#color_ident), #idx) }
         })
         .collect();
 

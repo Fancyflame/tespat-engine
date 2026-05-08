@@ -2,7 +2,7 @@ use convert_case::Case;
 use proc_macro2::Ident;
 use quote::format_ident;
 
-use crate::compile::ir::ProjectFile;
+use crate::compile::ir::{ProjectFile, VisibleColor};
 
 /// 生成带命名空间索引后缀的颜色枚举项标识符。
 pub(crate) fn namespaced_color_variant_ident(name: &str, namespace_index: usize) -> Ident {
@@ -39,12 +39,13 @@ pub(crate) fn color_const_ident(name: &str) -> Ident {
     cased_ident(name, Case::Pascal)
 }
 
-/// 查询命名空间在全局颜色表中的索引。
-pub(crate) fn namespace_index<'a>(project: &ProjectFile<'a>, path: &str) -> usize {
-    *project
-        .namespace_indices
+/// 查询命名空间可见颜色集合。
+pub(crate) fn visible_colors<'a>(project: &'a ProjectFile<'a>, path: &str) -> &'a [VisibleColor<'a>] {
+    project
+        .visible_colors_by_namespace
         .get(path)
-        .expect("namespace index should exist for generated namespace")
+        .map(Vec::as_slice)
+        .expect("visible colors should exist for generated namespace")
 }
 
 /// 保留下划线前缀进行 case 转换。
